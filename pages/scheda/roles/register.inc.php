@@ -15,7 +15,7 @@ $render_back = function () use ($pg_url, $MESSAGE) { ?>
 <?php };
 
 if ($_REQUEST['pg'] != $_SESSION['login']) {
-    echo '<div class="gdrcd-alert-error">Non puoi inserire registrazioni nella scheda altrui.</div>';
+    echo '<div class="gdrcd-alert-error">' . gdrcd_filter('out', $MESSAGE['ui']['feedback']['not_allowed']) . '</div>';
     $render_back();
     return;
 }
@@ -120,7 +120,7 @@ $mesi_label = [
             Dettagli giocata
         </h3>
         <label class="block">
-            <span class="text-xs uppercase tracking-wide text-gdrcd-text-soft font-display">Tag</span>
+            <span class="text-xs uppercase tracking-wide text-gdrcd-text-soft font-display"><?= gdrcd_filter('out', $MESSAGE['ui']['fields']['tag']) ?></span>
             <input name="ab" type="text" value="" class="gdrcd-input mt-1 w-full" placeholder="es. duello, esplorazione, taverna…" maxlength="255">
             <span class="text-xs text-gdrcd-text-soft mt-1 block">Brevi parole-chiave per ritrovare la role.</span>
         </label>
@@ -134,14 +134,14 @@ $mesi_label = [
     <div class="flex justify-between items-center gap-2">
         <a href="main.php?page=scheda_roles&pg=<?= $pg_url ?>" class="gdrcd-btn-ghost">
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-            Annulla
+            <?= gdrcd_filter('out', $MESSAGE['ui']['actions']['cancel']) ?>
         </a>
         <input type="hidden" name="op" value="send_segn">
         <input type="hidden" name="mese" value="<?= $mese ?>">
         <input type="hidden" name="anno" value="<?= $anno ?>">
         <button type="submit" class="gdrcd-btn-primary">
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-            Registra giocata
+            <?= gdrcd_filter('out', $MESSAGE['ui']['actions']['register']) ?>
         </button>
     </div>
 </form>

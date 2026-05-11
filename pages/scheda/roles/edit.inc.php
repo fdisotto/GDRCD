@@ -15,7 +15,7 @@ $render_back = function () use ($pg_url, $MESSAGE) { ?>
 <?php };
 
 if (!($_SESSION['permessi'] >= EDIT_PERM || $_REQUEST['pg'] == $_SESSION['login'])) {
-    echo '<div class="gdrcd-alert-error">Non hai i permessi per modificare una registrazione.</div>';
+    echo '<div class="gdrcd-alert-error">' . gdrcd_filter('out', $MESSAGE['ui']['feedback']['not_allowed']) . '</div>';
     $render_back();
     return;
 }
@@ -69,12 +69,12 @@ if ($op === 'edit') {
 
         <article class="gdrcd-card space-y-3">
             <label class="block">
-                <span class="text-sm text-gdrcd-text-soft">Tag</span>
+                <span class="text-sm text-gdrcd-text-soft"><?= gdrcd_filter('out', $MESSAGE['ui']['fields']['tag']) ?></span>
                 <input name="ab" type="text" value="<?= htmlspecialchars($row['tags']) ?>" class="gdrcd-input mt-1 w-full">
                 <span class="text-xs text-gdrcd-text-soft">I tag possono essere utili per ritrovare rapidamente una role.</span>
             </label>
             <label class="block">
-                <span class="text-sm text-gdrcd-text-soft">Note quest</span>
+                <span class="text-sm text-gdrcd-text-soft"><?= gdrcd_filter('out', $MESSAGE['ui']['fields']['quest_notes']) ?></span>
                 <input name="quest" type="text" value="<?= htmlspecialchars($row['quest']) ?>" class="gdrcd-input mt-1 w-full">
                 <span class="text-xs text-gdrcd-text-soft">Brevissimo riassunto di interazioni con spunti di trama. In assenza di segnalazione un GM non riceve notifica.</span>
             </label>
@@ -85,7 +85,7 @@ if ($op === 'edit') {
             <input type="hidden" name="id" value="<?= $row_id ?>">
             <button type="submit" class="gdrcd-btn-primary">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                Salva modifiche
+                <?= gdrcd_filter('out', $MESSAGE['ui']['actions']['save']) ?>
             </button>
         </div>
     </form>

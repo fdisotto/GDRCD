@@ -52,14 +52,30 @@ $is_gm = ((int)$_SESSION['permessi'] >= GAMEMASTER);
         $_SESSION['last_message'] = 0;
         ?>
 
-        <!-- iframe nascosto: poll messaggi -->
+        <!-- iframe nascosto: usato solo come target POST per i form chat;
+             il polling messaggi avviene via fetch in includes/chat.js -->
         <div class="absolute -left-[9999px] w-px h-px overflow-hidden" aria-hidden="true">
-            <iframe src="pages/chat.inc.php?ref=30&chat=yes" id="chat_frame" name="chat_frame" title="Aggiornamento messaggi chat" frameborder="0"></iframe>
+            <iframe src="about:blank" id="chat_frame" name="chat_frame" title="Target invio form chat" frameborder="0"></iframe>
         </div>
 
-        <!-- Chat output (popolato dal JS via iframe) -->
+        <!-- Chat output (popolato da includes/chat.js via fetch /api/chat.inc.php) -->
         <section class="gdrcd-card">
-            <div id="pagina_chat" class="chat_box p-2 sm:p-4 min-h-[40vh] max-h-[65vh] overflow-y-auto overflow-x-hidden"></div>
+            <div id="pagina_chat"
+                 class="chat_box p-2 sm:p-4 min-h-[40vh] max-h-[65vh] overflow-y-auto overflow-x-hidden"
+                 data-poll-url="/api/chat.inc.php"
+                 data-poll-interval="4000"
+                 data-from-bottom="<?= (($PARAMETERS['mode']['chat_from_bottom'] ?? 'OFF') === 'ON') ? '1' : '0' ?>"
+                 data-login="<?= htmlspecialchars($_SESSION['login'] ?? '', ENT_QUOTES) ?>"
+                 data-permessi="<?= (int)($_SESSION['permessi'] ?? 0) ?>"
+                 data-spy-private="<?= (($PARAMETERS['mode']['spyprivaterooms'] ?? 'OFF') === 'ON') ? '1' : '0' ?>"
+                 data-chat-avatar="<?= (($PARAMETERS['mode']['chat_avatar'] ?? 'OFF') === 'ON') ? '1' : '0' ?>"
+                 data-chat-icons="<?= (($PARAMETERS['mode']['chaticons'] ?? 'OFF') === 'ON') ? '1' : '0' ?>"
+                 data-avatar-link="<?= (($PARAMETERS['settings']['chat_avatar']['link']['mode'] ?? 'OFF') === 'ON') ? '1' : '0' ?>"
+                 data-avatar-popup="<?= (($PARAMETERS['settings']['chat_avatar']['link']['popup'] ?? 'OFF') === 'ON') ? '1' : '0' ?>"
+                 data-theme="<?= htmlspecialchars($PARAMETERS['themes']['current_theme'] ?? '', ENT_QUOTES) ?>"
+                 data-msg-whisper-by="<?= htmlspecialchars($MESSAGE['chat']['whisper']['by'] ?? 'ti sussurra', ENT_QUOTES) ?>"
+                 data-msg-whisper-to="<?= htmlspecialchars($MESSAGE['chat']['whisper']['to'] ?? 'Sussurri a', ENT_QUOTES) ?>"
+                 data-msg-whisper-from-to="<?= htmlspecialchars($MESSAGE['chat']['whisper']['from_to'] ?? 'sussurra a', ENT_QUOTES) ?>"></div>
         </section>
 
         <!-- Form invio messaggio -->

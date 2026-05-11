@@ -232,7 +232,7 @@ foreach ($alerts as [$kind, $msg]) {
                     </select>
                 </label>
                 <label class="block">
-                    <span class="text-sm text-gdrcd-text-soft">Ammontare</span>
+                    <span class="text-sm text-gdrcd-text-soft"><?= gdrcd_filter('out', $MESSAGE['ui']['fields']['amount']) ?></span>
                     <input type="number" name="ammontare" min="0" value="0" class="gdrcd-input mt-1 w-full">
                 </label>
                 <label class="block">

@@ -44,7 +44,7 @@ if ($op === 'segnala') {
 
         <article class="gdrcd-card space-y-3">
             <label class="block">
-                <span class="text-sm text-gdrcd-text-soft">Note aggiuntive</span>
+                <span class="text-sm text-gdrcd-text-soft"><?= gdrcd_filter('out', $MESSAGE['ui']['fields']['notes']) ?> aggiuntive</span>
                 <input name="note" type="text" value="" class="gdrcd-input mt-1 w-full" placeholder="Esito, obiettivo, motivazione...">
                 <span class="text-xs text-gdrcd-text-soft">Scrivere la motivazione della segnalazione (esito, obiettivo, ecc).</span>
             </label>

@@ -58,7 +58,7 @@ $stat_month = (int)gdrcd_query(gdrcd_query(
             <input type="hidden" name="pg" value="<?= htmlspecialchars($pg) ?>">
             <button type="submit" class="gdrcd-btn-primary">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
-                Registra
+                <?= gdrcd_filter('out', $MESSAGE['ui']['actions']['register']) ?>
             </button>
         </form>
     </div>
@@ -70,8 +70,8 @@ $stat_month = (int)gdrcd_query(gdrcd_query(
                 <span class="text-xs uppercase tracking-wide text-gdrcd-text-soft font-display">Cerca per</span>
                 <div class="flex gap-2 mt-1">
                     <select name="type" class="gdrcd-select w-40 shrink-0">
-                        <option value="0">Personaggio</option>
-                        <option value="1">Tag</option>
+                        <option value="0"><?= gdrcd_filter('out', $MESSAGE['ui']['fields']['character']) ?></option>
+                        <option value="1"><?= gdrcd_filter('out', $MESSAGE['ui']['fields']['tag']) ?></option>
                         <option value="2">Quest</option>
                     </select>
                     <input name="search" class="gdrcd-input flex-1" placeholder="Chiave di ricerca…" type="text">
@@ -79,9 +79,9 @@ $stat_month = (int)gdrcd_query(gdrcd_query(
             </label>
             <input type="hidden" name="op" value="search">
             <input type="hidden" name="pg" value="<?= htmlspecialchars($pg) ?>">
-            <button type="submit" class="gdrcd-btn-primary shrink-0 w-full md:w-auto" title="Cerca">
+            <button type="submit" class="gdrcd-btn-primary shrink-0 w-full md:w-auto" title="<?= gdrcd_filter('out', $MESSAGE['ui']['actions']['search']) ?>">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z"/></svg>
-                Cerca
+                <?= gdrcd_filter('out', $MESSAGE['ui']['actions']['search']) ?>
             </button>
         </form>
     </div>
@@ -170,12 +170,12 @@ $stat_month = (int)gdrcd_query(gdrcd_query(
                 <table class="gdrcd-table">
                     <thead>
                         <tr>
-                            <th>Data</th>
+                            <th><?= gdrcd_filter('out', $MESSAGE['ui']['fields']['date']) ?></th>
                             <th>Chat</th>
                             <th>Partecipanti</th>
                             <th class="tabular-nums">Az.</th>
-                            <th>Tag</th>
-                            <th>Note quest</th>
+                            <th><?= gdrcd_filter('out', $MESSAGE['ui']['fields']['tag']) ?></th>
+                            <th><?= gdrcd_filter('out', $MESSAGE['ui']['fields']['quest_notes']) ?></th>
                             <th>Stato</th>
                             <th class="text-right">Azioni</th>
                         </tr>

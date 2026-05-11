@@ -839,6 +839,70 @@ $MESSAGE['interface']['forms']['submit'] = 'Invia';
 $MESSAGE['interface']['forms']['cancel'] = 'Annulla';
 $MESSAGE['interface']['forms']['delete'] = 'Elimina';
 $MESSAGE['interface']['forms']['save'] = 'Salva';
+
+/********** UI condivisa **********
+ * Convenzione: tutte le stringhe ricorrenti dell'interfaccia (azioni,
+ * stati vuoti, label di campi comuni, prompt di conferma, navigazione)
+ * vivono qui sotto `$MESSAGE['ui']`. Le pagine devono leggerle tramite
+ * gdrcd_filter('out', $MESSAGE['ui']['<categoria>']['<chiave>']) invece
+ * di hardcodare il testo in italiano. Categorie:
+ *   - actions   : verbi (Salva, Annulla, Conferma, ...)
+ *   - empty     : stati vuoti / nessun risultato
+ *   - feedback  : messaggi generici di esito operazione
+ *   - fields    : label di campi comuni (Tag, Note, Data, ...)
+ *   - confirm   : prompt di conferma azioni distruttive
+ *   - nav       : etichette di navigazione (Indietro, Vai a, ...)
+ * Aggiungere nuove voci solo se davvero ricorrenti (>= 2 pagine).
+ */
+/* Azioni - verbi comuni dei pulsanti */
+$MESSAGE['ui']['actions']['confirm']  = 'Conferma';
+$MESSAGE['ui']['actions']['cancel']   = 'Annulla';
+$MESSAGE['ui']['actions']['save']     = 'Salva';
+$MESSAGE['ui']['actions']['edit']     = 'Modifica';
+$MESSAGE['ui']['actions']['delete']   = 'Elimina';
+$MESSAGE['ui']['actions']['search']   = 'Cerca';
+$MESSAGE['ui']['actions']['open']     = 'Apri';
+$MESSAGE['ui']['actions']['close']    = 'Chiudi';
+$MESSAGE['ui']['actions']['back']     = 'Indietro';
+$MESSAGE['ui']['actions']['next']     = 'Avanti';
+$MESSAGE['ui']['actions']['download'] = 'Scarica';
+$MESSAGE['ui']['actions']['register'] = 'Registra';
+$MESSAGE['ui']['actions']['submit']   = 'Invia';
+
+/* Stati vuoti - placeholder quando non ci sono dati */
+$MESSAGE['ui']['empty']['no_results']  = 'Nessun risultato';
+$MESSAGE['ui']['empty']['no_items']    = 'Nessun elemento disponibile';
+$MESSAGE['ui']['empty']['no_data']     = 'Nessun dato presente';
+$MESSAGE['ui']['empty']['no_services'] = 'Nessun servizio disponibile';
+$MESSAGE['ui']['empty']['no_entries']  = 'Nessuna voce disponibile';
+
+/* Feedback - esiti generici di operazione */
+$MESSAGE['ui']['feedback']['done']         = 'Operazione completata';
+$MESSAGE['ui']['feedback']['saved']        = 'Modifiche salvate';
+$MESSAGE['ui']['feedback']['deleted']      = 'Eliminato con successo';
+$MESSAGE['ui']['feedback']['error']        = 'Errore durante l\'operazione';
+$MESSAGE['ui']['feedback']['not_allowed']  = 'Non hai i permessi per eseguire questa operazione';
+
+/* Fields - label di campi ricorrenti */
+$MESSAGE['ui']['fields']['tag']         = 'Tag';
+$MESSAGE['ui']['fields']['notes']       = 'Note';
+$MESSAGE['ui']['fields']['quest_notes'] = 'Note quest';
+$MESSAGE['ui']['fields']['date']        = 'Data';
+$MESSAGE['ui']['fields']['time']        = 'Ora';
+$MESSAGE['ui']['fields']['character']   = 'Personaggio';
+$MESSAGE['ui']['fields']['description'] = 'Descrizione';
+$MESSAGE['ui']['fields']['title']       = 'Titolo';
+$MESSAGE['ui']['fields']['amount']      = 'Ammontare';
+
+/* Confirm - prompt di conferma azioni distruttive */
+$MESSAGE['ui']['confirm']['sure']     = 'Sei sicuro?';
+$MESSAGE['ui']['confirm']['no_undo']  = 'L\'operazione non può essere annullata';
+
+/* Nav - etichette di navigazione */
+$MESSAGE['ui']['nav']['section']  = 'Sezione';
+$MESSAGE['ui']['nav']['go_to']    = 'Vai a';
+$MESSAGE['ui']['nav']['homepage'] = 'Homepage';
+$MESSAGE['ui']['nav']['back']     = 'Indietro';
 /*Paginatore*/
 $MESSAGE['interface']['pager']['pages_name'] = 'Pagine';
 /*Help*/

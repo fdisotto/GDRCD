@@ -446,6 +446,31 @@ via `GDRCD_BACKUP_RETENTION`). Esempio di crontab:
 
 ---
 
+## Internazionalizzazione (i18n)
+
+Tutte le stringhe di interfaccia visualizzate all'utente devono passare
+dal vocabolario in `vocabulary/IT-it.vocabulary.php`, mai essere
+hardcoded nei file PHP delle pagine.
+
+- Il vocabolario popola un singolo array nidificato `$MESSAGE`, accessibile
+  in tutto il codice dopo l'include di `header.inc.php`.
+- Le stringhe ricorrenti dell'UI (azioni, stati vuoti, label di campi,
+  feedback) vivono sotto `$MESSAGE['ui']` con sotto-categorie
+  `actions`, `empty`, `feedback`, `fields`, `confirm`, `nav`.
+- Pattern di accesso canonico:
+
+  ```php
+  <?= gdrcd_filter('out', $MESSAGE['ui']['actions']['save']) ?>
+  ```
+
+  `gdrcd_filter('out', ...)` applica l'escaping HTML in uscita; non
+  serve aggiungere `htmlspecialchars` a valle.
+- Per aggiungere una nuova lingua copiare `vocabulary/IT-it.vocabulary.php`
+  in `vocabulary/<CODICE>.vocabulary.php` (es. `EN-en.vocabulary.php`)
+  e tradurre i valori delle chiavi mantenendone struttura e nomi.
+
+---
+
 ## Contribuire
 
 Le linee guida complete sono in [`CONTRIBUTING.md`](CONTRIBUTING.md).

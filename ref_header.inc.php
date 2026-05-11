@@ -351,7 +351,7 @@ if((gdrcd_filter_get($_REQUEST['chat']) == 'yes') && (empty($_SESSION['login']) 
         /**    * Fix problema visualizzazione spazi vuoti con i sussurri
          * @author eLDiabolo
          */
-        $add_chat .= '<div class="chat_row_'.$row['tipo'].'">';
+        $add_chat .= '<div class="chat_row_'.$row['tipo'].'" data-msg-id="'.(int)$row['id'].'">';
 
         // identifico se l'ultimo messaggio è dell'utente o meno
         $isLastMessageFromUser = ($row['mittente'] == $_SESSION['login']);
