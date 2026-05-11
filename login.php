@@ -78,8 +78,12 @@ $render_error = function (string $title, string $details = '', array $extra_line
     exit();
 };
 
-/* Blacklist IP */
-$result = gdrcd_query("SELECT * FROM blacklist WHERE ip = '" . $_SERVER['REMOTE_ADDR'] . "' AND granted = 0", 'result');
+/* Blacklist IP (ban permanenti o non ancora scaduti) */
+$result = gdrcd_query(
+    "SELECT * FROM blacklist WHERE ip = '" . $_SERVER['REMOTE_ADDR'] . "' "
+    . "AND granted = 0 AND (expires_at IS NULL OR expires_at > NOW())",
+    'result'
+);
 if (gdrcd_query($result, 'num_rows') > 0) {
     gdrcd_query($result, 'free');
     gdrcd_query("INSERT INTO log (nome_interessato, autore, data_evento, codice_evento, descrizione_evento)

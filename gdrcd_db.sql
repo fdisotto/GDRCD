@@ -139,8 +139,10 @@ CREATE TABLE IF NOT EXISTS `blacklist` (
   `granted` tinyint(1) NOT NULL DEFAULT '0',
   `ora` datetime DEFAULT NULL,
   `host` varchar(255) NOT NULL DEFAULT '-',
+  `expires_at` datetime NULL DEFAULT NULL,
   PRIMARY KEY (`ip`),
-  KEY `Ora` (`ora`)
+  KEY `Ora` (`ora`),
+  KEY `idx_blacklist_expires` (`granted`,`expires_at`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
@@ -806,7 +808,8 @@ INSERT INTO _gdrcd_db_versions (migration_id,applied_on) VALUES
   ('2026051112', NOW()),
   ('2026051113', NOW()),
   ('2026051114', NOW()),
-  ('2026051115', NOW());
+  ('2026051115', NOW()),
+  ('2026051117', NOW());
 
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

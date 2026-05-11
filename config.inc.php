@@ -744,6 +744,9 @@ if (ESITI)
 $PARAMETERS['administration']['email']['text'] = 'Gestione email';
 $PARAMETERS['administration']['email']['url'] = 'main.php?page=gestione_cambio_email';
 $PARAMETERS['administration']['email']['access_level'] = MODERATOR;
+$PARAMETERS['administration']['ban']['text'] = 'Ban e blacklist';
+$PARAMETERS['administration']['ban']['url'] = 'main.php?page=gestione/ban';
+$PARAMETERS['administration']['ban']['access_level'] = MODERATOR;
 $PARAMETERS['administration']['skills']['text'] = 'Gestione abilità';
 $PARAMETERS['administration']['skills']['url'] = 'main.php?page=gestione_abilita';
 $PARAMETERS['administration']['skills']['access_level'] = SUPERUSER;
