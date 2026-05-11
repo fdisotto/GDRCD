@@ -1,109 +1,105 @@
 <?php
+/**
+ * Servizi/Prenotazioni — booking stanze private.
+ */
 
-// Avvio l'operazione di prenotazione stanza
-if (gdrcd_filter('get', $_POST['action']) == "bookRoom") {
+$alert = null;
 
-    // Recupero i valori del FORM
-    $idRoom = gdrcd_filter('get', $_POST['id']);
-    $timeRoom = gdrcd_filter('num', gdrcd_filter('get', $_POST['ore']));
+if (gdrcd_filter('get', $_POST['action'] ?? '') === 'bookRoom') {
+    $idRoom = gdrcd_filter('get', $_POST['id'] ?? 0);
+    $timeRoom = max(1, (int)gdrcd_filter('num', gdrcd_filter('get', $_POST['ore'] ?? 1)));
+    $checkRoom = gdrcd_query("SELECT costo, privata, scadenza, proprietario FROM mappa WHERE id = " . gdrcd_filter('num', $idRoom) . " LIMIT 1");
 
-    // Preparo un controllo preliminare per assicurarmi l'affitabilità della stanza
-    $checkRoom = gdrcd_query("SELECT costo, privata, scadenza, proprietario FROM mappa WHERE id = " . gdrcd_filter('num', $idRoom ) . "  LIMIT 1");
+    $bookable = ($checkRoom['privata'] == 1 && $checkRoom['costo'] >= 0 && $checkRoom['scadenza'] <= date('Y-m-d H:i:s'));
 
-    if(
-            $checkRoom['privata'] == 1
-        &&  $checkRoom['costo'] >= 0
-        &&  $checkRoom['scadenza'] <= strftime('%Y-%m-%d %H:%M:%S')
-    ) {
-        $bookableRoom = true;
-    } else {
-        $bookableRoom = false;
-    }
-
-    // Se la stanza è affittabile, allora procedo con la prenotazione
-    if ($bookableRoom) {
-        // Controllo i soldi in possesso del personaggio
-        $checkPG = gdrcd_query("SELECT soldi FROM personaggio WHERE nome ='".$_SESSION['login']."' LIMIT 1");
-
-        // Imposto il valore minimo delle ore a 1
-        $timeRoom = $timeRoom >= 0 ? $timeRoom : 1;
-
-        // Controllo se il personaggio ha abbastanza soldi
-        if($checkPG['soldi'] >= ($timeRoom * $checkRoom['costo'])) {
-            /*Opero la prenotazione*/
-            gdrcd_query("UPDATE mappa SET proprietario = '".$_SESSION['login']."', invitati='', ora_prenotazione=NOW(), scadenza=DATE_ADD(NOW(), INTERVAL ".gdrcd_filter('get', $_POST['ore'])." HOUR) WHERE id = ".gdrcd_filter('num', $idRoom)." and scadenza < NOW() LIMIT 1");
-            gdrcd_query("UPDATE personaggio SET soldi = soldi - ".gdrcd_filter('num', $timeRoom * $checkRoom['costo'])." WHERE nome = '".$_SESSION['login']."' LIMIT 1");
-            echo '<div class="warning">'.gdrcd_filter('out', $MESSAGE['interface']['hotel']['ok']).'</div>';
+    if ($bookable) {
+        $checkPG = gdrcd_query("SELECT soldi FROM personaggio WHERE nome = '" . gdrcd_filter('in', $_SESSION['login']) . "' LIMIT 1");
+        if ($checkPG['soldi'] >= ($timeRoom * $checkRoom['costo'])) {
+            gdrcd_query("UPDATE mappa SET proprietario = '" . gdrcd_filter('in', $_SESSION['login']) . "', invitati='', ora_prenotazione=NOW(),
+                         scadenza=DATE_ADD(NOW(), INTERVAL " . gdrcd_filter('num', $_POST['ore']) . " HOUR)
+                         WHERE id = " . gdrcd_filter('num', $idRoom) . " AND scadenza < NOW() LIMIT 1");
+            gdrcd_query("UPDATE personaggio SET soldi = soldi - " . gdrcd_filter('num', $timeRoom * $checkRoom['costo']) . "
+                         WHERE nome = '" . gdrcd_filter('in', $_SESSION['login']) . "' LIMIT 1");
+            $alert = ['success', gdrcd_filter('out', $MESSAGE['interface']['hotel']['ok'])];
         } else {
-            echo '<div class="error">'.gdrcd_filter('out', $MESSAGE['interface']['hotel']['no_bucks']).'</div>';
+            $alert = ['error', gdrcd_filter('out', $MESSAGE['interface']['hotel']['no_bucks'])];
+        }
+    } else {
+        if ($checkRoom['proprietario'] == $_SESSION['login']) {
+            $alert = ['error', gdrcd_filter('out', $MESSAGE['interface']['hotel']['already_booked_by_user'])];
+        } else {
+            $alert = ['warning', gdrcd_filter('out', $MESSAGE['warning']['cant_do'])];
         }
     }
-    else {
-        // Se l'utente è il proprietario della stanza, allora lo segnalo
-        // Forzo questo messaggio per evitare che l'utente veda un messaggio di errore
-        if($checkRoom['proprietario'] == $_SESSION['login']) {
-            echo '<div class="error">'.gdrcd_filter('out', $MESSAGE['interface']['hotel']['already_booked_by_user']).'</div>';
-        }
-        // Altrimenti la stranza è prenotata da un altro utente
-        else {
-            echo '<div class="warning">'.gdrcd_filter('out', $MESSAGE['warning']['cant_do']).'</div>';
-        }
-    }
- }
-
-// Ottengo le stanze private che l'utente può prenotare
-$query = "SELECT mappa.id, mappa.nome AS luogo, mappa.costo, mappa.proprietario, mappa.scadenza, mappa_click.nome FROM mappa JOIN mappa_click on mappa.id_mappa = mappa_click.id_click WHERE mappa.privata = 1 ORDER BY mappa.nome, mappa.costo DESC";
-$result = gdrcd_query($query, 'result');
-
-// Scorro i risultati e inserisco le opzioni
-$optionsRooms = [];
-while ($rooms = gdrcd_query($result, 'fetch')) {
-    $isSelected = gdrcd_filter('get', $_REQUEST['id']) == $rooms['id'] ? 'selected' : NULL;
-    $isBooked = strtotime($rooms['scadenza']) > strtotime(date('Y-m-d H:m:s'));
-    $optionsRooms[] = $isBooked
-                        ? '<option value="' . $rooms['id'] . '" disabled>' . gdrcd_filter('out', $rooms['luogo'].', '.$rooms['nome']).' ('.$rooms['proprietario'].', '.gdrcd_format_time($rooms['scadenza']).') </option>'
-                        : '<option value="' . $rooms['id'] . '" ' . $isSelected . '>' . gdrcd_filter('out', $rooms['luogo'].', '.$rooms['nome']).' ('.$rooms['costo'].' '.strtolower($PARAMETERS['names']['currency']['plur']).' '.$MESSAGE['interface']['hotel']['per_hour'].')</option>';
 }
 
-$optionsHours = [];
-for($i = 1; $i <= 12; $i++) {
-    $optionsHours[] = "<option value=".$i.">".$i." ".gdrcd_filter('out', $MESSAGE['interface']['hotel']['hours'])."</option>";
+$result = gdrcd_query("SELECT mappa.id, mappa.nome AS luogo, mappa.costo, mappa.proprietario, mappa.scadenza, mappa_click.nome
+                        FROM mappa JOIN mappa_click ON mappa.id_mappa = mappa_click.id_click
+                        WHERE mappa.privata = 1 ORDER BY mappa.nome, mappa.costo DESC", 'result');
+
+$rooms = [];
+while ($r = gdrcd_query($result, 'fetch')) {
+    $r['booked'] = strtotime($r['scadenza']) > time();
+    $rooms[] = $r;
 }
+gdrcd_query($result, 'free');
 
-// Controllo su presenza stanze private e funzionalità sbloccata
-if( ( is_array($optionsRooms) && count($optionsRooms) == 0 ) || ($PARAMETERS['mode']['privaterooms'] == 'OFF')) { ?>
-    <div class="warning"><?=gdrcd_filter('out', $MESSAGE['interface']['hotel']['no_room']);?></div>
-<?php } else { ?>
-    <!-- FORM -->
-    <div id="PrenotaStanza" class="servizi_form_container">
+$enabled = ($PARAMETERS['mode']['privaterooms'] ?? 'OFF') === 'ON' && !empty($rooms);
+?>
 
-        <div class="servizi_form_title"><?= gdrcd_filter('out', $MESSAGE['interface']['hotel']['form']['bookRoom']['title']); ?></div>
-
-        <form method="POST" id="PrenotaStanzaForm" class="servizi_form" action="main.php?page=servizi_prenotazioni">
-
-            <!-- STANZE -->
-            <div class="single_input">
-                <div class="label"><?= $MESSAGE['interface']['hotel']['room']; ?></div>
-                <select name="id">
-                    <?php echo implode('', $optionsRooms); ?>
-                </select>
-            </div>
-
-            <!-- ORE -->
-            <div class="single_input">
-                <div class="label"><?= $MESSAGE['interface']['hotel']['hours']; ?></div>
-                <select name="ore">
-                    <?php echo implode('', $optionsHours); ?>
-                </select>
-            </div>
-
-            <!-- SUBMIT + EXTRA -->
-            <div class="single_input split-50">
-                <input type="hidden" name="action" value="bookRoom" required>
-                <input type="submit" value="<?= gdrcd_filter('out', $MESSAGE['interface']['forms']['submit']); ?>">
-            </div>
-
-        </form>
-
+<?php if ($alert): ?>
+    <div class="gdrcd-alert-<?= $alert[0] ?>">
+        <svg class="w-5 h-5 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+        <div><?= $alert[1] ?></div>
     </div>
-<?php } ?>
+<?php endif; ?>
+
+<?php if (!$enabled): ?>
+    <div class="gdrcd-alert-warning">
+        <svg class="w-5 h-5 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01"/></svg>
+        <div><?= gdrcd_filter('out', $MESSAGE['interface']['hotel']['no_room']) ?></div>
+    </div>
+<?php else: ?>
+    <article class="gdrcd-card">
+        <header class="gdrcd-card-header">
+            <h3 class="gdrcd-h3"><?= gdrcd_filter('out', $MESSAGE['interface']['hotel']['form']['bookRoom']['title']) ?></h3>
+        </header>
+        <div class="gdrcd-card-body">
+            <form method="POST" action="main.php?page=servizi_prenotazioni" class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <label class="block md:col-span-2">
+                    <span class="text-sm text-gdrcd-text-soft"><?= $MESSAGE['interface']['hotel']['room'] ?></span>
+                    <select name="id" class="gdrcd-select mt-1 w-full">
+                        <?php foreach ($rooms as $r):
+                            if ($r['booked']):
+                        ?>
+                            <option value="<?= (int)$r['id'] ?>" disabled>
+                                <?= gdrcd_filter('out', $r['luogo'] . ', ' . $r['nome']) ?>
+                                (<?= htmlspecialchars($r['proprietario']) ?>, <?= gdrcd_format_time($r['scadenza']) ?>)
+                            </option>
+                        <?php else: ?>
+                            <option value="<?= (int)$r['id'] ?>"<?= (gdrcd_filter('get', $_REQUEST['id'] ?? '') == $r['id']) ? ' selected' : '' ?>>
+                                <?= gdrcd_filter('out', $r['luogo'] . ', ' . $r['nome']) ?>
+                                (<?= (int)$r['costo'] ?> <?= strtolower($PARAMETERS['names']['currency']['plur']) ?>/<?= gdrcd_filter('out', $MESSAGE['interface']['hotel']['per_hour']) ?>)
+                            </option>
+                        <?php endif; endforeach; ?>
+                    </select>
+                </label>
+                <label class="block">
+                    <span class="text-sm text-gdrcd-text-soft"><?= $MESSAGE['interface']['hotel']['hours'] ?></span>
+                    <select name="ore" class="gdrcd-select mt-1 w-full">
+                        <?php for ($i = 1; $i <= 12; $i++): ?>
+                            <option value="<?= $i ?>"><?= $i ?> <?= gdrcd_filter('out', $MESSAGE['interface']['hotel']['hours']) ?></option>
+                        <?php endfor; ?>
+                    </select>
+                </label>
+                <div class="md:col-span-3 flex justify-end">
+                    <input type="hidden" name="action" value="bookRoom">
+                    <button type="submit" class="gdrcd-btn-primary">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        <?= gdrcd_filter('out', $MESSAGE['interface']['forms']['submit']) ?>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </article>
+<?php endif; ?>

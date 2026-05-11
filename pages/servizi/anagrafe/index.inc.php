@@ -1,176 +1,154 @@
 <?php
+/**
+ * Servizi/Anagrafe — ricerca personaggi.
+ */
 
-// Avvio l'operazione di ricerca nel caso sia stato inviato il form
-if (gdrcd_filter('get', $_POST['action']) == "searchPersonaggio") {
+$tableSearch = '';
 
+if (gdrcd_filter('get', $_POST['action'] ?? '') === 'searchPersonaggio') {
     if (!empty($_REQUEST['nome']) || !empty($_REQUEST['genere']) || !empty($_REQUEST['razza'])) {
-        // Ottengo i filtri inviati dal FORM
-        if (gdrcd_filter('get', $_REQUEST['nome'])) {
+        $whereFilters = [];
+        if (gdrcd_filter('get', $_REQUEST['nome'] ?? '')) {
             $whereFilters[] = "personaggio.nome LIKE '%" . gdrcd_filter('get', $_REQUEST['nome']) . "%'";
         }
-
-        if (gdrcd_filter('get', $_REQUEST['genere'])) {
+        if (gdrcd_filter('get', $_REQUEST['genere'] ?? '')) {
             $whereFilters[] = "personaggio.sesso = '" . gdrcd_filter('get', $_REQUEST['genere']) . "'";
         }
-
-        if (gdrcd_filter('get', $_REQUEST['razza'])) {
+        if (gdrcd_filter('get', $_REQUEST['razza'] ?? '')) {
             $whereFilters[] = "personaggio.id_razza = '" . gdrcd_filter('get', $_REQUEST['razza']) . "'";
         }
 
-        $limit_val = gdrcd_filter('num', $_REQUEST['limit']);
+        $limit_val = gdrcd_filter('num', $_REQUEST['limit'] ?? 0);
+        $limit = ($limit_val > 0) ? " LIMIT $limit_val " : '';
 
-        $limit = (isset($_REQUEST['limit']) && ($_REQUEST['limit'] > 0)) ? " LIMIT {$_REQUEST['limit']} " : '';
-
-        // Costruisco la query
-        $querySearch = "SELECT personaggio.url_img_chat, personaggio.nome, personaggio.cognome, personaggio.sesso, 
-                               razza.nome_razza 
-                        FROM personaggio 
-                        LEFT JOIN razza ON personaggio.id_razza = razza.id_razza 
-                        WHERE 1 " . (isset($whereFilters) ? ' AND ' . implode(' AND ', $whereFilters) : NULL) . '
-                        ORDER BY nome DESC '.$limit;
+        $querySearch = "SELECT personaggio.url_img_chat, personaggio.nome, personaggio.cognome, personaggio.sesso,
+                               razza.nome_razza
+                        FROM personaggio
+                        LEFT JOIN razza ON personaggio.id_razza = razza.id_razza
+                        WHERE 1 " . (!empty($whereFilters) ? ' AND ' . implode(' AND ', $whereFilters) : '') . "
+                        ORDER BY nome DESC $limit";
         $resultSearch = gdrcd_query($querySearch, 'result');
 
-        // Se ottengo dei risultati, costruisco la tabella
         if (gdrcd_query($resultSearch, 'num_rows') > 0) {
-
-            // Costruisco le intestazioni
-            $trs[] = '<tr>
-                        <td class="casella_titolo"><div class="capitolo_elenco">' . $MESSAGE['interface']['pg_list']['search']['img'] . '</div></td>
-                        <td class="casella_titolo"><div class="capitolo_elenco">' . $MESSAGE['interface']['pg_list']['search']['personaggio'] . '</div></td>
-                        <td class="casella_titolo"><div class="capitolo_elenco">' . $MESSAGE['interface']['pg_list']['search']['sesso'] . '</div></td>
-                        <td class="casella_titolo"><div class="capitolo_elenco">' . $MESSAGE['interface']['pg_list']['search']['razza'] . '</div></td>
-                        <td class="casella_titolo"></td>
-                     </tr>';
-
-            // Scorro i risultati
-            while ($rowSearch = gdrcd_query($resultSearch, 'fetch')) {
-                // Aggiungo le celle con i dettagli del personaggio
-                $tds[] = '<td class="casella_elemento">
-                            <div class="elementi_elenco">
-                                <img src="' . gdrcd_filter('out', $rowSearch['url_img_chat']) . '" class="chat_avatar" alt="Avatar chat di ' . gdrcd_filter('out', $rowSearch['nome']) . '"
-                                     style="width:' . $PARAMETERS['settings']['chat_avatar']['width'] . 'px; height:' . $PARAMETERS['settings']['chat_avatar']['height'] . 'px;" />
-                            </div>
-                          </td>';
-                $tds[] = '<td class="casella_elemento">
-                            <div class="elementi_elenco">
-                                <a href="main.php?page=scheda&pg=' . gdrcd_filter('out', $rowSearch['nome']) . '">' .
-                                    gdrcd_filter('out', $rowSearch['nome']) . ' ' . gdrcd_filter('out', $rowSearch['cognome']) . '
-                                </a>
-                            </div>                        
-                         </td>';
-                $tds[] = '<td class="casella_elemento">
-                            <div class="elementi_elenco">' .
-                                gdrcd_filter('out', $MESSAGE['register']['fields']['gender_' . $rowSearch['sesso']]) . '
-                            </div>
-                         </td>';
-                $tds[] = '<td class="casella_elemento">
-                            <div class="elementi_elenco">' .
-                                gdrcd_filter('out', $rowSearch['nome_razza']) . '
-                            </div>                     
-                         </td>';
-                $tds[] = '<td class="casella_elemento">
-                            <div class="controllo_elenco">
-                                <form action="main.php?page=messages_center&op=create" method="post">
-                                    <input type="hidden" name="destinatario" value="'.$rowSearch['nome'].'" />
-                                    <input type="image" src="imgs/icons/reply.png" value="submit" alt="'.gdrcd_filter('out', $MESSAGE['interface']['messages']['reply']).'"
-                                           title="'.gdrcd_filter('out', $MESSAGE['interface']['messages']['reply']).'" />
-                                </form>
-                            </div>
-                           </td>';
-
-                // Costruisco la riga
-                $trs[] = '<tr>' . implode('', $tds) . '</tr>';
-
-                // Rimuovo le celle
-                unset($tds);
-            }
-
-
-            // Finalizzo la costruzione della tabella
-            $tableSearch =
-                '<div class="elenco_esteso">
-                    <div class="elenco_record_gioco">
-                        <table>
-                            ' . implode('', $trs) . '
-                        </table>
-                    </div>
-                </div>';
+            ob_start();
+            ?>
+            <article class="gdrcd-card">
+                <header class="gdrcd-card-header">
+                    <h3 class="gdrcd-h3">Risultati ricerca</h3>
+                </header>
+                <div class="overflow-x-auto">
+                    <table class="gdrcd-table">
+                        <thead>
+                            <tr>
+                                <th><?= gdrcd_filter('out', $MESSAGE['interface']['pg_list']['search']['img']) ?></th>
+                                <th><?= gdrcd_filter('out', $MESSAGE['interface']['pg_list']['search']['personaggio']) ?></th>
+                                <th><?= gdrcd_filter('out', $MESSAGE['interface']['pg_list']['search']['sesso']) ?></th>
+                                <th><?= gdrcd_filter('out', $MESSAGE['interface']['pg_list']['search']['razza']) ?></th>
+                                <th class="text-right">Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        <?php while ($rowSearch = gdrcd_query($resultSearch, 'fetch')): ?>
+                            <tr>
+                                <td>
+                                    <?php if (!empty($rowSearch['url_img_chat'])): ?>
+                                        <img src="<?= gdrcd_filter('out', $rowSearch['url_img_chat']) ?>" alt="" class="w-10 h-10 rounded-full object-cover border border-gdrcd-border">
+                                    <?php else: ?>
+                                        <span class="inline-block w-10 h-10 rounded-full bg-gdrcd-panel-alt"></span>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <a href="main.php?page=scheda&pg=<?= urlencode($rowSearch['nome']) ?>" class="text-gdrcd-accent hover:underline">
+                                        <?= gdrcd_filter('out', $rowSearch['nome'] . ' ' . $rowSearch['cognome']) ?>
+                                    </a>
+                                </td>
+                                <td class="text-sm"><?= gdrcd_filter('out', $MESSAGE['register']['fields']['gender_' . $rowSearch['sesso']]) ?></td>
+                                <td class="text-sm"><?= gdrcd_filter('out', $rowSearch['nome_razza']) ?></td>
+                                <td class="text-right">
+                                    <form action="main.php?page=messages_center&op=create" method="post" class="inline">
+                                        <input type="hidden" name="destinatario" value="<?= htmlspecialchars($rowSearch['nome']) ?>">
+                                        <button type="submit" class="gdrcd-btn-ghost" title="<?= gdrcd_filter('out', $MESSAGE['interface']['messages']['reply']) ?>">
+                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
+                                            </svg>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        <?php endwhile; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </article>
+            <?php
+            $tableSearch = ob_get_clean();
+        } else {
+            $tableSearch = '<div class="gdrcd-alert-info">
+                <svg class="w-5 h-5 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <div>Nessun personaggio corrisponde ai criteri di ricerca.</div></div>';
         }
     } else {
-        echo '<div class="warning">Selezionare almeno un criterio di ricerca.</div>';
+        $tableSearch = '<div class="gdrcd-alert-warning">
+            <svg class="w-5 h-5 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+            <div>Selezionare almeno un criterio di ricerca.</div></div>';
     }
 }
 
-
-// Ottengo le razze per costruire le opzioni
 $result = gdrcd_query("SELECT id_razza, nome_razza FROM razza ORDER BY nome_razza", 'result');
-// Scorro i risultati e inserisco le opzioni
-$optionsRazze = [];
+$razze = [];
 while ($razza = gdrcd_query($result, 'fetch')) {
-    $isSelected = gdrcd_filter('get', $_REQUEST['razza']) == $razza['id_razza'] ? 'selected' : NULL;
-    $optionsRazze[] = '<option value="' . $razza['id_razza'] . '" ' . $isSelected . '>' . gdrcd_filter('out', $razza['nome_razza']) . '</option>';
+    $razze[] = $razza;
 }
+gdrcd_query($result, 'free');
 
-// Ottengo i generi per costruire le opzioni
-$genders = ['m', 'f'];
-// Scorro i risultati e inserisco le opzioni
-$optionsGenders = [];
-foreach ($genders as $gender) {
-    $isSelected = gdrcd_filter('get', $_REQUEST['genere']) == $gender ? 'selected' : NULL;
-    $optionsGenders[] = '<option value="' . $gender . '" ' . $isSelected . '>' . gdrcd_filter('out', $MESSAGE['register']['fields']['gender_' . $gender]) . '</option>';
-}
-
+$generi = ['m', 'f'];
 ?>
-    <!-- INIZIO FILTRI -->
-    <div id="FiltriAnagrafe" class="servizi_form_container">
 
-        <div class="servizi_form_title"><?= gdrcd_filter('out', $MESSAGE['interface']['pg_list']['search']['title']); ?></div>
-
-        <form method="POST" id="FiltriAnagrafeForm" class="servizi_form" action="main.php?page=servizi_anagrafe">
-
-            <!-- NOME -->
-            <div class="single_input">
-                <div class="label"><?= $MESSAGE['interface']['pg_list']['search']['personaggio']; ?></div>
-                <input type="text" name="nome" value="<?= gdrcd_filter('out', $_REQUEST['nome']); ?>"/>
-            </div>
-
-            <!-- GENERE -->
-            <div class="single_input">
-                <div class="label"><?= $MESSAGE['interface']['pg_list']['search']['sesso']; ?></div>
-                <select name="genere">
+<article class="gdrcd-card">
+    <header class="gdrcd-card-header">
+        <h3 class="gdrcd-h3"><?= gdrcd_filter('out', $MESSAGE['interface']['pg_list']['search']['title']) ?></h3>
+    </header>
+    <div class="gdrcd-card-body">
+        <form method="POST" action="main.php?page=servizi_anagrafe" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+            <label class="block">
+                <span class="text-sm text-gdrcd-text-soft"><?= $MESSAGE['interface']['pg_list']['search']['personaggio'] ?></span>
+                <input type="text" name="nome" value="<?= gdrcd_filter('out', $_REQUEST['nome'] ?? '') ?>" class="gdrcd-input mt-1 w-full">
+            </label>
+            <label class="block">
+                <span class="text-sm text-gdrcd-text-soft"><?= $MESSAGE['interface']['pg_list']['search']['sesso'] ?></span>
+                <select name="genere" class="gdrcd-select mt-1 w-full">
                     <option value=""></option>
-                    <?php echo implode('', $optionsGenders); ?>
+                    <?php foreach ($generi as $g): ?>
+                        <option value="<?= $g ?>"<?= (gdrcd_filter('get', $_REQUEST['genere'] ?? '') == $g) ? ' selected' : '' ?>>
+                            <?= gdrcd_filter('out', $MESSAGE['register']['fields']['gender_' . $g]) ?>
+                        </option>
+                    <?php endforeach; ?>
                 </select>
-            </div>
-
-            <!-- RAZZA -->
-            <div class="single_input">
-                <div class="label"><?= $MESSAGE['interface']['pg_list']['search']['razza']; ?></div>
-                <select name="razza">
+            </label>
+            <label class="block">
+                <span class="text-sm text-gdrcd-text-soft"><?= $MESSAGE['interface']['pg_list']['search']['razza'] ?></span>
+                <select name="razza" class="gdrcd-select mt-1 w-full">
                     <option value=""></option>
-                    <?php echo implode('', $optionsRazze); ?>
+                    <?php foreach ($razze as $r): ?>
+                        <option value="<?= $r['id_razza'] ?>"<?= (gdrcd_filter('get', $_REQUEST['razza'] ?? '') == $r['id_razza']) ? ' selected' : '' ?>>
+                            <?= gdrcd_filter('out', $r['nome_razza']) ?>
+                        </option>
+                    <?php endforeach; ?>
                 </select>
+            </label>
+            <label class="block">
+                <span class="text-sm text-gdrcd-text-soft"><?= $MESSAGE['interface']['pg_list']['search']['limit'] ?></span>
+                <input type="number" name="limit" min="0" value="<?= isset($_REQUEST['limit']) ? (int)$_REQUEST['limit'] : 0 ?>" class="gdrcd-input mt-1 w-full">
+            </label>
+            <div class="md:col-span-2 lg:col-span-4 flex justify-end">
+                <input type="hidden" name="action" value="searchPersonaggio">
+                <button type="submit" class="gdrcd-btn-primary">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z"/></svg>
+                    <?= gdrcd_filter('out', $MESSAGE['interface']['pg_list']['search']['submit']) ?>
+                </button>
             </div>
-
-            <!-- LIMITE PG -->
-            <div class="single_input">
-                <div class="label"><?= $MESSAGE['interface']['pg_list']['search']['limit']; ?></div>
-                <input type="number" name="limit"
-                       value="<?= isset($_REQUEST['limit']) ? gdrcd_filter('out', $_REQUEST['limit']) : 0; ?>"/>
-            </div>
-
-            <!-- SUBMIT + EXTRA -->
-            <div class="single_input split-50">
-                <input type="hidden" name="action" value="searchPersonaggio" required>
-                <input type="submit"
-                       value="<?= gdrcd_filter('out', $MESSAGE['interface']['pg_list']['search']['submit']); ?>">
-            </div>
-
         </form>
     </div>
-    <!-- FINE FILTRI -->
+</article>
 
-    <!-- RISULTATO -->
-<?php if (isset($tableSearch)) {
-    echo $tableSearch;
-}
+<?= $tableSearch ?>

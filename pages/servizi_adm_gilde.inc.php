@@ -1,269 +1,244 @@
-<div class="pagina_servizi_adm_gilde">
-    <!-- Titolo della pagina -->
-    <div class="page_title">
-        <h2><?php echo gdrcd_filter('out', $MESSAGE['interface']['adm_guilds']['page_name'] . ' ' . strtolower($PARAMETERS['names']['guild_name']['plur'])); ?></h2>
-    </div>
-    <!-- Box principale -->
-    <div class="page_body">
-        <?php /*Elenco lavori*/
-        if (isset($_POST['op']) === false) {
+<?php
+/**
+ * Servizi — Amministrazione gilde: assunzioni, licenziamenti, dimissioni.
+ */
 
-            if ($_SESSION['permessi'] >= GUILDMODERATOR) {
-                echo '<div class="form_gioco">';
-                /*Seleziono i ruoli su cui l'account ha competenza*/
-                if ($_SESSION['permessi'] >= MODERATOR) {
-                    $people = "SELECT nome, cognome FROM personaggio  WHERE permessi > -1 ORDER BY nome";
-                    $query = "SELECT ruolo.id_ruolo, ruolo.nome_ruolo, gilda.nome FROM ruolo LEFT JOIN gilda ON ruolo.gilda = gilda.id_gilda  ORDER BY gilda.nome, ruolo.capo DESC, ruolo.stipendio DESC, ruolo.nome_ruolo";
-                    $members = "SELECT clgpersonaggioruolo.personaggio, clgpersonaggioruolo.id_ruolo, ruolo.nome_ruolo FROM clgpersonaggioruolo JOIN ruolo ON clgpersonaggioruolo.id_ruolo=ruolo.id_ruolo ORDER BY ruolo.gilda DESC, ruolo.stipendio DESC";
-                } else {
-                    if ($_SESSION['permessi'] >= GUILDMODERATOR) {
-                        $people = "SELECT nome, cognome FROM personaggio  WHERE permessi > -1 ORDER BY nome";
-                        $query = "SELECT ruolo.id_ruolo, ruolo.nome_ruolo, gilda.nome FROM ruolo JOIN gilda ON ruolo.gilda = gilda.id_gilda WHERE ruolo.gilda IN (SELECT ruolo.gilda FROM clgpersonaggioruolo JOIN ruolo ON clgpersonaggioruolo.id_ruolo = ruolo.id_ruolo WHERE clgpersonaggioruolo.personaggio= '" . $_SESSION['login'] . "' AND ruolo.gilda>-1 AND ruolo.capo = 1)   ORDER BY gilda.nome, ruolo.capo DESC, ruolo.stipendio DESC, ruolo.nome_ruolo";
-                        $members = "SELECT clgpersonaggioruolo.personaggio, clgpersonaggioruolo.id_ruolo, ruolo.nome_ruolo FROM clgpersonaggioruolo JOIN ruolo ON clgpersonaggioruolo.id_ruolo=ruolo.id_ruolo WHERE ruolo.gilda IN (SELECT ruolo.gilda FROM clgpersonaggioruolo JOIN ruolo ON clgpersonaggioruolo.id_ruolo = ruolo.id_ruolo WHERE clgpersonaggioruolo.personaggio= '" . $_SESSION['login'] . "' AND ruolo.gilda>-1 AND ruolo.capo =1) OR ruolo.gilda=-1  ORDER BY ruolo.gilda DESC, ruolo.stipendio DESC";
-                    } else {
-                        $people = "SELECT nome, cognome FROM personaggio  WHERE permessi > -1 ORDER BY nome";
-                        $query = "SELECT ruolo.id_ruolo, ruolo.nome_ruolo, gilda.nome FROM ruolo JOIN gilda ON ruolo.gilda = gilda.id_gilda WHERE ruolo.gilda IN (SELECT ruolo.gilda FROM clgpersonaggioruolo JOIN ruolo ON clgpersonaggioruolo.id_ruolo = ruolo.id_ruolo WHERE clgpersonaggioruolo.personaggio= '" . $_SESSION['login'] . "' AND ruolo.gilda>-1 AND ruolo.capo=1) ORDER BY gilda.nome, ruolo.capo DESC, ruolo.stipendio DESC, ruolo.nome_ruolo";
-                        $members = "SELECT clgpersonaggioruolo.personaggio, clgpersonaggioruolo.id_ruolo, ruolo.nome_ruolo, ruolo.gilda FROM clgpersonaggioruolo JOIN ruolo ON clgpersonaggioruolo.id_ruolo=ruolo.id_ruolo WHERE ruolo.gilda IN (SELECT ruolo.gilda FROM clgpersonaggioruolo JOIN ruolo ON clgpersonaggioruolo.id_ruolo = ruolo.id_ruolo WHERE clgpersonaggioruolo.personaggio= '" . $_SESSION['login'] . "' AND ruolo.gilda>-1 AND capo=1) OR ruolo.gilda=-1 ORDER BY ruolo.gilda DESC, ruolo.stipendio DESC";
-                    }
-                }
-                $result = gdrcd_query($query, 'result');
-                $people_result = gdrcd_query($people, 'result');
-                $members_result = gdrcd_query($members, 'result');
-                /*Se non c'e' titolo per gestire una gilda*/
-                if (gdrcd_query($result, 'num_rows') == 0) {
-                    echo '<div class="warning">' . $MESSAGE['interface']['adm_guilds']['no_adm'] . ' ' . strtolower($PARAMETERS['names']['guild_name']['sing']) . '</div>';
-                } else { ?>
-                    <form action="main.php?page=servizi_adm_gilde" method="post">
-                        <div class="form_label">
-                            <?php echo $MESSAGE['interface']['adm_guilds']['new_member'] . ' ' . strtolower($PARAMETERS['names']['guild_name']['members']); ?>
-                        </div>
-                        <div class="form_element">
-                            <select name="ruolo">
-                                <?php
-                                while ($row = gdrcd_query($result, 'fetch')) { ?>
-                                    <option value="<?php echo $row['id_ruolo'] . '-' . $row['nome_ruolo']; ?>">
-                                        <?php echo $row['nome_ruolo']; ?>
-                                        (<?php if ($row['nome'] != '') {
-                                            echo $row['nome'];
-                                        } else {
-                                            echo $MESSAGE['interface']['adm_guilds']['freelance'];
-                                        } ?>)
-                                    </option>
-                                <?php }
-                                gdrcd_query($result, 'free');
-                                ?>
-                            </select>
-                            <select name="nome">
-                                <?php
-                                while ($row = gdrcd_query($people_result, 'fetch')) { ?>
-                                    <option value="<?php echo $row['nome']; ?>">
-                                        <?php echo $row['nome'] . ' ' . $row['cognome']; ?>
-                                    </option>
-                                <?php }
-                                gdrcd_query($people_result, 'free');
-                                ?>
-                            </select>
-                        </div>
-                        <div class="form_submit">
-                            <input type="hidden" name="op" value="hire"/>
-                            <input type="submit" name="submit"
-                                   value="<?php echo $MESSAGE['interface']['adm_guilds']['hire']; ?>"/>
-                        </div>
-                    </form>
-                    <form action="main.php?page=servizi_adm_gilde" method="post">
-                        <div class="form_label">
-                            <?php echo $MESSAGE['interface']['adm_guilds']['fire_member'] . ' ' . strtolower($PARAMETERS['names']['guild_name']['members']); ?>
-                        </div>
-                        <div class="form_element">
-                            <select name="ruolo">
-                                <?php
-                                $echoed_null_row = false;
-                                while ($row = gdrcd_query($members_result, 'fetch')) {
-                                    if (($echoed_null_row === false) && ($row['gilda'] == -1)) {
-                                        echo '<option value="" disabled>-------</option>';
-                                        $echoed_null_row = true;
-                                    }
-                                    ?>
-                                    <option value="<?php echo $row['personaggio'] . "-" . $row['id_ruolo'] . "-" . $row['nome_ruolo']; ?>">
-                                        <?php echo $row['personaggio'] . " (" . $row['nome_ruolo'] . ")"; ?>
-                                    </option>
-                                <?php }
-                                gdrcd_query($members_result, 'free');
-                                ?>
-                            </select>
-                        </div>
-                        <div class="form_submit">
-                            <input type="hidden" name="op" value="fire"/>
-                            <input type="submit" name="submit"
-                                   value="<?php echo $MESSAGE['interface']['adm_guilds']['fire']; ?>"/>
-                        </div>
-                    </form>
-                    <?php
-                }//else
-                $affiliazioni = "SELECT ruolo.nome_ruolo, gilda.nome, ruolo.id_ruolo FROM ruolo LEFT JOIN gilda ON gilda.id_gilda = ruolo.gilda WHERE ruolo.id_ruolo IN (SELECT id_ruolo FROM clgpersonaggioruolo WHERE personaggio = '" . $_SESSION['login'] . "' AND scadenza < NOW()) ";
-                $affiliazioni_result = gdrcd_query($affiliazioni, 'result');
+$op = $_POST['op'] ?? null;
+$alerts = [];
 
-                if (gdrcd_query($affiliazioni_result, 'num_rows') > 0) { ?>
-                    <form action="" method="">
-                        <div class="form_label">
-                            <?php echo $MESSAGE['interface']['adm_guilds']['quit']; ?>
-                        </div>
-                    </form>
-                    <?php while ($row = gdrcd_query($affiliazioni_result, 'fetch')) { ?>
-                        <form action="main.php?page=servizi_adm_gilde" method="post">
-                            <div style="float: left; width: 70%">
-                                <?php echo $row['nome_ruolo'];
-                                if (empty($row['nome']) === false) {
-                                    echo ' (' . $row['nome'] . ') ';
-                                } ?>
-                            </div>
-                            <div class="form_submit">
-                                <input type="hidden" name="ruolo"
-                                       value="<?php echo $_SESSION['login'] . "-" . $row['id_ruolo'] . "-" . $row['nome_ruolo']; ?>"/>
-                                <input type="hidden" name="op" value="fire"/>
-                                <input type="submit" name="submit"
-                                       value="<?php echo $MESSAGE['interface']['adm_guilds']['quit']; ?>"/>
+if ($op === 'hire' && $_SESSION['permessi'] >= GUILDMODERATOR) {
+    $jobs = gdrcd_query("SELECT COUNT(*) AS n FROM clgpersonaggioruolo
+                         WHERE personaggio = '" . gdrcd_filter('in', $_POST['nome']) . "'");
+    if ((int)$jobs['n'] >= $PARAMETERS['settings']['guilds_limit']) {
+        $alerts[] = ['error', gdrcd_filter('out', $_POST['nome'] . ' ' . $MESSAGE['interface']['adm_guilds']['cannot_hire'])];
+    } else {
+        $subject = explode('-', gdrcd_filter('in', $_POST['ruolo']));
+        $ruolo = $subject[0];
+        $data = gdrcd_query("SELECT gilda FROM ruolo WHERE id_ruolo='{$ruolo}' LIMIT 1");
+        $ruoli_capi = gdrcd_query("SELECT id_ruolo FROM ruolo WHERE gilda='{$data['gilda']}' AND capo=1", 'result');
+        $contr = false;
+        foreach ($ruoli_capi as $rc) {
+            $check = gdrcd_query("SELECT COUNT(*) AS tot FROM clgpersonaggioruolo
+                                  WHERE personaggio = '" . gdrcd_filter('in', $_POST['nome']) . "'
+                                  AND id_ruolo = '{$rc['id_ruolo']}'");
+            if ((int)$check['tot'] > 0) { $contr = true; break; }
+        }
+        if ($contr || $_SESSION['permessi'] >= MODERATOR) {
+            gdrcd_query("INSERT INTO clgpersonaggioruolo (personaggio, id_ruolo, scadenza)
+                         VALUES ('" . gdrcd_filter('in', $_POST['nome']) . "', " . (int)$subject[0] . ", NOW())");
+            $alerts[] = ['success', gdrcd_filter('out', $MESSAGE['interface']['adm_guilds']['ok_hire'])];
+            gdrcd_query("INSERT INTO log (nome_interessato, autore, data_evento, codice_evento, descrizione_evento)
+                         VALUES ('" . gdrcd_filter('in', $_POST['nome']) . "', '" . gdrcd_filter('in', $_SESSION['login']) . "',
+                                 NOW(), " . NUOVOLAVORO . ", '" . gdrcd_filter('out', $subject[1] ?? '') . "')");
+            if ($_SESSION['login'] != $_POST['nome']) {
+                gdrcd_query("INSERT INTO messaggi (mittente, destinatario, spedito, testo)
+                             VALUES ('" . gdrcd_filter('in', $_SESSION['login']) . "',
+                                     '" . gdrcd_filter('in', $_POST['nome']) . "', NOW(),
+                                     '" . gdrcd_filter('in', $MESSAGE['interface']['adm-guilds']['message_body']['hire'] . ' ' . ($subject[1] ?? '')) . "')");
+            }
+        }
+    }
+}
+
+if ($op === 'fire' && $_SESSION['permessi'] >= GUILDMODERATOR) {
+    $subject = explode('-', gdrcd_filter('in', $_POST['ruolo']));
+    if (count($subject) >= 3) {
+        $ruolo = $subject[1];
+        $data = gdrcd_query("SELECT gilda FROM ruolo WHERE id_ruolo='{$ruolo}' LIMIT 1");
+        $ruoli_capi = gdrcd_query("SELECT id_ruolo FROM ruolo WHERE gilda='{$data['gilda']}' AND capo=1", 'result');
+        $contr = false;
+        foreach ($ruoli_capi as $rc) {
+            $check = gdrcd_query("SELECT COUNT(*) AS tot FROM clgpersonaggioruolo
+                                  WHERE personaggio = '" . gdrcd_filter('in', $_POST['nome'] ?? $subject[0]) . "'
+                                  AND id_ruolo = '{$rc['id_ruolo']}'");
+            if ((int)$check['tot'] > 0) { $contr = true; break; }
+        }
+        if ($contr || $_SESSION['permessi'] >= MODERATOR) {
+            gdrcd_query("DELETE FROM clgpersonaggioruolo
+                         WHERE personaggio = '" . $subject[0] . "'
+                         AND id_ruolo = " . gdrcd_filter('num', $subject[1]) . " LIMIT 1");
+            $alerts[] = ['success', gdrcd_filter('out', $MESSAGE['interface']['adm_guilds']['ok_fire'])];
+            gdrcd_query("INSERT INTO log (nome_interessato, autore, data_evento, codice_evento, descrizione_evento)
+                         VALUES ('" . $subject[0] . "', '" . gdrcd_filter('in', $_SESSION['login']) . "',
+                                 NOW(), " . DIMISSIONE . ", '" . gdrcd_filter('out', $subject[2]) . "')");
+            if ($_SESSION['login'] != $subject[0]) {
+                gdrcd_query("INSERT INTO messaggi (mittente, destinatario, spedito, testo)
+                             VALUES ('" . gdrcd_filter('in', $_SESSION['login']) . "', '" . $subject[0] . "', NOW(),
+                                     '" . gdrcd_filter('in', $MESSAGE['interface']['adm-guilds']['message_body']['fire'] . ' ' . $subject[2]) . "')");
+            }
+        }
+    }
+}
+
+if ($op === 'fire-yourself') {
+    $ruolo = gdrcd_filter('num', $_POST['ruolo'] ?? 0);
+    $me = gdrcd_filter('in', $_SESSION['login']);
+    gdrcd_query("DELETE FROM clgpersonaggioruolo WHERE personaggio='{$me}' AND id_ruolo='{$ruolo}' LIMIT 1");
+    $alerts[] = ['success', 'Licenziamento avvenuto con successo.'];
+}
+
+// Carico dati per form
+$is_mod = $_SESSION['permessi'] >= MODERATOR;
+$is_guildmod = $_SESSION['permessi'] >= GUILDMODERATOR;
+
+if ($is_guildmod) {
+    if ($is_mod) {
+        $q_ruoli = "SELECT ruolo.id_ruolo, ruolo.nome_ruolo, gilda.nome FROM ruolo
+                    LEFT JOIN gilda ON ruolo.gilda = gilda.id_gilda
+                    ORDER BY gilda.nome, ruolo.capo DESC, ruolo.stipendio DESC, ruolo.nome_ruolo";
+        $q_membri = "SELECT clgpersonaggioruolo.personaggio, clgpersonaggioruolo.id_ruolo, ruolo.nome_ruolo, ruolo.gilda
+                     FROM clgpersonaggioruolo JOIN ruolo ON clgpersonaggioruolo.id_ruolo = ruolo.id_ruolo
+                     ORDER BY ruolo.gilda DESC, ruolo.stipendio DESC";
+    } else {
+        $login_in = gdrcd_filter('in', $_SESSION['login']);
+        $q_ruoli = "SELECT ruolo.id_ruolo, ruolo.nome_ruolo, gilda.nome FROM ruolo
+                    JOIN gilda ON ruolo.gilda = gilda.id_gilda
+                    WHERE ruolo.gilda IN (SELECT ruolo.gilda FROM clgpersonaggioruolo
+                                          JOIN ruolo ON clgpersonaggioruolo.id_ruolo = ruolo.id_ruolo
+                                          WHERE clgpersonaggioruolo.personaggio='{$login_in}'
+                                          AND ruolo.gilda>-1 AND ruolo.capo = 1)
+                    ORDER BY gilda.nome, ruolo.capo DESC, ruolo.stipendio DESC, ruolo.nome_ruolo";
+        $q_membri = "SELECT clgpersonaggioruolo.personaggio, clgpersonaggioruolo.id_ruolo, ruolo.nome_ruolo, ruolo.gilda
+                     FROM clgpersonaggioruolo JOIN ruolo ON clgpersonaggioruolo.id_ruolo = ruolo.id_ruolo
+                     WHERE ruolo.gilda IN (SELECT ruolo.gilda FROM clgpersonaggioruolo
+                                           JOIN ruolo ON clgpersonaggioruolo.id_ruolo = ruolo.id_ruolo
+                                           WHERE clgpersonaggioruolo.personaggio='{$login_in}'
+                                           AND ruolo.gilda>-1 AND ruolo.capo = 1) OR ruolo.gilda=-1
+                     ORDER BY ruolo.gilda DESC, ruolo.stipendio DESC";
+    }
+    $ruoli_res = gdrcd_query($q_ruoli, 'result');
+    $people_res = gdrcd_query("SELECT nome, cognome FROM personaggio WHERE permessi > -1 ORDER BY nome", 'result');
+    $membri_res = gdrcd_query($q_membri, 'result');
+}
+
+$me = gdrcd_filter('in', $_SESSION['login']);
+$miei_ruoli = gdrcd_query("SELECT ruolo.id_ruolo, ruolo.nome_ruolo FROM clgpersonaggioruolo
+                            LEFT JOIN ruolo ON ruolo.id_ruolo = clgpersonaggioruolo.id_ruolo
+                            WHERE clgpersonaggioruolo.personaggio='{$me}'", 'result');
+?>
+
+<div class="space-y-6">
+    <header class="space-y-1">
+        <h2 class="gdrcd-h1 flex items-center gap-3">
+            <span class="gdrcd-icon-circle">
+                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                </svg>
+            </span>
+            <?= gdrcd_filter('out', $MESSAGE['interface']['adm_guilds']['page_name'] . ' ' . strtolower($PARAMETERS['names']['guild_name']['plur'])) ?>
+        </h2>
+    </header>
+
+    <?php foreach ($alerts as [$kind, $msg]): ?>
+        <div class="gdrcd-alert-<?= $kind ?>">
+            <svg class="w-5 h-5 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+            <div><?= $msg ?></div>
+        </div>
+    <?php endforeach; ?>
+
+    <?php if ($is_guildmod):
+        $has_ruoli = gdrcd_query($ruoli_res, 'num_rows') > 0;
+    ?>
+        <?php if (!$has_ruoli): ?>
+            <div class="gdrcd-alert-info">
+                <svg class="w-5 h-5 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01"/></svg>
+                <div><?= $MESSAGE['interface']['adm_guilds']['no_adm'] . ' ' . strtolower($PARAMETERS['names']['guild_name']['sing']) ?></div>
+            </div>
+        <?php else: ?>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Assumi -->
+                <article class="gdrcd-card">
+                    <header class="gdrcd-card-header">
+                        <h3 class="gdrcd-h3"><?= $MESSAGE['interface']['adm_guilds']['new_member'] . ' ' . strtolower($PARAMETERS['names']['guild_name']['members']) ?></h3>
+                    </header>
+                    <div class="gdrcd-card-body">
+                        <form action="main.php?page=servizi_adm_gilde" method="post" class="space-y-3">
+                            <label class="block">
+                                <span class="text-sm text-gdrcd-text-soft">Ruolo</span>
+                                <select name="ruolo" class="gdrcd-select mt-1 w-full">
+                                    <?php while ($row = gdrcd_query($ruoli_res, 'fetch')): ?>
+                                        <option value="<?= (int)$row['id_ruolo'] . '-' . htmlspecialchars($row['nome_ruolo']) ?>">
+                                            <?= htmlspecialchars($row['nome_ruolo']) ?>
+                                            (<?= !empty($row['nome']) ? htmlspecialchars($row['nome']) : $MESSAGE['interface']['adm_guilds']['freelance'] ?>)
+                                        </option>
+                                    <?php endwhile; gdrcd_query($ruoli_res, 'free'); ?>
+                                </select>
+                            </label>
+                            <label class="block">
+                                <span class="text-sm text-gdrcd-text-soft">Personaggio</span>
+                                <select name="nome" class="gdrcd-select mt-1 w-full">
+                                    <?php while ($row = gdrcd_query($people_res, 'fetch')): ?>
+                                        <option value="<?= htmlspecialchars($row['nome']) ?>">
+                                            <?= htmlspecialchars($row['nome'] . ' ' . $row['cognome']) ?>
+                                        </option>
+                                    <?php endwhile; gdrcd_query($people_res, 'free'); ?>
+                                </select>
+                            </label>
+                            <div class="flex justify-end">
+                                <input type="hidden" name="op" value="hire">
+                                <button type="submit" class="gdrcd-btn-primary">
+                                    <?= $MESSAGE['interface']['adm_guilds']['hire'] ?>
+                                </button>
                             </div>
                         </form>
-                        <?php
-                    }//while
-                    gdrcd_query($affiliazioni_result, 'free');
-                }
-            }
+                    </div>
+                </article>
 
-            $me = gdrcd_filter('in', $_SESSION['login']);
-            $ruoli = gdrcd_query("SELECT ruolo.id_ruolo,ruolo.nome_ruolo FROM clgpersonaggioruolo LEFT JOIN ruolo 
-        ON (ruolo.id_ruolo = clgpersonaggioruolo.id_ruolo) WHERE clgpersonaggioruolo.personaggio='{$me}'", 'result');
+                <!-- Licenzia -->
+                <article class="gdrcd-card">
+                    <header class="gdrcd-card-header">
+                        <h3 class="gdrcd-h3"><?= $MESSAGE['interface']['adm_guilds']['fire_member'] . ' ' . strtolower($PARAMETERS['names']['guild_name']['members']) ?></h3>
+                    </header>
+                    <div class="gdrcd-card-body">
+                        <form action="main.php?page=servizi_adm_gilde" method="post" class="space-y-3">
+                            <label class="block">
+                                <span class="text-sm text-gdrcd-text-soft">Membro</span>
+                                <select name="ruolo" class="gdrcd-select mt-1 w-full">
+                                    <?php
+                                    $echoed_null_row = false;
+                                    while ($row = gdrcd_query($membri_res, 'fetch')):
+                                        if (!$echoed_null_row && $row['gilda'] == -1):
+                                            echo '<option value="" disabled>──────────</option>';
+                                            $echoed_null_row = true;
+                                        endif;
+                                    ?>
+                                        <option value="<?= htmlspecialchars($row['personaggio'] . '-' . $row['id_ruolo'] . '-' . $row['nome_ruolo']) ?>">
+                                            <?= htmlspecialchars($row['personaggio'] . ' (' . $row['nome_ruolo'] . ')') ?>
+                                        </option>
+                                    <?php endwhile; gdrcd_query($membri_res, 'free'); ?>
+                                </select>
+                            </label>
+                            <div class="flex justify-end">
+                                <input type="hidden" name="op" value="fire">
+                                <button type="submit" class="gdrcd-btn-secondary">
+                                    <?= $MESSAGE['interface']['adm_guilds']['fire'] ?>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </article>
+            </div>
+        <?php endif;
+    endif; ?>
 
-            ?>
-
-            <div class="form-box">
-                <form method="POST">
-                    <select name="ruolo">
+    <!-- Dimissioni proprie -->
+    <?php if (gdrcd_query($miei_ruoli, 'num_rows') > 0): ?>
+        <article class="gdrcd-card">
+            <header class="gdrcd-card-header">
+                <h3 class="gdrcd-h3"><?= $MESSAGE['interface']['adm_guilds']['quit'] ?? 'Dimissioni' ?></h3>
+            </header>
+            <div class="gdrcd-card-body">
+                <form action="main.php?page=servizi_adm_gilde" method="post" class="flex flex-col md:flex-row gap-3">
+                    <select name="ruolo" class="gdrcd-select flex-1">
                         <option value=""></option>
-                        <?php foreach ($ruoli as $ruolo) { ?>
-                            <option value="<?= gdrcd_filter('num', $ruolo['id_ruolo']); ?>"><?= gdrcd_filter('out', $ruolo['nome_ruolo']); ?></option>
-                        <?php } ?>
-                    </select><br>
-                    <button type="submit">Licenziati</button>
+                        <?php foreach ($miei_ruoli as $r): ?>
+                            <option value="<?= (int)$r['id_ruolo'] ?>"><?= gdrcd_filter('out', $r['nome_ruolo']) ?></option>
+                        <?php endforeach; ?>
+                    </select>
                     <input type="hidden" name="op" value="fire-yourself">
+                    <button type="submit" class="gdrcd-btn-secondary">Licenziati</button>
                 </form>
-
             </div>
-
-
-            <div class="link_back">
-                <a href="main.php?page=servizi_adm_gilde"><?php echo gdrcd_filter('out', $MESSAGE['interface']['adm_guids']['back']); ?></a>
-            </div>
-            <?php
-        } //if
-        /*Affiliazione*/
-        if (gdrcd_filter('get', $_POST['op']) == 'hire') {
-            if ($_SESSION['permessi'] >= GUILDMODERATOR) {
-                /*Controllo il numero di affiliazioni correnti del personaggio*/
-                $jobs = gdrcd_query("SELECT COUNT(*) FROM clgpersonaggioruolo WHERE personaggio = '" . gdrcd_filter('in', $_POST['nome']) . "'");
-
-                /*Se il personaggio ha raggiunto il limite*/
-                if ($jobs['COUNT(*)'] >= $PARAMETERS['settings']['guilds_limit']) {
-                    echo '<div class="warning">' . gdrcd_filter('out', $_POST['nome'] . ' ' . $MESSAGE['interface']['adm_guilds']['cannot_hire']) . '</div>';
-                } else {
-                    /*Opero l'affiliazione*/
-                    $subject = explode('-', gdrcd_filter('in', $_POST['ruolo']));
-                    $ruolo = $subject[0];
-
-                    $data = gdrcd_query("SELECT gilda FROM ruolo WHERE id_ruolo='{$ruolo}' LIMIT 1");
-                    $ruoli_capi = gdrcd_query("SELECT id_ruolo FROM ruolo WHERE gilda='{$data['gilda']}' AND capo=1",'result');
-
-                    $contr = false;
-
-                    foreach ($ruoli_capi as $ruolo_capo){
-
-                        $jobs = gdrcd_query("SELECT COUNT(*) AS tot FROM clgpersonaggioruolo WHERE personaggio = '" . gdrcd_filter('in', $_POST['nome']) . "' AND  id_ruolo='{$ruolo_capo['id_ruolo']}'");
-
-                        if($jobs['tot'] > 0){
-                            $contr = true;
-                            break;
-                        }
-
-                    }
-
-                    if(($contr) || ($_SESSION['permessi'] >= MODERATOR)) {
-                        gdrcd_query("INSERT INTO clgpersonaggioruolo  (personaggio, id_ruolo, scadenza) VALUES ('" . gdrcd_filter('in', $_POST['nome']) . "', " . $subject[0] . ", NOW())");
-
-                        /*Confermo l'operazione*/
-                        echo '<div class="warning">' . gdrcd_filter('out', $MESSAGE['interface']['adm_guilds']['ok_hire']) . '</div>';
-                        /*Registro l'operazione*/
-                        gdrcd_query("INSERT INTO log (nome_interessato, autore, data_evento, codice_evento ,descrizione_evento) VALUES ('" . gdrcd_filter('in', $_POST['nome']) . "', '" . $_SESSION['login'] . "', NOW(), " . NUOVOLAVORO . ", '" . gdrcd_filter('out', $subject[1]) . "')");
-
-                        /*Avviso l'utente*/
-                        if ($_SESSION['login'] != $_POST['nome']) {
-                            gdrcd_query("INSERT INTO messaggi (mittente, destinatario, spedito, testo) VALUES ('" . $_SESSION['login'] . "', '" . gdrcd_filter('in', $_POST['nome']) . "', NOW(), '" . gdrcd_filter('in', $MESSAGE['interface']['adm-guilds']['message_body']['hire'] . ' ' . $subject[1]) . "')");
-                        }
-                    }
-                }
-            }//else
-            ?>
-            <div class="panels_link">
-                <a href="main.php?page=servizi_adm_gilde"><?php echo gdrcd_filter('out', $MESSAGE['interface']['adm_guilds']['back']); ?></a>
-            </div>
-            <?php
-        }
-        /*Espulsione*/
-        if ($_POST['op'] == 'fire') {
-
-            if ($_SESSION['permessi'] >= GUILDMODERATOR) {
-                $subject = explode('-', gdrcd_filter('in', $_POST['ruolo']));
-                $ruolo = $subject[1];
-
-                $data = gdrcd_query("SELECT gilda FROM ruolo WHERE id_ruolo='{$ruolo}' LIMIT 1");
-                $ruoli_capi = gdrcd_query("SELECT id_ruolo FROM ruolo WHERE gilda='{$data['gilda']}' AND capo=1",'result');
-
-                $contr = false;
-
-                foreach ($ruoli_capi as $ruolo_capo){
-
-                    $jobs = gdrcd_query("SELECT COUNT(*) AS tot FROM clgpersonaggioruolo WHERE personaggio = '" . gdrcd_filter('in', $_POST['nome']) . "' AND  id_ruolo='{$ruolo_capo['id_ruolo']}'");
-
-                    if($jobs['tot'] > 0){
-                        $contr = true;
-                        break;
-                    }
-
-                }
-
-                if(($contr) || ($_SESSION['permessi'] >= MODERATOR)) {
-                    gdrcd_query("DELETE FROM clgpersonaggioruolo WHERE personaggio='" . $subject[0] . "' AND id_ruolo = " . gdrcd_filter('num', $subject[1]) . " LIMIT 1");
-
-                    /*Confermo l'operazione*/
-                    echo '<div class="warning">' . gdrcd_filter('out', $MESSAGE['interface']['adm_guilds']['ok_fire']) . '</div>';
-                    /*Registro l'operazione*/
-                    gdrcd_query("INSERT INTO log (nome_interessato, autore, data_evento, codice_evento ,descrizione_evento) VALUES ('" . $subject[0] . "', '" . $_SESSION['login'] . "', NOW(), " . DIMISSIONE . ", '" . gdrcd_filter('out', $subject[2]) . "')");
-
-                    /*Avviso l'utente*/
-                    if ($_SESSION['login'] != $subject[0]) {
-                        gdrcd_query("INSERT INTO messaggi (mittente, destinatario, spedito, testo) VALUES ('" . $_SESSION['login'] . "', '" . $subject[0] . "', NOW(), '" . gdrcd_filter('in', $MESSAGE['interface']['adm-guilds']['message_body']['fire'] . ' ' . $subject[2]) . "')");
-                    }
-                }
-            }
-            ?>
-            <div class="panels_link">
-                <a href="main.php?page=servizi_adm_gilde"><?php echo gdrcd_filter('out', $MESSAGE['interface']['adm_guilds']['back']); ?></a>
-            </div>
-        <?php }
-        if ($_POST['op'] == 'fire-yourself') {
-
-            $ruolo = gdrcd_filter('num', $_POST['ruolo']);
-            $me = gdrcd_filter('in', $_SESSION['login']);
-
-            gdrcd_query("DELETE FROM clgpersonaggioruolo WHERE personaggio='{$me}' AND id_ruolo='{$ruolo}' LIMIT 1");
-            ?>
-            <div class="warning"> Licenziamento avvenuto con successo</div>
-            <div class="panels_link">
-                <a href="main.php?page=servizi_adm_gilde"><?php echo gdrcd_filter('out', $MESSAGE['interface']['adm_guilds']['back']); ?></a>
-            </div>
-
-
-        <?php } ?>
-
-    </div>
-</div><!-- Box principale -->
+        </article>
+    <?php endif; ?>
+</div>
