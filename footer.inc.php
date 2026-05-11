@@ -1,6 +1,7 @@
 <script type="text/javascript" src="/includes/corefunctions.js"></script>
 <!--<script type="text/javascript" src="includes/gdrcdskills.js"></script>-->
 <script type="text/javascript" src="/includes/modal.js"></script>
+<script type="text/javascript" src="/includes/toast.js"></script>
 <?php
 /** * Abilitazione tooltip
  * @author Blancks
@@ -25,6 +26,7 @@ if($PARAMETERS['mode']['alert_pm_via_pagetitle'] == 'ON') {
 <!--<script type="text/javascript">
     setTimeout("self.location.href.reload();",<?php //echo (int) $_GET['ref'] * 1000; ?>);
 </script-->
+<?= gdrcd_flash_toasts() ?>
 </body>
 </html>
 <?php

@@ -123,7 +123,8 @@ CREATE TABLE IF NOT EXISTS `backmessaggi` (
   `tipo` int NOT NULL DEFAULT '0',
   `oggetto` text,
   `testo` text,
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  KEY `idx_backmessaggi_mittente_spedito` (`mittente`,`spedito`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
@@ -698,7 +699,8 @@ CREATE TABLE IF NOT EXISTS `segnalazione_role` (
   `data_fine` datetime DEFAULT NULL,
   `tags` text CHARACTER SET utf8 COLLATE utf8_general_ci,
   `quest` text CHARACTER SET utf8 COLLATE utf8_general_ci,
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  KEY `idx_segnrole_mittente_data` (`mittente`,`data_inizio`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
@@ -747,7 +749,8 @@ CREATE TABLE IF NOT EXISTS _gdrcd_db_versions (
 INSERT INTO _gdrcd_db_versions (migration_id,applied_on) VALUES
   ('2020072500', NOW()),
   ('2021103018', NOW()),
-  ('2026051112', NOW());
+  ('2026051112', NOW()),
+  ('2026051113', NOW());
 
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

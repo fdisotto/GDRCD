@@ -15,6 +15,7 @@ switch ($_POST['op'] ?? '') {
             . "'" . gdrcd_filter('in', $_POST['pg'] ?? '') . "')"
         );
         $msg = 'Pagina creata.';
+        gdrcd_toast('success', $msg);
         break;
 
     case 'save_edit':
@@ -28,14 +29,17 @@ switch ($_POST['op'] ?? '') {
              WHERE id = " . gdrcd_filter('num', $_POST['id'] ?? 0) . " LIMIT 1"
         );
         $msg = 'Modifiche salvate.';
+        gdrcd_toast('success', $msg);
         break;
 
     case 'delete':
         gdrcd_query("DELETE FROM diario WHERE id = " . gdrcd_filter('num', $_POST['id'] ?? 0));
         $msg = 'Pagina eliminata.';
+        gdrcd_toast('success', $msg);
         break;
 
     default:
+        gdrcd_toast('error', 'Operazione non riconosciuta.');
         echo '<div class="gdrcd-alert-error">Operazione non riconosciuta.</div>';
         return;
 }

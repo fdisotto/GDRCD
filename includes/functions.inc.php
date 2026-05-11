@@ -1110,6 +1110,75 @@ function gdrcd_login_attempt_log($ip, $username, $success)
 }
 
 /**
+ * Registra una toast notification da mostrare alla prossima renderizzazione di pagina.
+ *
+ * Le toast vengono accodate in $_SESSION['_toasts'] e poi flushate (e svuotate)
+ * da gdrcd_flash_toasts(), tipicamente invocata nel footer. Pensato per essere
+ * usato in handler che terminano con un redirect (PRG pattern).
+ *
+ * @param string $kind    Uno tra: success | error | warning | info.
+ * @param string $message Testo della notifica (verrà escapato in JS).
+ * @return void
+ */
+function gdrcd_toast($kind, $message)
+{
+    $valid = array('success', 'error', 'warning', 'info');
+    $kind = in_array($kind, $valid, true) ? $kind : 'info';
+
+    if (!isset($_SESSION['_toasts']) || !is_array($_SESSION['_toasts'])) {
+        $_SESSION['_toasts'] = array();
+    }
+
+    $_SESSION['_toasts'][] = array(
+        'kind' => $kind,
+        'message' => (string)$message,
+    );
+}
+
+/**
+ * Estrae le toast accodate in sessione e produce un blocco <script> con le
+ * chiamate a window.gdrcdToast(...). La coda viene svuotata dopo il flush.
+ *
+ * @return string Blocco <script> pronto da inserire nel footer, o '' se vuoto.
+ */
+function gdrcd_flash_toasts()
+{
+    if (empty($_SESSION['_toasts']) || !is_array($_SESSION['_toasts'])) {
+        return '';
+    }
+
+    $toasts = $_SESSION['_toasts'];
+    $_SESSION['_toasts'] = array();
+
+    $calls = array();
+    foreach ($toasts as $t) {
+        if (!is_array($t) || !isset($t['kind'], $t['message'])) {
+            continue;
+        }
+        $kind_json    = json_encode((string)$t['kind'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $message_json = json_encode((string)$t['message'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        if ($kind_json === false || $message_json === false) {
+            continue;
+        }
+        $calls[] = '    window.gdrcdToast(' . $kind_json . ', ' . $message_json . ');';
+    }
+
+    if (empty($calls)) {
+        return '';
+    }
+
+    return "<script>\n"
+         . "(function(){\n"
+         . "  function fire(){\n"
+         . implode("\n", $calls) . "\n"
+         . "  }\n"
+         . "  if (typeof window.gdrcdToast === 'function') { fire(); }\n"
+         . "  else { document.addEventListener('DOMContentLoaded', fire); }\n"
+         . "})();\n"
+         . "</script>\n";
+}
+
+/**
  * Rimuove i tentativi di login più vecchi di un'ora per l'IP indicato.
  * Operazione di cleanup leggera, tipicamente chiamata dopo un login riuscito.
  *

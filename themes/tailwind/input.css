@@ -320,6 +320,49 @@
         @apply flex-1 min-w-[1.5rem] h-px bg-gdrcd-border;
     }
 
+    /* ---------- Toasts ---------- */
+    .gdrcd-toast-container {
+        @apply fixed bottom-4 right-4 z-50 flex flex-col gap-2
+               w-[calc(100%-2rem)] max-w-sm pointer-events-none;
+    }
+    .gdrcd-toast {
+        @apply pointer-events-auto flex items-start gap-3
+               px-4 py-3 rounded-lg border border-l-4 text-sm leading-relaxed
+               bg-gdrcd-panel shadow-gdrcd-elev
+               transition-all duration-200 ease-out
+               translate-x-0 opacity-100;
+    }
+    .gdrcd-toast.is-entering {
+        @apply translate-x-6 opacity-0;
+    }
+    .gdrcd-toast.is-leaving {
+        @apply translate-x-6 opacity-0;
+    }
+    .gdrcd-toast-icon {
+        @apply shrink-0;
+    }
+    .gdrcd-toast-msg {
+        @apply flex-1 min-w-0 break-words text-gdrcd-text-soft;
+    }
+    .gdrcd-toast-close {
+        @apply shrink-0 inline-flex items-center justify-center w-6 h-6 rounded-md
+               text-gdrcd-muted hover:text-gdrcd-text hover:bg-gdrcd-panel-alt
+               transition-colors focus:outline-none
+               focus-visible:ring-2 focus-visible:ring-gdrcd-accent-ring;
+    }
+    .gdrcd-toast-success {
+        @apply gdrcd-toast bg-gdrcd-success-soft border-green-200 border-l-gdrcd-success text-gdrcd-success;
+    }
+    .gdrcd-toast-error {
+        @apply gdrcd-toast bg-gdrcd-error-soft border-red-200 border-l-gdrcd-error text-gdrcd-error;
+    }
+    .gdrcd-toast-warning {
+        @apply gdrcd-toast bg-gdrcd-warning-soft border-amber-200 border-l-gdrcd-warning text-gdrcd-warning;
+    }
+    .gdrcd-toast-info {
+        @apply gdrcd-toast bg-gdrcd-info-soft border-blue-200 border-l-gdrcd-info text-gdrcd-info;
+    }
+
     /* ---------- Inline login bar ---------- */
     .gdrcd-login-inline {
         @apply flex flex-wrap items-end gap-3;

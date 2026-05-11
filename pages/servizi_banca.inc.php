@@ -85,6 +85,12 @@ if ($op === 'preleva') {
 }
 
 $currency = gdrcd_filter('out', $PARAMETERS['names']['currency']['plur']);
+
+// Mirror each accumulated alert as a toast notification (additivo: l'alert
+// inline resta visibile per ora; futuro cleanup potrà rimuoverlo).
+foreach ($alerts as [$kind, $msg]) {
+    gdrcd_toast($kind, strip_tags($msg));
+}
 ?>
 
 <div class="space-y-6">

@@ -102,6 +102,11 @@ $lbl_m  = $MESSAGE['interface']['sheet']['menu'];
 $is_self = ($_SESSION['login'] === $pg);
 $is_gmod = ((int)$_SESSION['permessi'] >= GUILDMODERATOR);
 $is_gm   = ((int)$_SESSION['permessi'] >= GAMEMASTER);
+
+// Mirror each accumulated alert as a toast notification (additivo).
+foreach ($alerts as [$kind, $msg]) {
+    gdrcd_toast($kind, strip_tags($msg));
+}
 ?>
 
 <div class="space-y-6">

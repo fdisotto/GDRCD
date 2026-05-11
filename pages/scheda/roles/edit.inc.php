@@ -29,6 +29,7 @@ if ($op === 'send_edit') {
             quest = '" . gdrcd_filter('in', $_POST['quest'] ?? '') . "'
          WHERE id = " . gdrcd_filter('num', $_POST['id'] ?? 0)
     );
+    gdrcd_toast('success', 'Registrazione modificata con successo.');
     ?>
     <div class="gdrcd-alert-success">
         <svg class="w-5 h-5 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
