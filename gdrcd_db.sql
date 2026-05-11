@@ -713,6 +713,22 @@ CREATE TABLE IF NOT EXISTS `send_GM` (
 -- --------------------------------------------------------
 
 --
+-- Struttura della tabella `login_attempts` (rate limiting brute-force login)
+--
+
+CREATE TABLE IF NOT EXISTS `login_attempts` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `ip` VARCHAR(45) NOT NULL,
+  `username` VARCHAR(50) NULL,
+  `attempted_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `success` TINYINT(1) NOT NULL DEFAULT 0,
+  INDEX `idx_ip_attempted_at` (`ip`, `attempted_at`),
+  INDEX `idx_username_attempted_at` (`username`, `attempted_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
 -- Struttura della tabella `_gdrcd_db_versions`
 --
 
@@ -724,7 +740,8 @@ CREATE TABLE IF NOT EXISTS _gdrcd_db_versions (
 
 INSERT INTO _gdrcd_db_versions (migration_id,applied_on) VALUES
   ('2020072500', NOW()),
-  ('2021103018',NOW());
+  ('2021103018', NOW()),
+  ('2026051112', NOW());
 
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
