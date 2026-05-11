@@ -1,52 +1,56 @@
-<div class="user_abilita">
-    <div class="page_title">
-        <h2><?php echo gdrcd_filter('out', $MESSAGE['interface']['skills']['page_name']); ?></h2>
-    </div>
-    <div class="page_body">
-        <?php
-        $query = "SELECT nome, car, descrizione FROM abilita ORDER BY nome";
-        $result = gdrcd_query($query, 'result'); ?>
-        <div class="panels_box">
-            <div class="elenco_record_gioco">
-                <table>
+<?php
+/**
+ * Utente — elenco abilità del sistema.
+ */
+$result = gdrcd_query("SELECT nome, car, descrizione FROM abilita ORDER BY nome", 'result');
+?>
+<div class="space-y-6">
+    <header class="space-y-1">
+        <h2 class="gdrcd-h1 flex items-center gap-3">
+            <span class="gdrcd-icon-circle">
+                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                </svg>
+            </span>
+            <?= gdrcd_filter('out', $MESSAGE['interface']['skills']['page_name']) ?>
+        </h2>
+    </header>
+
+    <article class="gdrcd-card">
+        <div class="overflow-x-auto">
+            <table class="gdrcd-table">
+                <thead>
                     <tr>
-                        <td class="casella_titolo">
-                            <div class="titoli_elenco"><?php echo gdrcd_filter('out', $MESSAGE['interface']['skills']['skill']); ?></div>
-                        </td>
-                        <td class="casella_titolo">
-                            <div class="titoli_elenco"><?php echo gdrcd_filter('out', $MESSAGE['interface']['skills']['car']); ?></div>
-                        </td>
-                        <td class="casella_titolo">
-                            <div class="titoli_elenco"><?php echo gdrcd_filter('out', $MESSAGE['interface']['skills']['desc']); ?></div>
-                        </td>
+                        <th><?= gdrcd_filter('out', $MESSAGE['interface']['skills']['skill']) ?></th>
+                        <th><?= gdrcd_filter('out', $MESSAGE['interface']['skills']['car']) ?></th>
+                        <th><?= gdrcd_filter('out', $MESSAGE['interface']['skills']['desc']) ?></th>
                     </tr>
-                    <?php while($row = gdrcd_query($result, 'fetch')) { ?>
+                </thead>
+                <tbody>
+                    <?php while ($row = gdrcd_query($result, 'fetch')): ?>
                         <tr>
-                            <td class="casella_elemento">
-                                <div class="elementi_elenco"><?php echo gdrcd_filter('out', $row['nome']); ?></div>
+                            <td class="font-display"><?= gdrcd_filter('out', $row['nome']) ?></td>
+                            <td>
+                                <span class="gdrcd-badge-accent">
+                                    <?= gdrcd_filter('out', $PARAMETERS['names']['stats']['car' . $row['car']]) ?>
+                                </span>
                             </td>
-                            <td class="casella_elemento">
-                                <div class="elementi_elenco"><?php echo gdrcd_filter('out', $PARAMETERS['names']['stats']['car'.$row['car']]); ?></div>
-                            </td>
-                            <td class="casella_elemento">
-                                <div class="elementi_elenco"><?php echo gdrcd_bbcoder(gdrcd_filter('out', $row['descrizione'])); ?></div>
+                            <td class="text-sm text-gdrcd-text-soft">
+                                <?= gdrcd_bbcoder(gdrcd_filter('out', $row['descrizione'])) ?>
                             </td>
                         </tr>
-                        <?php
-                    }//while
-                    gdrcd_query($result, 'free');
-                    ?>
-                    <tr>
-                        <td colspan="3">
-                            <div class="page_title"><h2><?php echo gdrcd_filter('out', $MESSAGE['interface']['skills']['sys_tit']); ?></h2></div>
-                            <div style='text-align: justify'><?php echo gdrcd_filter('out', $MESSAGE['interface']['skills']['sys']); ?></div>
-                        </td>
-                    </tr>
-                </table>
-            </div>
-            <!--elenco_record_gioco-->
+                    <?php endwhile; gdrcd_query($result, 'free'); ?>
+                </tbody>
+            </table>
         </div>
-        <!--panels_box-->
-    </div>
-</div><!-- Box principale -->
+    </article>
 
+    <article class="gdrcd-card">
+        <header class="gdrcd-card-header">
+            <h3 class="gdrcd-h3"><?= gdrcd_filter('out', $MESSAGE['interface']['skills']['sys_tit']) ?></h3>
+        </header>
+        <div class="gdrcd-card-body text-gdrcd-text leading-relaxed text-justify">
+            <?= gdrcd_filter('out', $MESSAGE['interface']['skills']['sys']) ?>
+        </div>
+    </article>
+</div>
