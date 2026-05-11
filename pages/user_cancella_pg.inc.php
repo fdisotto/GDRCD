@@ -3,7 +3,11 @@
  * Utente — cancella account proprio + force/restore (mod/superuser).
  */
 
-$row = gdrcd_query("SELECT email, pass FROM personaggio WHERE nome = '" . gdrcd_filter('in', $_SESSION['login']) . "'");
+$row = Db::preparedFetch(
+    "SELECT email, pass FROM personaggio WHERE nome = ?",
+    's',
+    [$_SESSION['login']]
+);
 $email = $row['email'] ?? '';
 $storedPass = $row['pass'] ?? '';
 $op = $_POST['op'] ?? null;
@@ -14,34 +18,60 @@ if ($op === 'delete') {
     if (gdrcd_password_verify(gdrcd_filter_email($_POST['email'] ?? ''), $email)
         && gdrcd_password_verify($_POST['new_pass'] ?? '', $storedPass)
         && gdrcd_check_pass($_POST['new_pass'] ?? '') === true) {
-        gdrcd_query("UPDATE personaggio SET permessi = -1
-                     WHERE nome = '" . gdrcd_filter('in', $_SESSION['login']) . "'");
-        gdrcd_query("INSERT INTO log (nome_interessato, autore, data_evento, codice_evento, descrizione_evento)
-                     VALUES ('" . gdrcd_filter('in', $_SESSION['login']) . "', '" . gdrcd_filter('in', $_SESSION['login']) . "',
-                             NOW(), " . DELETEPG . ", '" . gdrcd_filter('in', $MESSAGE['interface']['user']['delete']['undeleted']) . "')");
+        Db::preparedExecute(
+            "UPDATE personaggio SET permessi = -1 WHERE nome = ?",
+            's',
+            [$_SESSION['login']]
+        );
+        Db::preparedExecute(
+            "INSERT INTO log (nome_interessato, autore, data_evento, codice_evento, descrizione_evento)
+             VALUES (?, ?, NOW(), ?, ?)",
+            'ssis',
+            [$_SESSION['login'], $_SESSION['login'], (int)DELETEPG, $MESSAGE['interface']['user']['delete']['undeleted']]
+        );
         $alerts[] = ['success', gdrcd_filter('out', $MESSAGE['warning']['modified'])];
         $logout = true;
     } else {
         $alerts[] = ['error', gdrcd_filter('out', $MESSAGE['warning']['cant_do'])];
     }
 } elseif ($op === 'force' && $_SESSION['permessi'] === MODERATOR) {
-    gdrcd_query("UPDATE personaggio SET permessi = -1
-                 WHERE nome = '" . gdrcd_filter('in', $_POST['account']) . "' AND permessi < " . SUPERUSER);
-    gdrcd_query("INSERT INTO log (nome_interessato, autore, data_evento, codice_evento, descrizione_evento)
-                 VALUES ('" . gdrcd_filter('in', $_POST['account']) . "', '" . gdrcd_filter('in', $_SESSION['login']) . "',
-                         NOW(), " . DELETEPG . ", '" . gdrcd_filter('in', $MESSAGE['interface']['user']['delete']['deleted']) . "')");
+    Db::preparedExecute(
+        "UPDATE personaggio SET permessi = -1 WHERE nome = ? AND permessi < " . (int)SUPERUSER,
+        's',
+        [$_POST['account']]
+    );
+    Db::preparedExecute(
+        "INSERT INTO log (nome_interessato, autore, data_evento, codice_evento, descrizione_evento)
+         VALUES (?, ?, NOW(), ?, ?)",
+        'ssis',
+        [$_POST['account'], $_SESSION['login'], (int)DELETEPG, $MESSAGE['interface']['user']['delete']['deleted']]
+    );
     $alerts[] = ['success', gdrcd_filter('out', $MESSAGE['warning']['modified'])];
 } elseif ($op === 'force' && $_SESSION['permessi'] === SUPERUSER) {
-    gdrcd_query("UPDATE personaggio SET permessi = -1 WHERE nome = '" . gdrcd_filter('in', $_POST['account']) . "'");
-    gdrcd_query("INSERT INTO log (nome_interessato, autore, data_evento, codice_evento, descrizione_evento)
-                 VALUES ('" . gdrcd_filter('in', $_POST['account']) . "', '" . gdrcd_filter('in', $_SESSION['login']) . "',
-                         NOW(), " . DELETEPG . ", '->')");
+    Db::preparedExecute(
+        "UPDATE personaggio SET permessi = -1 WHERE nome = ?",
+        's',
+        [$_POST['account']]
+    );
+    Db::preparedExecute(
+        "INSERT INTO log (nome_interessato, autore, data_evento, codice_evento, descrizione_evento)
+         VALUES (?, ?, NOW(), ?, ?)",
+        'ssis',
+        [$_POST['account'], $_SESSION['login'], (int)DELETEPG, '->']
+    );
     $alerts[] = ['success', gdrcd_filter('out', $MESSAGE['warning']['modified'])];
 } elseif ($op === 'get_back' && $_SESSION['permessi'] >= MODERATOR) {
-    gdrcd_query("UPDATE personaggio SET permessi = 0 WHERE nome = '" . gdrcd_filter('in', $_POST['account']) . "'");
-    gdrcd_query("INSERT INTO log (nome_interessato, autore, data_evento, codice_evento, descrizione_evento)
-                 VALUES ('" . gdrcd_filter('in', $_POST['account']) . "', '" . gdrcd_filter('in', $_SESSION['login']) . "',
-                         NOW(), " . DELETEPG . ", '<-')");
+    Db::preparedExecute(
+        "UPDATE personaggio SET permessi = 0 WHERE nome = ?",
+        's',
+        [$_POST['account']]
+    );
+    Db::preparedExecute(
+        "INSERT INTO log (nome_interessato, autore, data_evento, codice_evento, descrizione_evento)
+         VALUES (?, ?, NOW(), ?, ?)",
+        'ssis',
+        [$_POST['account'], $_SESSION['login'], (int)DELETEPG, '<-']
+    );
     $alerts[] = ['success', gdrcd_filter('out', $MESSAGE['warning']['modified'])];
 }
 ?>

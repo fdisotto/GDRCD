@@ -194,6 +194,143 @@ class Db
     }
 
     /**
+     * Esegue una query con prepared statement.
+     *
+     * Per SELECT ritorna la mysqli_result (o false se la query non
+     * produce un resultset utilizzabile - es. INSERT/UPDATE/DELETE).
+     * Per le altre query restituisce true in caso di successo.
+     *
+     * I parametri della stringa SQL devono usare il placeholder '?'
+     * mysqli classico; $types e' la stringa di binding (es. 'sii').
+     *
+     * @param string $sql    SQL parametrizzato con '?'
+     * @param string $types  stringa di tipo per bind_param ('i','d','s','b'...)
+     * @param array  $params valori da bindare, in ordine
+     * @return mysqli_result|bool
+     */
+    public static function prepared(string $sql, string $types, array $params)
+    {
+        $db_link = self::connect();
+        $stmt    = mysqli_prepare($db_link, $sql);
+
+        if ($stmt === false) {
+            self::handleError($sql);
+            return false;
+        }
+
+        if ($types !== '' && !empty($params)) {
+            // bind_param vuole riferimenti: copia in array indicizzato e
+            // poi prende le ref a quelle posizioni.
+            $values = array_values($params);
+            $refs   = array();
+            foreach ($values as $k => $v) {
+                $refs[$k] = &$values[$k];
+            }
+            array_unshift($refs, $types);
+            call_user_func_array(array($stmt, 'bind_param'), $refs);
+        }
+
+        $ok = mysqli_stmt_execute($stmt);
+        if (!$ok) {
+            $err = mysqli_stmt_error($stmt);
+            mysqli_stmt_close($stmt);
+            self::handleError($sql . ' [' . $err . ']');
+            return false;
+        }
+
+        $result = mysqli_stmt_get_result($stmt);
+        mysqli_stmt_close($stmt);
+
+        // Per INSERT/UPDATE/DELETE mysqli_stmt_get_result ritorna false:
+        // in quel caso restituiamo true per coerenza con execute().
+        if ($result === false) {
+            return true;
+        }
+
+        return $result;
+    }
+
+    /**
+     * Esegue una SELECT preparata e ritorna la prima riga associativa,
+     * o null se vuota.
+     *
+     * @param string $sql
+     * @param string $types
+     * @param array  $params
+     * @return array|null
+     */
+    public static function preparedFetch(string $sql, string $types, array $params): ?array
+    {
+        $result = self::prepared($sql, $types, $params);
+        if (!($result instanceof mysqli_result)) {
+            return null;
+        }
+        $row = mysqli_fetch_assoc($result);
+        mysqli_free_result($result);
+        return $row !== null ? $row : null;
+    }
+
+    /**
+     * Esegue una SELECT preparata e ritorna tutte le righe associative.
+     *
+     * @param string $sql
+     * @param string $types
+     * @param array  $params
+     * @return array
+     */
+    public static function preparedFetchAll(string $sql, string $types, array $params): array
+    {
+        $result = self::prepared($sql, $types, $params);
+        if (!($result instanceof mysqli_result)) {
+            return array();
+        }
+        $rows = array();
+        while ($row = mysqli_fetch_assoc($result)) {
+            $rows[] = $row;
+        }
+        mysqli_free_result($result);
+        return $rows;
+    }
+
+    /**
+     * Esegue una INSERT/UPDATE/DELETE preparata.
+     * Ritorna true in caso di successo, false in caso di errore gestito.
+     *
+     * @param string $sql
+     * @param string $types
+     * @param array  $params
+     * @return bool
+     */
+    public static function preparedExecute(string $sql, string $types, array $params): bool
+    {
+        $result = self::prepared($sql, $types, $params);
+        if ($result instanceof mysqli_result) {
+            // Inatteso ma non drammatico: libera la risorsa.
+            mysqli_free_result($result);
+            return true;
+        }
+        return $result === true;
+    }
+
+    /**
+     * Esegue una INSERT/UPDATE/DELETE preparata e ritorna il numero di
+     * righe interessate (0 se la query non ha modificato nulla, -1 errore).
+     *
+     * @param string $sql
+     * @param string $types
+     * @param array  $params
+     * @return int
+     */
+    public static function preparedAffected(string $sql, string $types, array $params): int
+    {
+        $ok = self::preparedExecute($sql, $types, $params);
+        if (!$ok) {
+            return -1;
+        }
+        return (int)mysqli_affected_rows(self::connect());
+    }
+
+    /**
      * Gestione errore: log strutturato + comportamento legacy.
      *
      * @param string $sql query che ha generato l'errore

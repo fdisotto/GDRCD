@@ -43,47 +43,79 @@ if ($confirm && $op !== null) {
         $bbcode_on = (($PARAMETERS['mode']['user_bbcode'] ?? 'OFF') === 'ON');
         $free_html = (($PARAMETERS['settings']['bbd']['free_html'] ?? 'OFF') === 'ON'
                      && ($PARAMETERS['settings']['forum_bbcode']['type'] ?? '') === 'bbd');
-        $filter_text = (!$bbcode_on || $free_html) ? 'addslashes' : 'in';
+        // Mantiene la semantica originale per il testo: il filtro applicato
+        // a storia/affetti/descrizione era 'in' (real_escape) o 'addslashes'.
+        // Con prepared statement non serve piu' escape: passiamo il valore
+        // grezzo. Per coerenza con BBCode parser legacy applichiamo addslashes
+        // solo se in modalita' free_html (preserva backslash + apici).
+        $apply_addslashes = (!$bbcode_on || $free_html);
+        $prep = function ($v) use ($apply_addslashes) {
+            return $apply_addslashes ? addslashes((string)$v) : (string)$v;
+        };
 
         $online_state = (($PARAMETERS['mode']['user_online_state'] ?? 'OFF') === 'ON')
-            ? gdrcd_filter('in', $_POST['online_state'] ?? '')
+            ? ($_POST['online_state'] ?? '')
             : '';
 
-        gdrcd_query(
+        Db::preparedExecute(
             "UPDATE personaggio SET
-                cognome = '" . gdrcd_filter('in', $_POST['modifica_cognome'] ?? '') . "',
-                storia = '" . gdrcd_filter($filter_text, $_POST['modifica_storia'] ?? '') . "',
-                affetti = '" . gdrcd_filter($filter_text, $_POST['modifica_affetti'] ?? '') . "',
-                descrizione = '" . gdrcd_filter($filter_text, $_POST['modifica_background'] ?? '') . "',
-                url_media = '" . gdrcd_filter('in', gdrcd_filter('fullurl', $_POST['modifica_url_media'] ?? '')) . "',
-                blocca_media = " . (int)$blocca_media . ",
-                url_img = '" . gdrcd_filter('in', gdrcd_filter('fullurl', $_POST['modifica_url_img'] ?? '')) . "',
-                url_img_chat = '" . gdrcd_filter('in', gdrcd_filter('fullurl', $_POST['modifica_url_img_chat'] ?? '')) . "',
-                online_status = '" . $online_state . "'
-             WHERE nome = '" . gdrcd_filter('in', $pg) . "'"
+                cognome = ?,
+                storia = ?,
+                affetti = ?,
+                descrizione = ?,
+                url_media = ?,
+                blocca_media = ?,
+                url_img = ?,
+                url_img_chat = ?,
+                online_status = ?
+             WHERE nome = ?",
+            'sssssisss' . 's',
+            [
+                $_POST['modifica_cognome'] ?? '',
+                $prep($_POST['modifica_storia'] ?? ''),
+                $prep($_POST['modifica_affetti'] ?? ''),
+                $prep($_POST['modifica_background'] ?? ''),
+                gdrcd_filter('fullurl', $_POST['modifica_url_media'] ?? ''),
+                (int)$blocca_media,
+                gdrcd_filter('fullurl', $_POST['modifica_url_img'] ?? ''),
+                gdrcd_filter('fullurl', $_POST['modifica_url_img_chat'] ?? ''),
+                $online_state,
+                $pg,
+            ]
         );
         $alerts[] = ['success', gdrcd_filter('out', $MESSAGE['warning']['modified'])];
 
     } elseif ($op === 'modify_status' && (int)$_SESSION['permessi'] >= GUILDMODERATOR) {
-        gdrcd_query(
-            "UPDATE personaggio SET
-                stato = '" . gdrcd_filter('in', $_POST['modifica_status'] ?? '') . "',
-                salute = " . gdrcd_filter('num', $_POST['modifica_salute'] ?? 0) . "
-             WHERE nome = '" . gdrcd_filter('in', $pg) . "'"
+        Db::preparedExecute(
+            "UPDATE personaggio SET stato = ?, salute = ? WHERE nome = ?",
+            'sis',
+            [
+                $_POST['modifica_status'] ?? '',
+                (int)gdrcd_filter('num', $_POST['modifica_salute'] ?? 0),
+                $pg,
+            ]
         );
         $alerts[] = ['success', gdrcd_filter('out', $MESSAGE['warning']['modified'])];
 
     } elseif ($op === 'exile' && (int)$_SESSION['permessi'] >= GAMEMASTER) {
-        gdrcd_query(
+        $exile_date = (int)gdrcd_filter('num', $_POST['year'])
+                    . '-' . (int)gdrcd_filter('num', $_POST['month'])
+                    . '-' . (int)gdrcd_filter('num', $_POST['day']);
+        Db::preparedExecute(
             "UPDATE personaggio SET
-                esilio = '" . gdrcd_filter('num', $_POST['year']) . '-'
-                          . gdrcd_filter('num', $_POST['month']) . '-'
-                          . gdrcd_filter('num', $_POST['day']) . "',
+                esilio = ?,
                 data_esilio = NOW(),
-                autore_esilio = '" . gdrcd_filter('in', $_SESSION['login']) . "',
-                motivo_esilio = '" . gdrcd_filter('in', $_POST['causale'] ?? '') . "'
-             WHERE nome = '" . gdrcd_filter('in', $pg) . "'
-               AND permessi <= " . (int)$_SESSION['permessi']
+                autore_esilio = ?,
+                motivo_esilio = ?
+             WHERE nome = ? AND permessi <= ?",
+            'ssssi',
+            [
+                $exile_date,
+                $_SESSION['login'],
+                $_POST['causale'] ?? '',
+                $pg,
+                (int)$_SESSION['permessi'],
+            ]
         );
         $alerts[] = ['success', gdrcd_filter('out', $MESSAGE['warning']['done'])];
     } else {
@@ -91,11 +123,13 @@ if ($confirm && $op !== null) {
     }
 }
 
-$record = gdrcd_query(
+$record = Db::preparedFetch(
     "SELECT descrizione, storia, affetti, cognome, online_status, url_img, url_img_chat,
             url_media, blocca_media, stato, salute
-     FROM personaggio WHERE nome = '" . gdrcd_filter('in', $pg) . "'"
-);
+     FROM personaggio WHERE nome = ?",
+    's',
+    [$pg]
+) ?? [];
 
 $lbl_mf = $MESSAGE['interface']['sheet']['modify_form'];
 $lbl_m  = $MESSAGE['interface']['sheet']['menu'];

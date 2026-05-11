@@ -5,35 +5,46 @@
 
 switch ($_POST['op'] ?? '') {
     case 'save_new':
-        gdrcd_query(
-            "INSERT INTO diario (titolo, data, data_inserimento, visibile, testo, personaggio) VALUES ("
-            . "'" . gdrcd_filter('in', $_POST['titolo'] ?? '') . "',"
-            . "'" . gdrcd_filter('in', $_POST['data'] ?? '') . "',"
-            . "NOW(),"
-            . "'" . gdrcd_filter('in', $_POST['visibile'] ?? 'no') . "',"
-            . "'" . gdrcd_filter('in', $_POST['testo'] ?? '') . "',"
-            . "'" . gdrcd_filter('in', $_POST['pg'] ?? '') . "')"
+        Db::preparedExecute(
+            "INSERT INTO diario (titolo, data, data_inserimento, visibile, testo, personaggio)
+             VALUES (?, ?, NOW(), ?, ?, ?)",
+            'sssss',
+            [
+                $_POST['titolo'] ?? '',
+                $_POST['data'] ?? '',
+                $_POST['visibile'] ?? 'no',
+                $_POST['testo'] ?? '',
+                $_POST['pg'] ?? '',
+            ]
         );
         $msg = 'Pagina creata.';
         gdrcd_toast('success', $msg);
         break;
 
     case 'save_edit':
-        gdrcd_query(
+        Db::preparedExecute(
             "UPDATE diario SET
-                titolo = '" . gdrcd_filter('in', $_POST['titolo'] ?? '') . "',
-                data = '" . gdrcd_filter('in', $_POST['data'] ?? '') . "',
-                visibile = '" . gdrcd_filter('in', $_POST['visibile'] ?? 'no') . "',
-                testo = '" . gdrcd_filter('in', $_POST['testo'] ?? '') . "',
-                data_modifica = NOW()
-             WHERE id = " . gdrcd_filter('num', $_POST['id'] ?? 0) . " LIMIT 1"
+                titolo = ?, data = ?, visibile = ?, testo = ?, data_modifica = NOW()
+             WHERE id = ? LIMIT 1",
+            'ssssi',
+            [
+                $_POST['titolo'] ?? '',
+                $_POST['data'] ?? '',
+                $_POST['visibile'] ?? 'no',
+                $_POST['testo'] ?? '',
+                (int)gdrcd_filter('num', $_POST['id'] ?? 0),
+            ]
         );
         $msg = 'Modifiche salvate.';
         gdrcd_toast('success', $msg);
         break;
 
     case 'delete':
-        gdrcd_query("DELETE FROM diario WHERE id = " . gdrcd_filter('num', $_POST['id'] ?? 0));
+        Db::preparedExecute(
+            "DELETE FROM diario WHERE id = ?",
+            'i',
+            [(int)gdrcd_filter('num', $_POST['id'] ?? 0)]
+        );
         $msg = 'Pagina eliminata.';
         gdrcd_toast('success', $msg);
         break;

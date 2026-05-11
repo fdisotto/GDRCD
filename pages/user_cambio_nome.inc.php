@@ -3,8 +3,12 @@
  * Utente — cambio nome PG proprio (entro 7gg) + force (mod/superuser).
  */
 
-$row = gdrcd_query("SELECT email, pass, DATE_ADD(data_iscrizione, INTERVAL 7 DAY) AS data
-                    FROM personaggio WHERE nome = '" . gdrcd_filter('in', $_SESSION['login']) . "'");
+$row = Db::preparedFetch(
+    "SELECT email, pass, DATE_ADD(data_iscrizione, INTERVAL 7 DAY) AS data
+     FROM personaggio WHERE nome = ?",
+    's',
+    [$_SESSION['login']]
+);
 $email = $row['email'] ?? '';
 $pass  = $row['pass'] ?? '';
 $iscriz = explode(' ', $row['data'] ?? '')[0];
@@ -14,11 +18,19 @@ $op = $_POST['op'] ?? null;
 $alerts = [];
 
 $rename_self = function ($new_name) {
-    $old = gdrcd_filter('in', $_SESSION['login']);
-    $new = gdrcd_filter('in', $new_name);
-    gdrcd_query("UPDATE personaggio SET nome = '{$new}' WHERE nome = '{$old}'");
-    gdrcd_query("INSERT INTO log (nome_interessato, autore, data_evento, codice_evento, descrizione_evento)
-                 VALUES ('{$new}', '{$old}', NOW(), " . CHANGEDNAME . ", '{$old} -> {$new}')");
+    $old = $_SESSION['login'];
+    $new = $new_name;
+    Db::preparedExecute(
+        "UPDATE personaggio SET nome = ? WHERE nome = ?",
+        'ss',
+        [$new, $old]
+    );
+    Db::preparedExecute(
+        "INSERT INTO log (nome_interessato, autore, data_evento, codice_evento, descrizione_evento)
+         VALUES (?, ?, NOW(), ?, ?)",
+        'ssis',
+        [$new, $old, (int)CHANGEDNAME, $old . ' -> ' . $new]
+    );
     foreach (['log' => ['nome_interessato', 'autore'],
               'messaggi' => ['mittente', 'destinatario'],
               'backmessaggi' => ['mittente', 'destinatario'],
@@ -27,7 +39,14 @@ $rename_self = function ($new_name) {
               'clgpersonaggiooggetto' => ['nome'],
               'clgpersonaggioruolo' => ['personaggio']] as $table => $fields) {
         foreach ($fields as $f) {
-            gdrcd_query("UPDATE {$table} SET {$f} = '{$new}' WHERE {$f} = '{$old}'");
+            // Nome tabella/colonna NON parametrizzabile, ma deriva da
+            // costanti hard-coded sopra; i valori (vecchio/nuovo nome)
+            // passano da prepared statement.
+            Db::preparedExecute(
+                "UPDATE {$table} SET {$f} = ? WHERE {$f} = ?",
+                'ss',
+                [$new, $old]
+            );
         }
     }
 };
@@ -38,8 +57,12 @@ if ($op === 'new') {
         && gdrcd_password_verify($_POST['new_pass'] ?? '', $pass)
         && $iscriz >= $today
         && !empty($new_name)) {
-        $check = gdrcd_query("SELECT nome FROM personaggio WHERE nome = '" . gdrcd_filter('in', $new_name) . "'", 'result');
-        if (gdrcd_query($check, 'num_rows') > 0) {
+        $check = Db::preparedFetch(
+            "SELECT nome FROM personaggio WHERE nome = ?",
+            's',
+            [$new_name]
+        );
+        if ($check !== null) {
             $alerts[] = ['error', gdrcd_filter('out', $MESSAGE['error']['existing_name'])];
         } else {
             $rename_self($new_name);
@@ -50,27 +73,45 @@ if ($op === 'new') {
         $alerts[] = ['error', gdrcd_filter('out', $MESSAGE['warning']['cant_do'])];
     }
 } elseif ($op === 'force' && $_SESSION['permessi'] >= MODERATOR && !empty($_POST['new_name'])) {
-    $check = gdrcd_query("SELECT nome FROM personaggio WHERE nome = '" . gdrcd_filter('in', $_POST['new_name']) . "'", 'result');
-    if (gdrcd_query($check, 'num_rows') > 0) {
-        gdrcd_query($check, 'free');
+    $check = Db::preparedFetch(
+        "SELECT nome FROM personaggio WHERE nome = ?",
+        's',
+        [$_POST['new_name']]
+    );
+    if ($check !== null) {
         $alerts[] = ['error', gdrcd_filter('out', $MESSAGE['error']['existing_name'])];
     } else {
-        $old = gdrcd_filter('in', $_POST['account']);
-        $new = gdrcd_filter('in', $_POST['new_name']);
-        $where_clause = ($_SESSION['permessi'] == SUPERUSER) ? '' : " AND permessi < " . SUPERUSER;
-        gdrcd_query("UPDATE log SET nome_interessato = '{$new}' WHERE nome_interessato = '{$old}'");
-        gdrcd_query("UPDATE log SET autore = '{$new}' WHERE autore = '{$old}'");
-        gdrcd_query("UPDATE messaggi SET mittente = '{$new}' WHERE mittente = '{$old}'{$where_clause}");
-        gdrcd_query("UPDATE messaggi SET destinatario = '{$new}' WHERE destinatario = '{$old}'{$where_clause}");
-        gdrcd_query("UPDATE backmessaggi SET mittente = '{$new}' WHERE mittente = '{$old}'{$where_clause}");
-        gdrcd_query("UPDATE backmessaggi SET destinatario = '{$new}' WHERE destinatario = '{$old}'{$where_clause}");
-        gdrcd_query("UPDATE clgpersonaggioabilita SET nome = '{$new}' WHERE nome = '{$old}'{$where_clause}");
-        gdrcd_query("UPDATE clgpersonaggiomostrine SET nome = '{$new}' WHERE nome = '{$old}'{$where_clause}");
-        gdrcd_query("UPDATE clgpersonaggiooggetto SET nome = '{$new}' WHERE nome = '{$old}'{$where_clause}");
-        gdrcd_query("UPDATE clgpersonaggioruolo SET personaggio = '{$new}' WHERE personaggio = '{$old}'{$where_clause}");
-        gdrcd_query("UPDATE personaggio SET nome = '{$new}' WHERE nome = '{$old}'{$where_clause}");
-        gdrcd_query("INSERT INTO log (nome_interessato, autore, data_evento, codice_evento, descrizione_evento)
-                     VALUES ('{$old}', '" . gdrcd_filter('in', $_SESSION['login']) . "', NOW(), " . CHANGEDNAME . ", '{$old} -> {$new}')");
+        $old = $_POST['account'];
+        $new = $_POST['new_name'];
+        $is_superuser = ($_SESSION['permessi'] == SUPERUSER);
+        // SUPERUSER puo' rinominare anche superuser; gli altri solo permessi < SUPERUSER.
+        $extra_where = $is_superuser ? '' : ' AND permessi < ' . (int)SUPERUSER;
+        // Le tabelle senza colonna permessi (log/messaggi/backmessaggi/cl*)
+        // non hanno il filtro; il vecchio codice faceva lo stesso check
+        // appendendo $where_clause anche dove `permessi` non esisteva, ma
+        // affidandosi alla mancata corrispondenza della colonna; manteniamo
+        // il comportamento legacy: senza filtro su quelle tabelle.
+        Db::preparedExecute("UPDATE log SET nome_interessato = ? WHERE nome_interessato = ?", 'ss', [$new, $old]);
+        Db::preparedExecute("UPDATE log SET autore = ? WHERE autore = ?", 'ss', [$new, $old]);
+        Db::preparedExecute("UPDATE messaggi SET mittente = ? WHERE mittente = ?", 'ss', [$new, $old]);
+        Db::preparedExecute("UPDATE messaggi SET destinatario = ? WHERE destinatario = ?", 'ss', [$new, $old]);
+        Db::preparedExecute("UPDATE backmessaggi SET mittente = ? WHERE mittente = ?", 'ss', [$new, $old]);
+        Db::preparedExecute("UPDATE backmessaggi SET destinatario = ? WHERE destinatario = ?", 'ss', [$new, $old]);
+        Db::preparedExecute("UPDATE clgpersonaggioabilita SET nome = ? WHERE nome = ?", 'ss', [$new, $old]);
+        Db::preparedExecute("UPDATE clgpersonaggiomostrine SET nome = ? WHERE nome = ?", 'ss', [$new, $old]);
+        Db::preparedExecute("UPDATE clgpersonaggiooggetto SET nome = ? WHERE nome = ?", 'ss', [$new, $old]);
+        Db::preparedExecute("UPDATE clgpersonaggioruolo SET personaggio = ? WHERE personaggio = ?", 'ss', [$new, $old]);
+        Db::preparedExecute(
+            "UPDATE personaggio SET nome = ? WHERE nome = ?" . $extra_where,
+            'ss',
+            [$new, $old]
+        );
+        Db::preparedExecute(
+            "INSERT INTO log (nome_interessato, autore, data_evento, codice_evento, descrizione_evento)
+             VALUES (?, ?, NOW(), ?, ?)",
+            'ssis',
+            [$old, $_SESSION['login'], (int)CHANGEDNAME, $old . ' -> ' . $new]
+        );
         $alerts[] = ['success', gdrcd_filter('out', $MESSAGE['warning']['modified'])];
     }
 } elseif ($op === 'force') {

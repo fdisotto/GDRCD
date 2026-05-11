@@ -70,9 +70,12 @@ $validate = function () use ($PARAMETERS, $MESSAGE) {
     if (empty(gdrcd_safe_name($name)) || preg_match($regex, $name)) {
         $errors[] = gdrcd_filter('out', $MESSAGE['register']['error']['invalid_name']);
     } else {
-        $result = gdrcd_query("SELECT nome FROM personaggio WHERE nome='" . gdrcd_safe_name($name) . "' LIMIT 1", 'result');
-        if (gdrcd_query($result, 'num_rows') > 0) {
-            gdrcd_query($result, 'free');
+        $existing = Db::preparedFetch(
+            "SELECT nome FROM personaggio WHERE nome = ? LIMIT 1",
+            's',
+            [gdrcd_safe_name($name)]
+        );
+        if ($existing !== null) {
             $errors[] = gdrcd_filter('out', $MESSAGE['register']['error']['name_taken']);
         }
     }
@@ -352,27 +355,40 @@ $action = htmlspecialchars($_SERVER['SCRIPT_NAME'] . '?' . $_SERVER['QUERY_STRIN
             $email = strtolower(gdrcd_filter_email($_POST['email']));
             $pass = gdrcd_genera_pass();
 
-            gdrcd_query(
+            // Prepared INSERT: i campi con NOW() restano inline perche'
+            // non sono parametri utente. Il campo opzionale ultimo_cambiopass
+            // viene aggiunto inline a SQL (anche il suo valore NOW()).
+            $nome_v    = gdrcd_safe_name($_POST['nome']);
+            $cognome_v = gdrcd_safe_name($_POST['cognome']);
+            $passHash  = gdrcd_password_hash($pass);
+            $emailCrypt= gdrcd_encript($email);
+            $genere_v  = $_POST['genere'];
+            $params = [
+                $nome_v,
+                $cognome_v,
+                $passHash,
+                $emailCrypt,
+                $genere_v,
+                (int)gdrcd_filter('num', $_POST['razza']),
+                (int)gdrcd_filter('num', $_POST['car0']),
+                (int)gdrcd_filter('num', $_POST['car1']),
+                (int)gdrcd_filter('num', $_POST['car2']),
+                (int)gdrcd_filter('num', $_POST['car3']),
+                (int)gdrcd_filter('num', $_POST['car4']),
+                (int)gdrcd_filter('num', $_POST['car5']),
+                (int)gdrcd_filter('num', $PARAMETERS['settings']['max_hp']),
+                (int)gdrcd_filter('num', $PARAMETERS['settings']['max_hp']),
+                (int)gdrcd_filter('num', $PARAMETERS['settings']['first_money']),
+                (int)gdrcd_filter('num', $PARAMETERS['settings']['first_px']),
+            ];
+            Db::preparedExecute(
                 "INSERT INTO personaggio (nome, cognome, pass, data_iscrizione, email, sesso, id_razza,"
                 . " car0, car1, car2, car3, car4, car5, salute, salute_max, soldi, esperienza"
                 . " $lastpasschange_field) VALUES ("
-                . "'" . gdrcd_safe_name($_POST['nome']) . "',"
-                . "'" . gdrcd_safe_name($_POST['cognome']) . "',"
-                . "'" . gdrcd_password_hash($pass) . "', NOW(),"
-                . "'" . gdrcd_encript($email) . "',"
-                . "'" . gdrcd_filter('in', $_POST['genere']) . "',"
-                . gdrcd_filter('num', $_POST['razza']) . ","
-                . gdrcd_filter('num', $_POST['car0']) . ","
-                . gdrcd_filter('num', $_POST['car1']) . ","
-                . gdrcd_filter('num', $_POST['car2']) . ","
-                . gdrcd_filter('num', $_POST['car3']) . ","
-                . gdrcd_filter('num', $_POST['car4']) . ","
-                . gdrcd_filter('num', $_POST['car5']) . ","
-                . gdrcd_filter('num', $PARAMETERS['settings']['max_hp']) . ","
-                . gdrcd_filter('num', $PARAMETERS['settings']['max_hp']) . ","
-                . gdrcd_filter('num', $PARAMETERS['settings']['first_money']) . ","
-                . gdrcd_filter('num', $PARAMETERS['settings']['first_px'])
-                . " $lastpasschange_value)"
+                . " ?, ?, ?, NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?"
+                . " $lastpasschange_value)",
+                'sssssiiiiiiiiiiii',
+                $params
             );
 
             $send_email = ($PARAMETERS['mode']['emailconfirmation'] === 'ON');
@@ -391,11 +407,15 @@ $action = htmlspecialchars($_SERVER['SCRIPT_NAME'] . '?' . $_SERVER['QUERY_STRIN
                 mail($email, $subject, $text, 'From: ' . gdrcd_filter('out', $PARAMETERS['info']['webmaster_email']));
             }
 
-            gdrcd_query(
-                "INSERT INTO messaggi (mittente, destinatario, spedito, testo) VALUES ("
-                . "'" . gdrcd_filter('out', $PARAMETERS['info']['webmaster_name']) . "',"
-                . "'" . gdrcd_safe_name($_POST['nome']) . "', NOW(),"
-                . "'" . gdrcd_filter('out', $MESSAGE['register']['welcome']['message'][4]) . "')"
+            Db::preparedExecute(
+                "INSERT INTO messaggi (mittente, destinatario, spedito, testo)
+                 VALUES (?, ?, NOW(), ?)",
+                'sss',
+                [
+                    gdrcd_filter('out', $PARAMETERS['info']['webmaster_name']),
+                    gdrcd_safe_name($_POST['nome']),
+                    gdrcd_filter('out', $MESSAGE['register']['welcome']['message'][4]),
+                ]
             );
             ?>
             <section class="gdrcd-card">

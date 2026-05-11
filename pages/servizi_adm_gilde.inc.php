@@ -7,73 +7,129 @@ $op = $_POST['op'] ?? null;
 $alerts = [];
 
 if ($op === 'hire' && $_SESSION['permessi'] >= GUILDMODERATOR) {
-    $jobs = gdrcd_query("SELECT COUNT(*) AS n FROM clgpersonaggioruolo
-                         WHERE personaggio = '" . gdrcd_filter('in', $_POST['nome']) . "'");
+    $nome_in = $_POST['nome'] ?? '';
+    $jobs = Db::preparedFetch(
+        "SELECT COUNT(*) AS n FROM clgpersonaggioruolo WHERE personaggio = ?",
+        's',
+        [$nome_in]
+    ) ?? ['n' => 0];
     if ((int)$jobs['n'] >= $PARAMETERS['settings']['guilds_limit']) {
-        $alerts[] = ['error', gdrcd_filter('out', $_POST['nome'] . ' ' . $MESSAGE['interface']['adm_guilds']['cannot_hire'])];
+        $alerts[] = ['error', gdrcd_filter('out', $nome_in . ' ' . $MESSAGE['interface']['adm_guilds']['cannot_hire'])];
     } else {
-        $subject = explode('-', gdrcd_filter('in', $_POST['ruolo']));
-        $ruolo = $subject[0];
-        $data = gdrcd_query("SELECT gilda FROM ruolo WHERE id_ruolo='{$ruolo}' LIMIT 1");
-        $ruoli_capi = gdrcd_query("SELECT id_ruolo FROM ruolo WHERE gilda='{$data['gilda']}' AND capo=1", 'result');
+        $subject = explode('-', $_POST['ruolo'] ?? '');
+        $ruolo = (int)($subject[0] ?? 0);
+        $data = Db::preparedFetch(
+            "SELECT gilda FROM ruolo WHERE id_ruolo = ? LIMIT 1",
+            'i',
+            [$ruolo]
+        ) ?? ['gilda' => 0];
+        $ruoli_capi = Db::preparedFetchAll(
+            "SELECT id_ruolo FROM ruolo WHERE gilda = ? AND capo = 1",
+            'i',
+            [(int)$data['gilda']]
+        );
         $contr = false;
         foreach ($ruoli_capi as $rc) {
-            $check = gdrcd_query("SELECT COUNT(*) AS tot FROM clgpersonaggioruolo
-                                  WHERE personaggio = '" . gdrcd_filter('in', $_POST['nome']) . "'
-                                  AND id_ruolo = '{$rc['id_ruolo']}'");
+            $check = Db::preparedFetch(
+                "SELECT COUNT(*) AS tot FROM clgpersonaggioruolo
+                 WHERE personaggio = ? AND id_ruolo = ?",
+                'si',
+                [$nome_in, (int)$rc['id_ruolo']]
+            ) ?? ['tot' => 0];
             if ((int)$check['tot'] > 0) { $contr = true; break; }
         }
         if ($contr || $_SESSION['permessi'] >= MODERATOR) {
-            gdrcd_query("INSERT INTO clgpersonaggioruolo (personaggio, id_ruolo, scadenza)
-                         VALUES ('" . gdrcd_filter('in', $_POST['nome']) . "', " . (int)$subject[0] . ", NOW())");
+            Db::preparedExecute(
+                "INSERT INTO clgpersonaggioruolo (personaggio, id_ruolo, scadenza)
+                 VALUES (?, ?, NOW())",
+                'si',
+                [$nome_in, $ruolo]
+            );
             $alerts[] = ['success', gdrcd_filter('out', $MESSAGE['interface']['adm_guilds']['ok_hire'])];
-            gdrcd_query("INSERT INTO log (nome_interessato, autore, data_evento, codice_evento, descrizione_evento)
-                         VALUES ('" . gdrcd_filter('in', $_POST['nome']) . "', '" . gdrcd_filter('in', $_SESSION['login']) . "',
-                                 NOW(), " . NUOVOLAVORO . ", '" . gdrcd_filter('out', $subject[1] ?? '') . "')");
-            if ($_SESSION['login'] != $_POST['nome']) {
-                gdrcd_query("INSERT INTO messaggi (mittente, destinatario, spedito, testo)
-                             VALUES ('" . gdrcd_filter('in', $_SESSION['login']) . "',
-                                     '" . gdrcd_filter('in', $_POST['nome']) . "', NOW(),
-                                     '" . gdrcd_filter('in', $MESSAGE['interface']['adm-guilds']['message_body']['hire'] . ' ' . ($subject[1] ?? '')) . "')");
+            Db::preparedExecute(
+                "INSERT INTO log (nome_interessato, autore, data_evento, codice_evento, descrizione_evento)
+                 VALUES (?, ?, NOW(), ?, ?)",
+                'ssis',
+                [$nome_in, $_SESSION['login'], (int)NUOVOLAVORO, $subject[1] ?? '']
+            );
+            if ($_SESSION['login'] != $nome_in) {
+                Db::preparedExecute(
+                    "INSERT INTO messaggi (mittente, destinatario, spedito, testo)
+                     VALUES (?, ?, NOW(), ?)",
+                    'sss',
+                    [
+                        $_SESSION['login'],
+                        $nome_in,
+                        $MESSAGE['interface']['adm-guilds']['message_body']['hire'] . ' ' . ($subject[1] ?? ''),
+                    ]
+                );
             }
         }
     }
 }
 
 if ($op === 'fire' && $_SESSION['permessi'] >= GUILDMODERATOR) {
-    $subject = explode('-', gdrcd_filter('in', $_POST['ruolo']));
+    $subject = explode('-', $_POST['ruolo'] ?? '');
     if (count($subject) >= 3) {
-        $ruolo = $subject[1];
-        $data = gdrcd_query("SELECT gilda FROM ruolo WHERE id_ruolo='{$ruolo}' LIMIT 1");
-        $ruoli_capi = gdrcd_query("SELECT id_ruolo FROM ruolo WHERE gilda='{$data['gilda']}' AND capo=1", 'result');
+        $ruolo = (int)$subject[1];
+        $data = Db::preparedFetch(
+            "SELECT gilda FROM ruolo WHERE id_ruolo = ? LIMIT 1",
+            'i',
+            [$ruolo]
+        ) ?? ['gilda' => 0];
+        $ruoli_capi = Db::preparedFetchAll(
+            "SELECT id_ruolo FROM ruolo WHERE gilda = ? AND capo = 1",
+            'i',
+            [(int)$data['gilda']]
+        );
+        $nome_in = $_POST['nome'] ?? $subject[0];
         $contr = false;
         foreach ($ruoli_capi as $rc) {
-            $check = gdrcd_query("SELECT COUNT(*) AS tot FROM clgpersonaggioruolo
-                                  WHERE personaggio = '" . gdrcd_filter('in', $_POST['nome'] ?? $subject[0]) . "'
-                                  AND id_ruolo = '{$rc['id_ruolo']}'");
+            $check = Db::preparedFetch(
+                "SELECT COUNT(*) AS tot FROM clgpersonaggioruolo
+                 WHERE personaggio = ? AND id_ruolo = ?",
+                'si',
+                [$nome_in, (int)$rc['id_ruolo']]
+            ) ?? ['tot' => 0];
             if ((int)$check['tot'] > 0) { $contr = true; break; }
         }
         if ($contr || $_SESSION['permessi'] >= MODERATOR) {
-            gdrcd_query("DELETE FROM clgpersonaggioruolo
-                         WHERE personaggio = '" . $subject[0] . "'
-                         AND id_ruolo = " . gdrcd_filter('num', $subject[1]) . " LIMIT 1");
+            Db::preparedExecute(
+                "DELETE FROM clgpersonaggioruolo
+                 WHERE personaggio = ? AND id_ruolo = ? LIMIT 1",
+                'si',
+                [$subject[0], $ruolo]
+            );
             $alerts[] = ['success', gdrcd_filter('out', $MESSAGE['interface']['adm_guilds']['ok_fire'])];
-            gdrcd_query("INSERT INTO log (nome_interessato, autore, data_evento, codice_evento, descrizione_evento)
-                         VALUES ('" . $subject[0] . "', '" . gdrcd_filter('in', $_SESSION['login']) . "',
-                                 NOW(), " . DIMISSIONE . ", '" . gdrcd_filter('out', $subject[2]) . "')");
+            Db::preparedExecute(
+                "INSERT INTO log (nome_interessato, autore, data_evento, codice_evento, descrizione_evento)
+                 VALUES (?, ?, NOW(), ?, ?)",
+                'ssis',
+                [$subject[0], $_SESSION['login'], (int)DIMISSIONE, $subject[2]]
+            );
             if ($_SESSION['login'] != $subject[0]) {
-                gdrcd_query("INSERT INTO messaggi (mittente, destinatario, spedito, testo)
-                             VALUES ('" . gdrcd_filter('in', $_SESSION['login']) . "', '" . $subject[0] . "', NOW(),
-                                     '" . gdrcd_filter('in', $MESSAGE['interface']['adm-guilds']['message_body']['fire'] . ' ' . $subject[2]) . "')");
+                Db::preparedExecute(
+                    "INSERT INTO messaggi (mittente, destinatario, spedito, testo)
+                     VALUES (?, ?, NOW(), ?)",
+                    'sss',
+                    [
+                        $_SESSION['login'],
+                        $subject[0],
+                        $MESSAGE['interface']['adm-guilds']['message_body']['fire'] . ' ' . $subject[2],
+                    ]
+                );
             }
         }
     }
 }
 
 if ($op === 'fire-yourself') {
-    $ruolo = gdrcd_filter('num', $_POST['ruolo'] ?? 0);
-    $me = gdrcd_filter('in', $_SESSION['login']);
-    gdrcd_query("DELETE FROM clgpersonaggioruolo WHERE personaggio='{$me}' AND id_ruolo='{$ruolo}' LIMIT 1");
+    $ruolo = (int)gdrcd_filter('num', $_POST['ruolo'] ?? 0);
+    Db::preparedExecute(
+        "DELETE FROM clgpersonaggioruolo WHERE personaggio = ? AND id_ruolo = ? LIMIT 1",
+        'si',
+        [$_SESSION['login'], $ruolo]
+    );
     $alerts[] = ['success', 'Licenziamento avvenuto con successo.'];
 }
 

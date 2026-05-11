@@ -111,14 +111,16 @@ if ($rate_limit_failures >= 5) {
 gdrcd_csrf_guard();
 
 /* Carico profilo account */
-$record = gdrcd_query(
+$record = Db::preparedFetch(
     "SELECT personaggio.pass, personaggio.nome, personaggio.cognome, personaggio.permessi, personaggio.sesso,
             personaggio.ultima_mappa, personaggio.ultimo_luogo, personaggio.id_razza, personaggio.blocca_media,
             personaggio.ora_entrata, personaggio.ora_uscita, personaggio.ultimo_refresh,
             razza.sing_m, razza.sing_f, razza.icon AS url_img_razza
      FROM personaggio LEFT JOIN razza ON personaggio.id_razza = razza.id_razza
-     WHERE nome = '" . gdrcd_filter('in', $login1) . "' LIMIT 1"
-);
+     WHERE nome = ? LIMIT 1",
+    's',
+    [$login1]
+) ?? [];
 
 $auth_ok = !empty($record)
     && gdrcd_password_verify($pass1, $record['pass'])
@@ -130,8 +132,11 @@ if ($auth_ok) {
     /* Rehash silenzioso se hash legacy */
     if (gdrcd_password_needs_rehash($record['pass'])) {
         $newHash = gdrcd_password_hash($pass1);
-        gdrcd_query("UPDATE personaggio SET pass = '" . gdrcd_filter('in', $newHash) . "'
-                     WHERE nome = '" . gdrcd_filter('in', $record['nome']) . "' LIMIT 1");
+        Db::preparedExecute(
+            "UPDATE personaggio SET pass = ? WHERE nome = ? LIMIT 1",
+            'ss',
+            [$newHash, $record['nome']]
+        );
     }
 
     /* Rigenera CSRF + popola sessione */
@@ -273,14 +278,22 @@ if ($_SESSION['login'] !== '') {
 
     if ($PARAMETERS['mode']['log_back_location'] == 'OFF') {
         $_SESSION['luogo'] = '-1';
-        gdrcd_query("UPDATE personaggio SET ora_entrata = NOW(), ultimo_luogo = '-1', ultimo_refresh = NOW(),
-                     last_ip = '" . $_SERVER['REMOTE_ADDR'] . "', is_invisible = 0
-                     WHERE nome = '" . gdrcd_filter('in', $_SESSION['login']) . "'");
+        Db::preparedExecute(
+            "UPDATE personaggio SET ora_entrata = NOW(), ultimo_luogo = '-1', ultimo_refresh = NOW(),
+                                    last_ip = ?, is_invisible = 0
+             WHERE nome = ?",
+            'ss',
+            [$_SERVER['REMOTE_ADDR'], $_SESSION['login']]
+        );
         header('Location: main.php?page=mappaclick&map_id=' . $_SESSION['mappa'], true);
     } else {
-        gdrcd_query("UPDATE personaggio SET ora_entrata = NOW(), ultimo_refresh = NOW(),
-                     last_ip = '" . $_SERVER['REMOTE_ADDR'] . "', is_invisible = 0
-                     WHERE nome = '" . gdrcd_filter('in', $_SESSION['login']) . "'");
+        Db::preparedExecute(
+            "UPDATE personaggio SET ora_entrata = NOW(), ultimo_refresh = NOW(),
+                                    last_ip = ?, is_invisible = 0
+             WHERE nome = ?",
+            'ss',
+            [$_SERVER['REMOTE_ADDR'], $_SESSION['login']]
+        );
         header('Location: main.php?dir=' . $_SESSION['luogo'], true);
     }
     exit();

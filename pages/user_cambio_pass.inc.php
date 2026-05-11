@@ -3,30 +3,54 @@
  * Utente — cambio password proprio + force (mod/superuser).
  */
 
-$row = gdrcd_query("SELECT email FROM personaggio WHERE nome = '" . gdrcd_filter('in', $_SESSION['login']) . "'");
+$row = Db::preparedFetch(
+    "SELECT email FROM personaggio WHERE nome = ?",
+    's',
+    [$_SESSION['login']]
+);
 $email = $row['email'] ?? '';
 $op = $_POST['op'] ?? null;
 $alerts = [];
 
 if ($op === 'new') {
     if (gdrcd_password_check(gdrcd_filter_email($_POST['email'] ?? ''), $email) && gdrcd_check_pass($_POST['new_pass'] ?? '') === true) {
-        gdrcd_query("UPDATE personaggio SET pass = '" . gdrcd_filter('in', gdrcd_password_hash($_POST['new_pass'])) . "', ultimo_cambiopass = NOW()
-                     WHERE nome = '" . gdrcd_filter('in', $_SESSION['login']) . "'");
-        gdrcd_query("INSERT INTO log (nome_interessato, autore, data_evento, codice_evento, descrizione_evento)
-                     VALUES ('" . gdrcd_filter('in', $_SESSION['login']) . "', '" . gdrcd_filter('in', $_SESSION['login']) . "',
-                             NOW(), " . CHANGEDPASS . ", '" . gdrcd_filter('in', $_SERVER['REMOTE_ADDR']) . "')");
+        Db::preparedExecute(
+            "UPDATE personaggio SET pass = ?, ultimo_cambiopass = NOW() WHERE nome = ?",
+            'ss',
+            [gdrcd_password_hash($_POST['new_pass']), $_SESSION['login']]
+        );
+        Db::preparedExecute(
+            "INSERT INTO log (nome_interessato, autore, data_evento, codice_evento, descrizione_evento)
+             VALUES (?, ?, NOW(), ?, ?)",
+            'ssis',
+            [$_SESSION['login'], $_SESSION['login'], (int)CHANGEDPASS, $_SERVER['REMOTE_ADDR']]
+        );
         $alerts[] = ['success', gdrcd_filter('out', $MESSAGE['warning']['modified'])];
     } else {
         $alerts[] = ['error', gdrcd_filter('out', $MESSAGE['warning']['cant_do'])];
     }
 } elseif ($op === 'force' && $_SESSION['permessi'] >= MODERATOR && gdrcd_check_pass($_POST['new_pass'] ?? '') === true) {
-    $where = ($_SESSION['permessi'] == SUPERUSER)
-        ? "nome = '" . gdrcd_filter_in($_POST['account']) . "'"
-        : "nome = '" . gdrcd_filter_in($_POST['account']) . "' AND permessi < " . SUPERUSER;
-    gdrcd_query("UPDATE personaggio SET pass = '" . gdrcd_filter('in', gdrcd_password_hash($_POST['new_pass'])) . "', ultimo_cambiopass = NOW() WHERE " . $where);
-    gdrcd_query("INSERT INTO log (nome_interessato, autore, data_evento, codice_evento, descrizione_evento)
-                 VALUES ('" . gdrcd_filter_in($_POST['account']) . "', '" . gdrcd_filter('in', $_SESSION['login']) . "',
-                         NOW(), " . CHANGEDPASS . ", '" . gdrcd_filter('in', $_SERVER['REMOTE_ADDR']) . "')");
+    $account = $_POST['account'] ?? '';
+    if ($_SESSION['permessi'] == SUPERUSER) {
+        Db::preparedExecute(
+            "UPDATE personaggio SET pass = ?, ultimo_cambiopass = NOW() WHERE nome = ?",
+            'ss',
+            [gdrcd_password_hash($_POST['new_pass']), $account]
+        );
+    } else {
+        Db::preparedExecute(
+            "UPDATE personaggio SET pass = ?, ultimo_cambiopass = NOW()
+             WHERE nome = ? AND permessi < " . (int)SUPERUSER,
+            'ss',
+            [gdrcd_password_hash($_POST['new_pass']), $account]
+        );
+    }
+    Db::preparedExecute(
+        "INSERT INTO log (nome_interessato, autore, data_evento, codice_evento, descrizione_evento)
+         VALUES (?, ?, NOW(), ?, ?)",
+        'ssis',
+        [$account, $_SESSION['login'], (int)CHANGEDPASS, $_SERVER['REMOTE_ADDR']]
+    );
     $alerts[] = ['success', gdrcd_filter('out', $MESSAGE['warning']['modified'])];
 } elseif ($op === 'force') {
     $alerts[] = ['error', gdrcd_filter('out', $MESSAGE['warning']['cant_do'])];

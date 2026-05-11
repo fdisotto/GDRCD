@@ -4,57 +4,106 @@
  */
 
 $theme = $PARAMETERS['themes']['current_theme'];
-$row = gdrcd_query("SELECT soldi FROM personaggio WHERE nome = '" . gdrcd_filter('in', $_SESSION['login']) . "'");
+$row = Db::preparedFetch(
+    "SELECT soldi FROM personaggio WHERE nome = ?",
+    's',
+    [$_SESSION['login']]
+) ?? [];
 $money = (int)($row['soldi'] ?? 0);
 
 $op = $_POST['op'] ?? ($_REQUEST['op'] ?? null);
 $alerts = [];
 
 if ($op === 'buy') {
-    $id_oggetto = gdrcd_filter('num', $_POST['id_oggetto']);
-    $costo = gdrcd_query("SELECT cariche, costo FROM oggetto WHERE id_oggetto = " . $id_oggetto);
+    $id_oggetto = (int)gdrcd_filter('num', $_POST['id_oggetto']);
+    $costo = Db::preparedFetch(
+        "SELECT cariche, costo FROM oggetto WHERE id_oggetto = ?",
+        'i',
+        [$id_oggetto]
+    ) ?? ['cariche' => 0, 'costo' => 0];
     if ($money >= (int)$costo['costo']) {
-        $check = gdrcd_query("SELECT id_oggetto FROM clgpersonaggiooggetto
-                              WHERE id_oggetto = " . $id_oggetto . "
-                              AND nome = '" . gdrcd_filter('in', $_SESSION['login']) . "'", 'result');
-        if (gdrcd_query($check, 'num_rows') > 0) {
-            gdrcd_query("UPDATE clgpersonaggiooggetto SET numero = numero + 1
-                         WHERE id_oggetto = " . $id_oggetto . "
-                         AND nome = '" . gdrcd_filter('in', $_SESSION['login']) . "'");
+        $check = Db::preparedFetch(
+            "SELECT id_oggetto FROM clgpersonaggiooggetto
+             WHERE id_oggetto = ? AND nome = ?",
+            'is',
+            [$id_oggetto, $_SESSION['login']]
+        );
+        if ($check !== null) {
+            Db::preparedExecute(
+                "UPDATE clgpersonaggiooggetto SET numero = numero + 1
+                 WHERE id_oggetto = ? AND nome = ?",
+                'is',
+                [$id_oggetto, $_SESSION['login']]
+            );
         } else {
-            gdrcd_query("INSERT INTO clgpersonaggiooggetto (nome, id_oggetto, cariche, numero, posizione)
-                         VALUES ('" . gdrcd_filter('in', $_SESSION['login']) . "',
-                                 " . $id_oggetto . ", " . (int)$costo['cariche'] . ", 1, 0)");
+            Db::preparedExecute(
+                "INSERT INTO clgpersonaggiooggetto (nome, id_oggetto, cariche, numero, posizione)
+                 VALUES (?, ?, ?, 1, 0)",
+                'sii',
+                [$_SESSION['login'], $id_oggetto, (int)$costo['cariche']]
+            );
         }
-        gdrcd_query($check, 'free');
-        gdrcd_query("UPDATE personaggio SET soldi = soldi - " . (int)$costo['costo'] . "
-                     WHERE nome = '" . gdrcd_filter('in', $_SESSION['login']) . "' LIMIT 1");
-        $q = (gdrcd_filter('num', $_POST['numero']) > 1)
-            ? "UPDATE mercato SET numero = numero - 1 WHERE id_oggetto = '" . $id_oggetto . "' LIMIT 1"
-            : "DELETE FROM mercato WHERE id_oggetto = '" . $id_oggetto . "' LIMIT 1";
-        gdrcd_query($q);
+        Db::preparedExecute(
+            "UPDATE personaggio SET soldi = soldi - ? WHERE nome = ? LIMIT 1",
+            'is',
+            [(int)$costo['costo'], $_SESSION['login']]
+        );
+        if ((int)gdrcd_filter('num', $_POST['numero']) > 1) {
+            Db::preparedExecute(
+                "UPDATE mercato SET numero = numero - 1 WHERE id_oggetto = ? LIMIT 1",
+                'i',
+                [$id_oggetto]
+            );
+        } else {
+            Db::preparedExecute(
+                "DELETE FROM mercato WHERE id_oggetto = ? LIMIT 1",
+                'i',
+                [$id_oggetto]
+            );
+        }
         $alerts[] = ['success', gdrcd_filter('out', $MESSAGE['warning']['buyed'])];
         $money -= (int)$costo['costo'];
     } else {
         $alerts[] = ['error', gdrcd_filter('out', $MESSAGE['warning']['cant_do'])];
     }
 } elseif ($op === 'sell') {
-    $id_oggetto = gdrcd_filter('num', $_POST['id_oggetto']);
-    $check = gdrcd_query("SELECT clgpersonaggiooggetto.numero, oggetto.costo
-                          FROM clgpersonaggiooggetto
-                          LEFT JOIN oggetto ON clgpersonaggiooggetto.id_oggetto = oggetto.id_oggetto
-                          WHERE clgpersonaggiooggetto.id_oggetto = " . $id_oggetto . "
-                          AND clgpersonaggiooggetto.nome = '" . gdrcd_filter('in', $_SESSION['login']) . "'", 'result');
-    if (gdrcd_query($check, 'num_rows') > 0) {
-        $r = gdrcd_query($check, 'fetch');
-        gdrcd_query($check, 'free');
+    $id_oggetto = (int)gdrcd_filter('num', $_POST['id_oggetto']);
+    $r = Db::preparedFetch(
+        "SELECT clgpersonaggiooggetto.numero, oggetto.costo
+         FROM clgpersonaggiooggetto
+         LEFT JOIN oggetto ON clgpersonaggiooggetto.id_oggetto = oggetto.id_oggetto
+         WHERE clgpersonaggiooggetto.id_oggetto = ?
+           AND clgpersonaggiooggetto.nome = ?",
+        'is',
+        [$id_oggetto, $_SESSION['login']]
+    );
+    if ($r !== null) {
         $costo_vendita = floor(($r['costo'] / 100) * (100 - $PARAMETERS['settings']['resell_price']));
-        $q = ($r['numero'] > 1)
-            ? "UPDATE clgpersonaggiooggetto SET numero = numero - 1 WHERE id_oggetto = " . $id_oggetto . " AND nome = '" . gdrcd_filter('in', $_SESSION['login']) . "' LIMIT 1"
-            : "DELETE FROM clgpersonaggiooggetto WHERE id_oggetto = " . $id_oggetto . " AND nome = '" . gdrcd_filter('in', $_SESSION['login']) . "' LIMIT 1";
-        gdrcd_query($q);
-        gdrcd_query("UPDATE mercato SET numero = numero + 1 WHERE id_oggetto = " . $id_oggetto . " LIMIT 1");
-        gdrcd_query("UPDATE personaggio SET soldi = soldi + " . (int)$costo_vendita . " WHERE nome = '" . gdrcd_filter('in', $_SESSION['login']) . "' LIMIT 1");
+        if ($r['numero'] > 1) {
+            Db::preparedExecute(
+                "UPDATE clgpersonaggiooggetto SET numero = numero - 1
+                 WHERE id_oggetto = ? AND nome = ? LIMIT 1",
+                'is',
+                [$id_oggetto, $_SESSION['login']]
+            );
+        } else {
+            Db::preparedExecute(
+                "DELETE FROM clgpersonaggiooggetto
+                 WHERE id_oggetto = ? AND nome = ? LIMIT 1",
+                'is',
+                [$id_oggetto, $_SESSION['login']]
+            );
+        }
+        Db::preparedExecute(
+            "UPDATE mercato SET numero = numero + 1 WHERE id_oggetto = ? LIMIT 1",
+            'i',
+            [$id_oggetto]
+        );
+        Db::preparedExecute(
+            "UPDATE personaggio SET soldi = soldi + ? WHERE nome = ? LIMIT 1",
+            'is',
+            [(int)$costo_vendita, $_SESSION['login']]
+        );
         $alerts[] = ['success', gdrcd_filter('out', $MESSAGE['warning']['buyed'])];
         $money += (int)$costo_vendita;
     } else {

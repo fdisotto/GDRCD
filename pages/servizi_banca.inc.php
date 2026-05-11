@@ -3,23 +3,26 @@
  * Servizi — Banca: saldo, deposito, prelievo, bonifico, stipendio.
  */
 
-$row = gdrcd_query("SELECT soldi, banca, ultimo_stipendio FROM personaggio
-                    WHERE nome = '" . gdrcd_filter('in', $_SESSION['login']) . "' LIMIT 1");
+$row = Db::preparedFetch(
+    "SELECT soldi, banca, ultimo_stipendio FROM personaggio WHERE nome = ? LIMIT 1",
+    's',
+    [$_SESSION['login']]
+) ?? [];
 $soldi  = (int)($row['soldi'] ?? 0);
 $banca  = (int)($row['banca'] ?? 0);
 $ultimo = $row['ultimo_stipendio'] ?? '';
 
-$result = gdrcd_query(
+$rolesRows = Db::preparedFetchAll(
     "SELECT ruolo.stipendio FROM clgpersonaggioruolo
      LEFT JOIN ruolo ON clgpersonaggioruolo.id_ruolo = ruolo.id_ruolo
-     WHERE clgpersonaggioruolo.personaggio = '" . gdrcd_filter('in', $_SESSION['login']) . "'",
-    'result'
+     WHERE clgpersonaggioruolo.personaggio = ?",
+    's',
+    [$_SESSION['login']]
 );
 $stipendio = 0;
-while ($r = gdrcd_query($result, 'fetch')) {
+foreach ($rolesRows as $r) {
     $stipendio += (int)$r['stipendio'];
 }
-gdrcd_query($result, 'free');
 
 $alerts = [];
 $op = $_POST['op'] ?? null;
@@ -33,8 +36,11 @@ if ($op === 'preleva') {
     } elseif ($amount > $banca) {
         $alerts[] = ['error', gdrcd_filter('out', $MESSAGE['interface']['bank']['withdraw_no'])];
     } else {
-        gdrcd_query("UPDATE personaggio SET soldi = soldi + " . $amount_in . ", banca = banca - " . $amount_in . "
-                     WHERE nome = '" . gdrcd_filter('in', $_SESSION['login']) . "' LIMIT 1");
+        Db::preparedExecute(
+            "UPDATE personaggio SET soldi = soldi + ?, banca = banca - ? WHERE nome = ? LIMIT 1",
+            'iis',
+            [$amount, $amount, $_SESSION['login']]
+        );
         $alerts[] = ['success', gdrcd_filter('out', $MESSAGE['interface']['bank']['done'])];
         $banca -= $amount;
         $soldi += $amount;
@@ -45,14 +51,17 @@ if ($op === 'preleva') {
     } elseif ($amount > $soldi) {
         $alerts[] = ['error', gdrcd_filter('out', $MESSAGE['interface']['bank']['deposit_no'])];
     } else {
-        gdrcd_query("UPDATE personaggio SET soldi = soldi - " . $amount_in . ", banca = banca + " . $amount_in . "
-                     WHERE nome = '" . gdrcd_filter('in', $_SESSION['login']) . "' LIMIT 1");
+        Db::preparedExecute(
+            "UPDATE personaggio SET soldi = soldi - ?, banca = banca + ? WHERE nome = ? LIMIT 1",
+            'iis',
+            [$amount, $amount, $_SESSION['login']]
+        );
         $alerts[] = ['success', gdrcd_filter('out', $MESSAGE['interface']['bank']['done'])];
         $banca += $amount;
         $soldi -= $amount;
     }
 } elseif ($op === 'bonifico') {
-    $beneficiario = gdrcd_filter('in', $_POST['beneficiario'] ?? '');
+    $beneficiario = $_POST['beneficiario'] ?? '';
     if (empty($beneficiario)) {
         $alerts[] = ['error', "Il beneficiario inserito non esiste o non è valido."];
     } elseif ($amount <= 0) {
@@ -60,25 +69,42 @@ if ($op === 'preleva') {
     } elseif ($amount > $banca) {
         $alerts[] = ['error', gdrcd_filter('out', $MESSAGE['interface']['bank']['withdraw_no'])];
     } else {
-        gdrcd_query("UPDATE personaggio SET banca = banca - " . $amount_in . "
-                     WHERE nome = '" . gdrcd_filter('in', $_SESSION['login']) . "' LIMIT 1");
-        gdrcd_query("UPDATE personaggio SET banca = banca + " . $amount_in . "
-                     WHERE nome = '" . $beneficiario . "' LIMIT 1");
-        $causale_in = gdrcd_filter('in', $_POST['causale'] ?? '');
-        gdrcd_query("INSERT INTO log (nome_interessato, autore, data_evento, codice_evento, descrizione_evento)
-                     VALUES ('" . $beneficiario . "', '" . gdrcd_filter('in', $_SESSION['login']) . "',
-                             NOW(), " . BONIFICO . ",
-                             '(" . $amount_in . " " . $PARAMETERS['names']['currency']['plur'] . ") " . $causale_in . "')");
-        gdrcd_query("INSERT INTO messaggi (mittente, destinatario, spedito, testo)
-                     VALUES ('" . gdrcd_filter('in', $_SESSION['login']) . "',
-                             '" . gdrcd_capital_letter($beneficiario) . "', NOW(),
-                             '" . gdrcd_filter('in', $_SESSION['login'] . ' ' . $MESSAGE['interface']['bank']['notice'] . ' ' . $amount_in . ' ' . $PARAMETERS['names']['currency']['plur']) . ".\n\n" . $causale_in . "')");
+        Db::preparedExecute(
+            "UPDATE personaggio SET banca = banca - ? WHERE nome = ? LIMIT 1",
+            'is',
+            [$amount, $_SESSION['login']]
+        );
+        Db::preparedExecute(
+            "UPDATE personaggio SET banca = banca + ? WHERE nome = ? LIMIT 1",
+            'is',
+            [$amount, $beneficiario]
+        );
+        $causale = $_POST['causale'] ?? '';
+        $log_descr = '(' . $amount . ' ' . $PARAMETERS['names']['currency']['plur'] . ') ' . $causale;
+        Db::preparedExecute(
+            "INSERT INTO log (nome_interessato, autore, data_evento, codice_evento, descrizione_evento)
+             VALUES (?, ?, NOW(), ?, ?)",
+            'ssis',
+            [$beneficiario, $_SESSION['login'], (int)BONIFICO, $log_descr]
+        );
+        $msg_text = $_SESSION['login'] . ' ' . $MESSAGE['interface']['bank']['notice']
+                  . ' ' . $amount . ' ' . $PARAMETERS['names']['currency']['plur'] . ".\n\n" . $causale;
+        Db::preparedExecute(
+            "INSERT INTO messaggi (mittente, destinatario, spedito, testo)
+             VALUES (?, ?, NOW(), ?)",
+            'sss',
+            [$_SESSION['login'], gdrcd_capital_letter($beneficiario), $msg_text]
+        );
         $alerts[] = ['success', gdrcd_filter('out', $MESSAGE['interface']['bank']['done'])];
         $banca -= $amount;
     }
 } elseif ($op === 'incassa' && $ultimo != $today) {
-    gdrcd_query("UPDATE personaggio SET banca = banca + " . (int)$stipendio . ", ultimo_stipendio = NOW()
-                 WHERE nome = '" . gdrcd_filter('in', $_SESSION['login']) . "' AND ultimo_stipendio < NOW() LIMIT 1");
+    Db::preparedExecute(
+        "UPDATE personaggio SET banca = banca + ?, ultimo_stipendio = NOW()
+         WHERE nome = ? AND ultimo_stipendio < NOW() LIMIT 1",
+        'is',
+        [(int)$stipendio, $_SESSION['login']]
+    );
     $alerts[] = ['success', gdrcd_filter('out', $MESSAGE['interface']['bank']['done'])];
     $banca += $stipendio;
     $ultimo = $today;
