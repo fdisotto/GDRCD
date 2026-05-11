@@ -152,7 +152,7 @@ $default_item_icon = '<path stroke-linecap="round" stroke-linejoin="round" d="M9
                         ?>
                         <a href="<?= htmlspecialchars($item['url']) ?>"
                            class="group gdrcd-card h-full block hover:border-gdrcd-accent-ring/60 hover:shadow-gdrcd-elev transition-all"
-                           title="<?= htmlspecialchars(gdrcd_filter('out', $item['text'])) ?>">
+                           title="<?= gdrcd_filter('out', $item['text']) ?>">
                             <div class="p-4 flex items-center gap-3 h-full">
                                 <span class="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-gdrcd-accent-soft text-gdrcd-accent border border-gdrcd-accent-ring/30 shrink-0 group-hover:bg-gdrcd-accent group-hover:text-white transition-colors">
                                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
