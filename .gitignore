@@ -179,3 +179,6 @@ core/db_overrides.php
 # Tailwind build artifact
 themes/tailwind/output.css
 node_modules/
+
+# Application logs (gdrcd_log_*)
+logs/

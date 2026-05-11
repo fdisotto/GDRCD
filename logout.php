@@ -11,6 +11,10 @@ $user = $_SESSION['login'] ?? '';
 if ($user !== '') {
     gdrcd_query("UPDATE personaggio SET ora_uscita = NOW()
                  WHERE nome = '" . gdrcd_filter('in', $user) . "'");
+    gdrcd_log_info('user logout', array(
+        'username' => $user,
+        'ip'       => $_SERVER['REMOTE_ADDR'] ?? null,
+    ));
 }
 
 $theme = htmlspecialchars($PARAMETERS['themes']['current_theme']);

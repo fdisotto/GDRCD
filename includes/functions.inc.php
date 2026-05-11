@@ -264,6 +264,8 @@ function gdrcd_mysql_error($details = false)
 {
     $backtrace = debug_backtrace(DEBUG_BACKTRACE_PROVIDE_OBJECT, 50);
 
+    $history = '';
+    $base    = array('file' => '?', 'line' => '?');
     foreach($backtrace as $v) {
         if($v['function'] == 'gdrcd_query') {
             $base = $v;
@@ -271,12 +273,27 @@ function gdrcd_mysql_error($details = false)
         $history .= '<strong>FILE: </strong>: ' . $v['file'] . ' - ';
         $history .= '<strong>LINE: </strong>: ' . $v['line'] . '</br />';
     }
+
+    $mysqli_errno = @mysqli_errno(gdrcd_connect());
+    $mysqli_error = @mysqli_error(gdrcd_connect());
+
+    // Log strutturato in parallelo al messaggio HTML mostrato/restituito.
+    if (function_exists('gdrcd_log_error')) {
+        gdrcd_log_error('MySQL error', array(
+            'errno' => $mysqli_errno,
+            'error' => $mysqli_error,
+            'query' => $details !== false ? (string)$details : null,
+            'file'  => $base['file'] ?? null,
+            'line'  => $base['line'] ?? null,
+        ));
+    }
+
     $error_msg  = '<div class="error mysql">';
     $error_msg .= '<strong>GDRCD MySQLi Error</strong>:</br>';
     if ($details !== false) {
         $error_msg .= '<strong>QUERY: </strong>: ' . $details . '</br>';
     }
-    $error_msg .= '<strong>ERROR [' . mysqli_errno(gdrcd_connect()) . ']</strong>: ' . mysqli_error(gdrcd_connect()) .'<br />';
+    $error_msg .= '<strong>ERROR [' . $mysqli_errno . ']</strong>: ' . $mysqli_error .'<br />';
     $error_msg .= '<strong>FILE: </strong>: ' . $base['file'] . ' - ';
     $error_msg .= '<strong>LINE: </strong>: ' . $base['line'] . '<br />';
     $error_msg .= '<details>';
@@ -1046,7 +1063,12 @@ function gdrcd_login_attempts_count($ip, $minutes = 5)
         $row = gdrcd_query("SELECT COUNT(*) AS n FROM login_attempts WHERE ip = '" . $ip . "' AND success = 0 AND attempted_at >= (NOW() - INTERVAL " . $minutes . " MINUTE)");
         return (int)($row['n'] ?? 0);
     } catch (\Throwable $e) {
-        error_log('[GDRCD] login_attempts_count failed: ' . $e->getMessage());
+        if (function_exists('gdrcd_log_error')) {
+            gdrcd_log_error('login_attempts_count failed', array(
+                'ip'        => $ip,
+                'exception' => $e->getMessage(),
+            ));
+        }
         return 0;
     }
 }
@@ -1075,7 +1097,11 @@ function gdrcd_login_attempts_table_ready()
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
         $ready = true;
     } catch (\Throwable $e) {
-        error_log('[GDRCD] cannot ensure login_attempts table: ' . $e->getMessage());
+        if (function_exists('gdrcd_log_error')) {
+            gdrcd_log_error('cannot ensure login_attempts table', array(
+                'exception' => $e->getMessage(),
+            ));
+        }
         $ready = false;
     }
     return $ready;
@@ -1105,7 +1131,14 @@ function gdrcd_login_attempt_log($ip, $username, $success)
             gdrcd_query("INSERT INTO login_attempts (ip, username, attempted_at, success) VALUES ('" . $ip . "', '" . $username . "', NOW(), " . $success_flag . ")");
         }
     } catch (\Throwable $e) {
-        error_log('[GDRCD] login_attempt_log failed: ' . $e->getMessage());
+        if (function_exists('gdrcd_log_error')) {
+            gdrcd_log_error('login_attempt_log failed', array(
+                'ip'        => $ip,
+                'username'  => $username,
+                'success'   => $success_flag,
+                'exception' => $e->getMessage(),
+            ));
+        }
     }
 }
 
@@ -1194,6 +1227,11 @@ function gdrcd_login_attempts_cleanup($ip)
     try {
         gdrcd_query("DELETE FROM login_attempts WHERE ip = '" . $ip . "' AND attempted_at < (NOW() - INTERVAL 1 HOUR)");
     } catch (\Throwable $e) {
-        error_log('[GDRCD] login_attempts_cleanup failed: ' . $e->getMessage());
+        if (function_exists('gdrcd_log_error')) {
+            gdrcd_log_error('login_attempts_cleanup failed', array(
+                'ip'        => $ip,
+                'exception' => $e->getMessage(),
+            ));
+        }
     }
 }

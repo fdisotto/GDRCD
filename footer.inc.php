@@ -12,6 +12,7 @@
  */
 if (!empty($_SESSION['login'])) { ?>
     <script type="text/javascript" src="/includes/notifications.js" defer></script>
+    <script type="text/javascript" src="/includes/presenti.js" defer></script>
 <?php } ?>
 <?php
 /** * Abilitazione tooltip

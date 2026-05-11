@@ -84,6 +84,12 @@ $rate_limit_ip = $_SERVER['REMOTE_ADDR'];
 $rate_limit_failures = gdrcd_login_attempts_count($rate_limit_ip, 5);
 if ($rate_limit_failures >= 5) {
     gdrcd_login_attempt_log($rate_limit_ip, $login1, false);
+    gdrcd_log_warning('login rate-limit triggered', array(
+        'username' => $login1,
+        'ip'       => $rate_limit_ip,
+        'failures' => $rate_limit_failures,
+        'window_minutes' => 5,
+    ));
     gdrcd_query("INSERT INTO log (nome_interessato, autore, data_evento, codice_evento, descrizione_evento)
                  VALUES ('" . gdrcd_filter('in', $login1) . "', 'Login_procedure', NOW(), " . BLOCKED . ", '" . $_SERVER['REMOTE_ADDR'] . " rate_limit')");
     $render_error(
@@ -194,6 +200,11 @@ if ($auth_ok) {
         gdrcd_query("INSERT INTO log (nome_interessato, autore, data_evento, codice_evento, descrizione_evento)
                      VALUES ('', '" . $host . "', NOW(), " . ERRORELOGIN . ", '" . $_SERVER['REMOTE_ADDR'] . "')");
         gdrcd_login_attempt_log($_SERVER['REMOTE_ADDR'], $login1, false);
+        gdrcd_log_warning('failed login attempt', array(
+            'username' => $login1,
+            'ip'       => $_SERVER['REMOTE_ADDR'],
+            'host'     => $host,
+        ));
 
         $cnt = gdrcd_query("SELECT COUNT(*) AS n FROM log
                             WHERE descrizione_evento = '" . $_SERVER['REMOTE_ADDR'] . "'
