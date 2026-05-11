@@ -185,6 +185,43 @@
     }
     .gdrcd-page-footer a { @apply gdrcd-link; }
 
+    /* ---------- Table ---------- */
+    .gdrcd-table {
+        @apply w-full text-sm text-left border-collapse;
+    }
+    .gdrcd-table thead th {
+        @apply px-3 py-2.5 font-display font-semibold text-xs uppercase tracking-wide
+               text-gdrcd-text-soft bg-gdrcd-panel-alt border-b border-gdrcd-border;
+    }
+    .gdrcd-table tbody td {
+        @apply px-3 py-2.5 align-top border-b border-gdrcd-border text-gdrcd-text-soft;
+    }
+    .gdrcd-table tbody tr:hover td { @apply bg-gdrcd-accent-soft/30; }
+    .gdrcd-table tbody tr:last-child td { @apply border-b-0; }
+    .gdrcd-table-wrap {
+        @apply gdrcd-card overflow-x-auto;
+    }
+
+    /* ---------- Pager ---------- */
+    .gdrcd-pager {
+        @apply flex flex-wrap items-center justify-center gap-1 mt-4;
+    }
+    .gdrcd-pager-label {
+        @apply text-xs text-gdrcd-muted mr-2;
+    }
+    .gdrcd-pager a,
+    .gdrcd-pager span {
+        @apply inline-flex items-center justify-center min-w-[2rem] h-8 px-2
+               rounded-md border border-gdrcd-border text-xs font-medium
+               text-gdrcd-text-soft bg-gdrcd-panel transition-colors;
+    }
+    .gdrcd-pager a:hover {
+        @apply border-gdrcd-accent text-gdrcd-accent-hover bg-gdrcd-accent-soft;
+    }
+    .gdrcd-pager span.is-current {
+        @apply bg-gdrcd-accent text-white border-gdrcd-accent;
+    }
+
     /* ---------- Stepper ---------- */
     .gdrcd-stepper {
         @apply flex items-center gap-2 md:gap-3 flex-wrap;
