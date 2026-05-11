@@ -1,202 +1,349 @@
-# GDRCD 5.x - Users Manual
+# GDRCD — Gioco di Ruolo Chat Driven
 
+> CMS PHP per giochi di ruolo via chat in tempo reale.
 
+GDRCD è un CMS open source pensato per gestire mondi di gioco di ruolo
+"play by chat": permette ai giocatori di interagire in stanze condivise,
+gestire la propria scheda personaggio, partecipare ad economia e gilde,
+mentre lo staff cura ambientazione, regolamento ed esiti delle giocate
+attraverso un pannello di amministrazione integrato.
 
-## VERSIONE STABILE
+Il progetto, nato nei primi anni 2000, è ora in fase di modernizzazione:
+runtime containerizzato con Docker, design system su Tailwind CSS,
+refactor del frontend in JavaScript vanilla (rimossa la dipendenza da
+jQuery) e progressiva introduzione di prepared statement lato database.
 
-Le corrente versione e' stabile, ma ancora soggetta ed ampliamenti,
-tuttavia dalla fase di testing della release beta è stata
-comprovato il corretto funzionamento del software.
-Le eventuali correzioni saranno rilasciare come nuove versioni 
-dei file correnti e sarà poissibile applicarle su un sito già pubblicato
-semplicemente sostituendo i file con i corrispettivi aggiornati.
+---
 
-Saranno auspicabilmente anche introdotte nuove funzioni ed
-ampliate le correnti su suggerimento dell'utenza.
+## Caratteristiche principali
 
+- **Chat live multi-stanza** con presenze, log azioni e sussurri privati
+- **Scheda personaggio** completa (descrizione, storia, diario,
+  equipaggiamento, oggetti, punti esperienza, transazioni)
+- **Gilde** con ruoli, gerarchie e amministrazione dedicata
+- **Mercato** in-game e **banca** con conto corrente e trasferimenti
+- **Sistema esiti** per la gestione narrativa degli interventi master
+- **Bacheche**, **forum** e **messaggi privati** integrati nel mondo
+- **Gestione editoriale** di regolamento, ambientazione, razze, luoghi,
+  mappe cliccabili, oggetti e abilità
+- **Log eventi** completi (chat, messaggi, azioni) consultabili dallo staff
+- **Sistema permessi** granulare per distinguere staff, master e giocatori
+- **Anagrafe** e **prenotazioni** per organizzare eventi e sessioni
+- **Pannello di gestione** unificato per tutte le entità del mondo
 
-## COMMUNITY DI SVILUPPO
+---
 
-GDRCD 5.x e' un progetto Open Source e come tale e' aperto ai contributi.
-Mi riservo di vagliare personalmente eventuali modifiche da
-inserire direttamente nel core ufficiale del programma, ma nulla
-vieta di rilasciarle come MODs o di produrre release alternative.
+## Stack tecnico
 
-Rispetto alle precedenti versioni di GDRCD e' introdotta la
-possibilità di rilasciare skin grafiche per il prodotto, che,
-senza andare ad alterare il codice PHP o l'HTML, possono essere
-installate sul proprio sito ed attivate cambiando immediatamente
-tutta la veste grafica, senza ulteriori interventi.
+| Componente      | Versione / Note                              |
+|-----------------|-----------------------------------------------|
+| PHP             | 8.2 (Apache `mod_php`, immagine `php:8.2-apache`) |
+| Database        | MariaDB 10.11 (compatibile con MySQL 8)      |
+| CSS framework   | Tailwind CSS 3.4 — standalone CLI, **senza Node** |
+| Orchestrazione  | Docker + `docker compose`                    |
+| Frontend JS     | JavaScript vanilla (nessuna dipendenza da jQuery) |
+| Estensioni PHP  | `mysqli`, `gd`, `mbstring`, `zip`            |
 
-Invito quanti desiderino cimentarsi nello sviluppo di MODs di
-rispettare la struttura base del sistema, che prevede l'utilizzo
-del file di vocabolario (IT-it.vocabulary.php) per contenere le
-i messaggi di output, piuttosto che inserirli direttamente nel codice, 
-l'utilizzo dei css per la formattazione della pagina, e che il mod sia
-un frammento di codice da includere in fase di load della pagina
-in uno dei div preposti di main.php come le pagine contenute nella
-cartella pages/. Le modifiche proposte al core che non rispettino
-questi standard non verranno prese in considerazione.
+---
 
+## Quick start (Docker)
 
-## VENIAMO AL DUNQUE, COME LA FACCIO STA LAND?
+Requisiti: Docker Engine 20+ e plugin `docker compose`.
 
-1. Scaricare il file gdrcd.zip e decomprimerlo (ma questo l'hai gia' 
-fatto).
+```bash
+git clone git@github.com:GDRCD/GDRCD.git
+cd GDRCD
+docker compose up -d
+```
 
-2. Prendere tutti i file e tutte le cartelle contenute nell'archivio 
-(gdrcd.zip)
+Al primo avvio apri `http://localhost:8080/installer.php` per eseguire
+l'installazione dello schema. L'installer richiama
+`DbMigrationEngine::updateDbSchema()` che crea le tabelle baseline e
+applica tutte le migrazioni presenti in `db_versions/`.
 
-3. Fare l'upload di tutti i file e tutte le cartelle sul tuo spazio 
-web. Potresti aver bisogno di un programma come Filezilla.
-ATTENZIONE: Ogni file deve essere all'interno della stessa cartella 
-dove l'hai trovato in gdrcd5.zip, una volta terminato l'upload, 
-altrimenti il sito non funzionera'.
+A installazione completata accedi alla homepage `http://localhost:8080/`.
 
-La struttira delle cartelle e' la seguente:
+### Container avviati
 
-ROOT
+| Container         | Servizio          | Porta host | Note                              |
+|-------------------|-------------------|------------|-----------------------------------|
+| `gdrcd-web`       | PHP 8.2 + Apache  | `8080`     | Applicazione GDRCD                |
+| `gdrcd-db`        | MariaDB 10.11     | `3306`     | Database                          |
+| `gdrcd-pma`       | phpMyAdmin 5      | `8081`     | UI web a `http://localhost:8081`  |
+| `gdrcd-tailwind`  | Tailwind watcher  | —          | Rebuild di `output.css` in dev    |
 
-|- docs
-|- imgs
-|   |--- avatars
-|   |--- icons
-|   |--- pegi
-|	|--- images
-|	|--- locations
-|- includes
-|- pages
-|- layouts
-|- sounds
-|- themes
-|   |--- advanced
-|	|	  |---- home
-|   |     |---- imgs
-|   |            |--- guilds
-|   |	         |--- items
-|   |	         |--- locations
-|   |	         |--- maps
-|   |	         |--- menus
-|   |	   	 	 |--- races
-|- vocabulary
+Il file `docker-compose.override.yml` viene caricato automaticamente in
+sviluppo e aggiunge il container `gdrcd-tailwind` più un bind mount del
+sorgente nel container `web` (così le modifiche PHP sono immediate).
 
-imgs: La cartella contiene alcune immagini utilizzate dal sistema, in
-particolare icone di sistrma. Se si desidera modificarle è possibile 
-agire sul contenuto di questa cartella anche se non è parte dei temi.
-La cartella pegi contiene i simboli pegi per la homepage, la cartella
-avatar contiene l'immagine base dell'avatar nelle schede e la figura
-su cui vengono ubicati gli oggetti indossati.
+---
 
-includes: La cartella includes contiene file essenziali al funzionamento
-del programma, che vengono inclusi ad ogni visualizzazione delle pagine.
+## Sviluppo
 
-pages: La cartella pages contiene i blocchi di codice da richiamare
-nella finestra principale con le singole funzioni. Vengono richiamati
-da main.php attraverso il parametro page, nella barra degli indirizzi.
-Ad esempio, l'indirizzo http://www.sito.it/main.php?page=uffici richiama
-i servizi della pagina uffici.inc.php presente in pages.
-Per aggiungee nuove funzioni al sito è consigliabile produrre nuovi
-blocchi di codice richiamabili con questo meccanismo da posizione in
-questa cartella. A prescindere dal contenuto, tali file dovranno avere
-l'estensione .inc.php.
+### Tailwind watcher
 
-themes: La cartella themes contiene i temi per la grafica del sito.
-Ciascun tema ha il proprio nome che corrisponde al nome della cartella
-relativa, che contiene i file css con le impostazioni e la cartella imgs.
-Nella cartella imgs sono posizionati, solitamente gli sfondi del sito,
-mentre, nelle sue sottocartelle sono posizionati, risperttivamente, le
-icone di gilda (guilds), le immagini degli oggetti (items), le immagini
-dei luoghi (locations), le immagini delle mappe (maps) e le immagini e
-iconde di razza (races). Il programma cerca automaticamente le immagini
-specificate per queste aree del sito in tali cartelle del tema 
-selezionato. Ad esempio, se specifichiamo l'immagine razza01.jpg come
-icona per una razza e abbiamo selezionato il tema "sfumature_blu" ogni
-volta che visualizziamo nel sito l'icona di tale razza, l'immagine
-verrà automaticamente cercata in 
-http://www.sito.it/themes/sfumature_blu/imgs/races.
+Il container `gdrcd-tailwind` esegue `docker/tailwind-watch.sh`, che
+usa `inotifywait` per rilevare modifiche a file `.php`, `.js`, `.html`,
+`.css` e a `tailwind.config.js`. Ad ogni salvataggio il binario
+standalone `tailwindcss` rigenera `themes/tailwind/output.css` minificato.
 
-4. Modificare il file config.inc.php. Questo passo è cruciale. A 
-prima vista il file e' lungo e complicato, ma in realta' e' molto 
-semplice. E' soltanto un elenco di parametri che puoi impostare a tuo 
-piacimento per modificare le impostazioni del tuo gioco e per attivare 
-o disattivare funzioni che ti interessano o che non vuoi.
+Per intervenire sul design system basta quindi:
 
-Assicurati di aver letto attentamente tutto il testo di help che il file 
-contiene perche' ti spieghera', parametro per parametro, la sua funzione.
+1. Modificare `themes/tailwind/input.css` (o aggiungere classi nei file PHP)
+2. Attendere il rebuild (visibile in `docker compose logs -f tailwind`)
+3. Ricaricare la pagina
 
-ATTENZIONE: Modificare le pagine php non ti dovrebbe essere necessario.
-Probabilmente la modifica che vuoi ottenere può essere fatta modificando 
-il file config.inc.php, oppure il file IT-it.vocabulary.php (se vuoi 
-cambiare un testo all'interno del sito), oppure mediante i file css della 
-cartella themes/nome-tema, se e' una modifica di tipo grafico.
+### Credenziali DB di sviluppo
 
-IMPORTANTE: La prima cosa che devi modificare sono i parametri di 
-connessione, essenziali perche' il sito funzioni:
+Definite in `docker-compose.yml` e iniettate via variabili d'ambiente:
 
-$PARAMETERS['database']['username'] = 'username'; 
-$PARAMETERS['database']['password'] = 'password'; 
-$PARAMETERS['database']['database_name'] = 'nomedatabase'; 
-$PARAMETERS['database']['url'] = 'indirizzo';
+| Variabile             | Default        |
+|-----------------------|----------------|
+| `GDRCD_DB_HOST`       | `db`           |
+| `GDRCD_DB_NAME`       | `gdrcd`        |
+| `GDRCD_DB_USER`       | `gdrcd`        |
+| `GDRCD_DB_PASSWORD`   | `gdrcd`        |
+| `MARIADB_ROOT_PASSWORD` | `rootpassword` |
 
-Al posto di username, password, nomedatabase e indirizzo, tra le virgolette, 
-devi scrivere i parametri che ti sono stati comunicati quando hai registrato
-il tuo spazio web.
+Le credenziali si modificano direttamente nel `docker-compose.yml`
+oppure con un file `.env` accanto.
 
-Subito sotto ci sono le informazioni sul sito e sullo webmaster. Ti invito
-a compilarli interamente riportando il tuo nome e cognome reali per 
-correttezza.
+### Override della configurazione
 
-5. A questo punto prova a visitare il tuo sito. Dovrebbe apparirti un 
-messaggio di errore. Se ti dice che il database e' vuoto e che dovresti fare
-l'installazione tutto ok, clicca sul link o visita la pagina 
-http:// [miosito.ext] /installer.php. Questo dovrebbe installare il database.
-Se invece il messaggio ti informa che non e' possibile trovare il database
-allora qualcosa e' andato storto. Probabilmente non hai scritto correttamente
-i parametri di connessione. Sono corretti? Sicuro di avere un database
-attivato nel tuo spazio web?
+L'entrypoint del container `web` genera ad ogni avvio
+`includes/config-overrides.php` con i parametri di connessione presi
+dalle variabili d'ambiente. Il file è auto-incluso da `config.inc.php`,
+quindi sovrascrive i valori di default **senza** modificare il sorgente
+versionato.
 
-6. Adesso dovresti avere il database installato. Prova ad accedere di nuovo
-alla homepage. Se si visualizza la homepage con il form di login e tutto 
-allora l'installazione e' completa. Prova ad effettuare il login come
-amministratore del sito:
+Esempio di file generato:
 
-user: Super
-password: super
+```php
+<?php
+// Generated by Docker entrypoint - do not edit by hand.
+$PARAMETERS['database']['url']           = getenv('GDRCD_DB_HOST')     ?: 'db';
+$PARAMETERS['database']['username']      = getenv('GDRCD_DB_USER')     ?: 'gdrcd';
+$PARAMETERS['database']['password']      = getenv('GDRCD_DB_PASSWORD') ?: 'gdrcd';
+$PARAMETERS['database']['database_name'] = getenv('GDRCD_DB_NAME')     ?: 'gdrcd';
+```
 
-Se il login viene effettuato tutto è andato liscio, altrimenti c'e' qualcosa
-che non va. Prova ad installare manualmente il database con il servizio di
-phpmyadmin offerto dal tuo spazio web, scegliendo l'opzione "importa" e caricando
-il file gdrcd5.4.sql. Se nel database sono gia' presenti alcune, ma non tutte, 
-tabelle di gdrcd5.4 allora eliminale prima di importare il file.
+In ambienti non-Docker è sufficiente creare manualmente lo stesso file
+per override locali (resta gitignored).
 
-7. Finalmente dovresti essere loggato nel tuo sito. Sei l'amministratore ed
-hai accesso al pannello di gestione. Adesso dovresti creare il tuo mondo,
-compilando un regolamento, un ambientazione, creando razze, luoghi, mappe, 
-oggetti, ecc. Tutto questo e' possibile farlo dal menu' "Gestione". Dovrebbe
-essere abbastanza intuitivo ed in questa breve quida non trattero' le sue voci.
+### Reset completo del database
 
-8. Adesso manca soltanto la grafica e qui ti è richiesta almeno un poco di 
-competenza con il CSS. Non ce l'hai? Non allarmarti, c'e' una scorciatoia.
-GDRCD ti mette a disposizione di default la skin "Advanced", realizzata da Blankcs,
-che fornisce un ottimo punto di partenza per realizzare la tua personale interfaccia, 
-giocando con CSS.
-Altrimenti potresti scaricare e installare skin realizzate da altri utenti, 
-semplicemente facendo l'upload della cartella della skin nella cartella
-themes ed andando ad attivarla nel file config.inc.php alla voce "Temi". 
-Se sei particolarmente bravo con i Temi, puoi permetterti anche di averne più di uno,
-fornendo al giocare la possibilità di scegliere il suo preferito!
+```bash
+docker compose down -v
+docker compose up -d
+```
 
+Il flag `-v` rimuove anche il volume `db_data`. Al riavvio sarà
+necessario rieseguire `installer.php`.
 
-## BUON LAVORO E BUON DIVERTIMENTO
+### Comandi utili
 
-Stavolta dovrebbe essere davvero facile fare la tua land, confido che
-ne verrai a capo. Buon Divertimento!
+```bash
+# Log dell'applicazione
+docker compose logs -f web
 
+# Shell dentro il container PHP
+docker compose exec web bash
 
-Fabrizio Pedani.
+# Connessione mysql al DB
+docker compose exec db mariadb -u gdrcd -pgdrcd gdrcd
 
-Files aggiornato e revisionato da Salvatore Rotondo.
+# Lint sintattico di un file PHP
+docker compose exec web php -l pages/scheda.inc.php
+```
 
-Files aggiornato e revisionato successivamente da Breaker.
+---
 
-Files aggiornato e revisionato successivamente da gianni10049 e kasui92 per la versione 5.6 e successive correzioni.
+## Architettura
+
+Struttura ad alto livello della codebase:
+
+```
+GDRCD/
+├── index.php                     # Homepage anonima (pre-login)
+├── login.php / logout.php        # Autenticazione
+├── main.php                      # Entry point delle pagine autenticate
+├── popup.php                     # Dispatcher per i popup AJAX
+├── installer.php                 # Bootstrap del database
+├── config.inc.php                # Configurazione globale ($PARAMETERS)
+├── header.inc.php / footer.inc.php
+├── ref_header.inc.php            # Header con stato sessione
+│
+├── pages/                        # Viste richiamate via ?page=...
+│   ├── scheda.inc.php            #   scheda PG
+│   ├── servizi_*.inc.php         #   banca, mercato, gilde, esiti, ...
+│   ├── gestione_*.inc.php        #   pannello staff
+│   ├── chat/, forum/, messages/  #   moduli dedicati
+│   └── frame_*.inc.php           #   frame della UI multi-pannello
+│
+├── includes/                     # Core dell'applicazione
+│   ├── functions.inc.php         #   funzioni utility (DB, hash, filter)
+│   ├── csrf.inc.php              #   gestione token CSRF
+│   ├── icons.inc.php             #   helper rendering icone
+│   ├── corefunctions.js          #   utility JS condivise
+│   ├── PasswordHash.php          #   phpass legacy (compat. retroattiva)
+│   ├── DbMigration/              #   engine di migrazione del DB
+│   └── config-overrides.php      #   override DB (auto-generato in Docker)
+│
+├── layouts/                      # Shell di layout (colonne left/right/top/bottom)
+│
+├── themes/
+│   ├── tailwind/
+│   │   ├── input.css             #   sorgente del design system
+│   │   └── output.css            #   bundle generato
+│   ├── advanced/                 #   tema legacy (chat e main.css di fallback)
+│   └── homepage/                 #   asset della homepage
+│
+├── db_versions/                  # Migrazioni incrementali del DB
+│   └── YYYYMMDDHH_NomeClasse.php
+├── gdrcd_db.sql                  # Schema baseline per nuove installazioni
+│
+├── docker/                       # Script container (entrypoint, watcher)
+├── Dockerfile                    # Build multi-stage (tailwind + php)
+├── docker-compose.yml            # Stack produzione/base
+├── docker-compose.override.yml   # Override dev (bind mount + watcher)
+├── tailwind.config.js            # Token e content paths Tailwind
+├── vocabulary/                   # Stringhe localizzate (IT)
+├── plugins/                      # Estensioni opzionali
+└── docs/                         # Documentazione storica
+```
+
+Il routing è volutamente minimale: `main.php?page=<nome>` include il
+file `pages/<nome>.inc.php` dopo aver applicato controlli di sessione,
+permessi e CSRF.
+
+---
+
+## Design system (Tailwind)
+
+Il file `themes/tailwind/input.css` definisce i token (colori
+`gdrcd-bg`, `gdrcd-panel`, `gdrcd-accent`, ecc.) e una libreria di
+componenti utility `gdrcd-*` da utilizzare in modo coerente in tutta
+l'applicazione. Le classi più importanti:
+
+| Categoria   | Classi principali                                                  |
+|-------------|---------------------------------------------------------------------|
+| Layout      | `gdrcd-shell`, `gdrcd-container`, `gdrcd-container-sm`             |
+| Card        | `gdrcd-card`, `gdrcd-card-elev`, `gdrcd-card-header`, `gdrcd-card-body` |
+| Tipografia  | `gdrcd-h1`, `gdrcd-h2`, `gdrcd-h3`, `gdrcd-prose`, `gdrcd-muted`, `gdrcd-eyebrow` |
+| Bottoni     | `gdrcd-btn-primary`, `gdrcd-btn-secondary`, `gdrcd-btn-ghost`, `gdrcd-btn-danger` |
+| Form        | `gdrcd-label`, `gdrcd-input`, `gdrcd-select`, `gdrcd-textarea`, `gdrcd-help` |
+| Alert       | `gdrcd-alert-success`, `gdrcd-alert-error`, `gdrcd-alert-warning`, `gdrcd-alert-info` |
+| Badge       | `gdrcd-badge-neutral`, `gdrcd-badge-accent`, `gdrcd-badge-success`, `gdrcd-badge-error` |
+| Tabelle     | `gdrcd-table`                                                       |
+| Navigazione | `gdrcd-nav-list`                                                    |
+
+Ogni nuova pagina dovrebbe comporre la propria UI a partire da queste
+classi, evitando stili inline o CSS ad hoc; il tema `advanced/` resta
+caricato come fallback per la chat e per qualche schermata legacy non
+ancora migrata.
+
+---
+
+## Sicurezza
+
+Lo stato della sicurezza riflette il refactor in corso:
+
+- **Password**: hash `bcrypt` via `password_hash(PASSWORD_BCRYPT)`
+  (`gdrcd_password_hash`). La verifica (`gdrcd_password_verify`) è
+  compatibile sia col nuovo formato che con il vecchio `phpass`,
+  effettuando un **rehash trasparente** al primo login riuscito.
+- **CSRF**: token random in sessione generato in `includes/csrf.inc.php`
+  e validato fail-closed all'ingresso di `main.php`, `login.php` e
+  `popup.php` tramite `gdrcd_csrf_guard()`. Tutti i form devono
+  includere il campo nascosto generato da `gdrcd_csrf_field()`.
+- **Rate limit login**: tabella `login_attempts` (migrazione
+  `2026051112_GDRCDLoginAttempts`) registra i tentativi falliti per IP.
+  Soglia: 5 tentativi in 5 minuti, dopodiché il login viene bloccato
+  temporaneamente. Pulizia automatica ad ogni accesso riuscito.
+- **XSS**: output sempre passato per `gdrcd_filter('out', ...)` o
+  `htmlspecialchars()`. Le nuove pagine devono attenersi a questa regola.
+- **Sessione**: cookie `HttpOnly` impostato a livello `php.ini`
+  (`session.cookie_httponly=1` in `Dockerfile`).
+
+**Roadmap sicurezza**: completare la migrazione di tutte le query a
+prepared statement tramite gli helper `gdrcd_stmt`, `gdrcd_stmt_one`
+e `gdrcd_stmt_all` (vedi `CONTRIBUTING.md`).
+
+---
+
+## Migrazione database
+
+Lo schema iniziale è in `gdrcd_db.sql` e viene caricato solo per
+nuove installazioni. Tutte le evoluzioni successive avvengono come
+migrazioni incrementali in `db_versions/`, secondo il pattern di nome:
+
+```
+YYYYMMDDHH_NomeClasse.php
+```
+
+Esempi presenti:
+
+```
+2020072500_GDRCD551.php
+2021103018_GDRCD56.php
+2023021608_GDRCD5606.php
+2026051112_GDRCDLoginAttempts.php
+2026051113_GDRCDPerformanceIndexes.php
+```
+
+Ogni classe estende `DbMigration` ed implementa i metodi `up()` e
+`down()`. L'engine `DbMigrationEngine` viene invocato:
+
+- al primo avvio (`installer.php`)
+- ogni volta che la tabella di tracciamento `_gdrcd_db_versions` indica
+  che ci sono migrazioni non ancora applicate
+
+Le migrazioni vengono applicate dentro una transazione quando possibile;
+attenzione che le istruzioni DDL (CREATE/ALTER TABLE) provocano un
+commit implicito in MySQL/MariaDB, quindi il rollback ha effetti
+limitati su quel tipo di operazioni.
+
+Per aggiungere una migrazione:
+
+1. Creare un file `db_versions/YYYYMMDDHH_Nome.php`
+2. Definire una classe omonima che estende `DbMigration`
+3. Implementare `up()` (e idealmente `down()`)
+4. Riavviare il container `web` o richiamare manualmente l'aggiornamento
+
+---
+
+## Contribuire
+
+Le linee guida complete sono in [`CONTRIBUTING.md`](CONTRIBUTING.md).
+In breve:
+
+1. **Coordinarsi su GitHub**: prendere in carico solo issue libere
+   della milestone in corso e dichiarare la propria disponibilità
+   nel commento della issue.
+2. **Branch base**: lavorare su fork e branch dedicato; per la 5.7.0
+   il branch base obbligatorio è `dev57`.
+3. **Convenzione commit**: messaggi in italiano, sintetici e descrittivi.
+4. **Query sicure**: usare sempre `gdrcd_stmt` / `gdrcd_stmt_one` /
+   `gdrcd_stmt_all` per qualsiasi nuova query.
+5. **Lint**: prima della PR verificare almeno `php -l` sui file toccati.
+6. **CSS**: dopo modifiche al design system il container Tailwind
+   ricostruisce `output.css` automaticamente; commitare anche il
+   bundle aggiornato.
+7. **PR**: apri la pull request sul repo upstream linkando la issue
+   di riferimento e descrivendo le modifiche.
+
+Per discussioni rapide è disponibile il canale
+[Discord del progetto](https://discord.gg/zh69CDUf3V), ma ogni
+decisione operativa va riportata sulla issue per tracciabilità.
+
+---
+
+## Licenza
+
+GDRCD è distribuito sotto licenza
+**Creative Commons Attribuzione - Condividi allo stesso modo 3.0**
+(CC BY-SA 3.0). Testo completo della licenza:
+<http://creativecommons.org/licenses/by-sa/3.0/deed.it>.
+
+I termini specifici del progetto sono riportati in
+[`license.md`](license.md).
