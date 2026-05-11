@@ -449,9 +449,6 @@ $PARAMETERS['mode']['chat_from_bottom'] = 'OFF';
 $PARAMETERS['mode']['give_only_if_online'] = 'ON';
 //ON: gli oggetti dei personaggi possono essere ceduti fra loro solo se entrambi online e nella stessa locazione
 //OFF: gli oggetti dei personaggi possono essere ceduti fra loro anche se uno dei due non è online e indipendentemente dalla locazione
-$PARAMETERS['mode']['popup_choise'] = 'ON';
-//ON:nel modulo di login nella land mostra un checkbox che consente a scelta dell'utente di aprire il gdr in una pagina popup
-//OFF:il gdr si apre nella pagina completa del browser
 $PARAMETERS['mode']['alert_pm_via_pagetitle'] = 'ON';
 //ON:il titolo della pagina annuncerà l'arrivo di nuovi messaggi privati
 //OFF:il titolo della pagina non subirà alcun cambiamento

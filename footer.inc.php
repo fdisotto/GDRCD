@@ -22,12 +22,6 @@ if($PARAMETERS['mode']['alert_pm_via_pagetitle'] == 'ON') {
     echo '<script type="text/javascript" src="/includes/changetitle.js"></script>';
 
 }
-/** * Caricamento script per la scelta popup nel login
- * @author Blancks
- */
-if($PARAMETERS['mode']['popup_choise'] == 'ON') {
-    echo '<script type="text/javascript" src="/includes/popupchoise.js"></script>';
-}
 ?>
 
 <!--<script type="text/javascript">
