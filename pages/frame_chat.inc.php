@@ -61,7 +61,7 @@ $is_gm = ((int)$_SESSION['permessi'] >= GAMEMASTER);
         <!-- Chat output (popolato da includes/chat.js via fetch /api/chat.inc.php) -->
         <section class="gdrcd-card">
             <div id="pagina_chat"
-                 class="chat_box p-2 sm:p-4 min-h-[40vh] max-h-[65vh] overflow-y-auto overflow-x-hidden"
+                 class="chat_box p-2 sm:p-4 h-[65vh] overflow-y-auto overflow-x-hidden"
                  data-poll-url="/api/chat.inc.php"
                  data-poll-interval="4000"
                  data-from-bottom="<?= (($PARAMETERS['mode']['chat_from_bottom'] ?? 'OFF') === 'ON') ? '1' : '0' ?>"
