@@ -45,8 +45,8 @@ $stat_month = (int)gdrcd_query(gdrcd_query(
 <?php if ($can_register): ?>
 <!-- Azioni rapide -->
 <div class="grid grid-cols-1 md:grid-cols-[1fr_2fr] gap-3">
-    <div class="gdrcd-card flex items-center justify-between gap-3 p-4">
-        <div class="min-w-0">
+    <div class="gdrcd-card flex flex-wrap items-center justify-between gap-3 p-4">
+        <div class="min-w-0 flex-1">
             <div class="font-display text-base text-gdrcd-text">Registra giocata</div>
             <p class="text-xs text-gdrcd-text-soft">Inserisci role del mese in corso non segnalata.</p>
         </div>
@@ -79,7 +79,7 @@ $stat_month = (int)gdrcd_query(gdrcd_query(
             </label>
             <input type="hidden" name="op" value="search">
             <input type="hidden" name="pg" value="<?= htmlspecialchars($pg) ?>">
-            <button type="submit" class="gdrcd-btn-primary shrink-0" title="Cerca">
+            <button type="submit" class="gdrcd-btn-primary shrink-0 w-full md:w-auto" title="Cerca">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z"/></svg>
                 Cerca
             </button>

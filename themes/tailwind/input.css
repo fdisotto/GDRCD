@@ -31,9 +31,9 @@
                shadow-gdrcd-card overflow-hidden;
     }
     .gdrcd-card-elev { @apply gdrcd-card shadow-gdrcd-elev; }
-    .gdrcd-card-body  { @apply p-6 md:p-8; }
+    .gdrcd-card-body  { @apply p-4 sm:p-6 md:p-8; }
     .gdrcd-card-header {
-        @apply px-6 md:px-8 py-4 border-b border-gdrcd-border bg-gdrcd-panel-alt;
+        @apply px-4 sm:px-6 md:px-8 py-4 border-b border-gdrcd-border bg-gdrcd-panel-alt;
     }
 
     /* ---------- Typography ---------- */
@@ -224,16 +224,22 @@
 
     /* ---------- Chat (rendered via iframe in #pagina_chat) ---------- */
     #pagina_chat {
-        @apply text-sm text-gdrcd-text-soft leading-relaxed;
+        @apply text-sm text-gdrcd-text-soft leading-relaxed break-words;
     }
     #pagina_chat > div[class^="chat_row_"] {
         @apply py-1.5 px-1 border-b border-gdrcd-border last:border-0
-               flex flex-wrap items-center gap-x-1.5 gap-y-1;
+               flex flex-wrap items-center gap-x-1.5 gap-y-1 min-w-0;
     }
     #pagina_chat .chat_avatar {
         @apply rounded-full object-cover border border-gdrcd-border shrink-0 self-center;
-        width: 2.5rem !important;
-        height: 2.5rem !important;
+        width: 2rem !important;
+        height: 2rem !important;
+    }
+    @screen sm {
+        #pagina_chat .chat_avatar {
+            width: 2.5rem !important;
+            height: 2.5rem !important;
+        }
     }
     #pagina_chat .chat_time {
         @apply text-xs text-gdrcd-muted shrink-0 tabular-nums self-center;
@@ -264,11 +270,16 @@
         @apply w-4 h-4 rounded inline-block align-middle;
     }
     #pagina_chat .chat_img {
-        @apply max-w-xs rounded border border-gdrcd-border;
+        @apply max-w-full sm:max-w-xs h-auto rounded border border-gdrcd-border;
     }
     /* Tipi specifici (azione, sussurro, master, narrazione, immagine) */
     #pagina_chat .chat_row_A { @apply italic; }
-    #pagina_chat .chat_row_S { @apply text-gdrcd-muted text-xs italic; }
+    #pagina_chat .chat_row_S {
+        @apply italic text-gdrcd-text-soft bg-gdrcd-panel-alt/40
+               border-l-2 border-gdrcd-accent/40 pl-2 rounded-r;
+    }
+    #pagina_chat .chat_row_S .chat_name { @apply text-gdrcd-accent/80 font-medium; }
+    #pagina_chat .chat_row_S .chat_msg  { @apply text-gdrcd-text-soft; }
     #pagina_chat .chat_row_M { @apply bg-gdrcd-accent-soft/30 px-3 rounded-md justify-center text-center; }
     #pagina_chat .chat_row_N { @apply text-gdrcd-text-soft; }
     #pagina_chat .chat_row_I { @apply justify-center; }

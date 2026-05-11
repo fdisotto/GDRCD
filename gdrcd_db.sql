@@ -176,7 +176,8 @@ CREATE TABLE IF NOT EXISTS `chat` (
   `tipo` varchar(255) DEFAULT NULL,
   `testo` text,
   PRIMARY KEY (`id`),
-  KEY `Stanza` (`stanza`)
+  KEY `Stanza` (`stanza`),
+  KEY `idx_chat_stanza_ora` (`stanza`,`ora`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
@@ -216,7 +217,8 @@ CREATE TABLE IF NOT EXISTS `clgpersonaggiooggetto` (
   `cariche` int NOT NULL DEFAULT '-1',
   `commento` varchar(255) DEFAULT NULL,
   `posizione` int NOT NULL DEFAULT '0',
-  PRIMARY KEY (`nome`,`id_oggetto`)
+  PRIMARY KEY (`nome`,`id_oggetto`),
+  KEY `idx_clgpgoggetto_nome_posizione` (`nome`,`posizione`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
@@ -228,7 +230,8 @@ CREATE TABLE IF NOT EXISTS `clgpersonaggiooggetto` (
 CREATE TABLE IF NOT EXISTS `clgpersonaggioruolo` (
   `personaggio` varchar(255) NOT NULL,
   `id_ruolo` int NOT NULL DEFAULT '0',
-  `scadenza` date NOT NULL DEFAULT '2010-01-01'
+  `scadenza` date NOT NULL DEFAULT '2010-01-01',
+  KEY `idx_clgpgruolo_personaggio` (`personaggio`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
@@ -377,7 +380,8 @@ CREATE TABLE IF NOT EXISTS `log` (
   `data_evento` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `codice_evento` varchar(255) NOT NULL DEFAULT '',
   `descrizione_evento` varchar(255) NOT NULL DEFAULT '',
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  KEY `idx_log_pg_evento_data` (`nome_interessato`,`codice_evento`,`data_evento`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
@@ -476,7 +480,8 @@ CREATE TABLE IF NOT EXISTS `messaggi` (
   `testo` text,
   PRIMARY KEY (`id`),
   KEY `destinatario` (`destinatario`),
-  KEY `letto` (`letto`)
+  KEY `letto` (`letto`),
+  KEY `idx_messaggi_destinatario_spedito` (`destinatario`,`spedito`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
@@ -592,7 +597,8 @@ CREATE TABLE IF NOT EXISTS `personaggio` (
   `posizione` int NOT NULL DEFAULT '1',
   PRIMARY KEY (`nome`),
   KEY `IDRazza` (`id_razza`),
-  KEY `Esilio` (`esilio`)
+  KEY `Esilio` (`esilio`),
+  KEY `idx_personaggio_ultimo_refresh` (`ultimo_refresh`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 --

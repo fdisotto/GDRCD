@@ -94,7 +94,7 @@ $lbl_s = $MESSAGE['interface']['sheet'];
     endif; ?>
 
     <header class="space-y-2">
-        <h2 class="gdrcd-h1">
+        <h2 class="gdrcd-h1 break-words">
             <?= gdrcd_filter('out', $personaggio['nome']) ?>
             <?php if (!empty($personaggio['cognome'])): ?>
                 <span class="text-gdrcd-accent"><?= gdrcd_filter('out', $personaggio['cognome']) ?></span>
@@ -134,7 +134,7 @@ $lbl_s = $MESSAGE['interface']['sheet'];
             </div>
         </section>
 
-        <section class="space-y-4">
+        <section class="space-y-4 min-w-0">
             <?php
             $rows = [];
 

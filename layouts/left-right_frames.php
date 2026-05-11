@@ -21,17 +21,17 @@ $me = htmlspecialchars($_SESSION['login'] ?? '');
 
 <header class="gdrcd-topbar">
     <div class="gdrcd-topbar-inner">
-        <div>
-            <h1 class="gdrcd-brand">
+        <div class="min-w-0">
+            <h1 class="gdrcd-brand break-words">
                 <a href="main.php"><?= htmlspecialchars($PARAMETERS['info']['site_name']) ?></a>
             </h1>
             <?php if ($me !== ''): ?>
-                <div class="gdrcd-brand-subtitle">
+                <div class="gdrcd-brand-subtitle break-words">
                     Bentornato, <span class="text-gdrcd-text font-medium"><?= $me ?></span>
                 </div>
             <?php endif; ?>
         </div>
-        <div class="flex items-center gap-2">
+        <div class="flex flex-wrap items-center gap-2">
             <?php if ($me !== ''): ?>
             <a href="main.php?page=scheda&pg=<?= urlencode($_SESSION['login']) ?>" class="gdrcd-btn-secondary">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
@@ -46,7 +46,7 @@ $me = htmlspecialchars($_SESSION['login'] ?? '');
     </div>
 </header>
 
-<main class="flex-1 w-full px-4 md:px-6 py-6">
+<main class="flex-1 w-full px-3 sm:px-4 md:px-6 py-4 sm:py-6">
     <div class="grid gap-6
                 <?= $has_left && $has_right ? 'lg:grid-cols-[16rem_minmax(0,1fr)_16rem]' : '' ?>
                 <?= $has_left && !$has_right ? 'lg:grid-cols-[16rem_minmax(0,1fr)]'      : '' ?>

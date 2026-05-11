@@ -59,7 +59,7 @@ $is_gm = ((int)$_SESSION['permessi'] >= GAMEMASTER);
 
         <!-- Chat output (popolato dal JS via iframe) -->
         <section class="gdrcd-card">
-            <div id="pagina_chat" class="chat_box p-4 min-h-[40vh] max-h-[65vh] overflow-y-auto"></div>
+            <div id="pagina_chat" class="chat_box p-2 sm:p-4 min-h-[40vh] max-h-[65vh] overflow-y-auto overflow-x-hidden"></div>
         </section>
 
         <!-- Form invio messaggio -->
@@ -67,8 +67,8 @@ $is_gm = ((int)$_SESSION['permessi'] >= GAMEMASTER);
             <div class="gdrcd-card-body space-y-4">
                 <form action="pages/chat.inc.php?ref=10&chat=yes" method="post" target="chat_frame" id="chat_form_messages" class="space-y-3">
                     <?= gdrcd_csrf_field() ?>
-                    <div class="grid grid-cols-1 md:grid-cols-[10rem_12rem_minmax(0,1fr)_auto] gap-3 items-end">
-                        <div>
+                    <div class="grid grid-cols-2 md:grid-cols-[10rem_12rem_minmax(0,1fr)_auto] gap-2 sm:gap-3 items-end">
+                        <div class="min-w-0">
                             <label class="gdrcd-label" for="type"><?= gdrcd_filter('out', $MESSAGE['chat']['type']['info']) ?></label>
                             <select class="gdrcd-select" name="type" id="type">
                                 <option value="0"><?= gdrcd_filter('out', $MESSAGE['chat']['type'][0]) ?></option>
@@ -85,15 +85,15 @@ $is_gm = ((int)$_SESSION['permessi'] >= GAMEMASTER);
                                 <?php endif; ?>
                             </select>
                         </div>
-                        <div>
+                        <div class="min-w-0">
                             <label class="gdrcd-label" for="tag">Tag</label>
                             <input class="gdrcd-input" type="text" name="tag" id="tag" placeholder="dst / png"/>
                         </div>
-                        <div>
+                        <div class="col-span-2 md:col-span-1 min-w-0">
                             <label class="gdrcd-label" for="message">Messaggio</label>
                             <input class="gdrcd-input" type="text" name="message" id="message" autocomplete="off"/>
                         </div>
-                        <div>
+                        <div class="col-span-2 md:col-span-1">
                             <input type="hidden" name="op" value="new_chat_message"/>
                             <button type="submit" class="gdrcd-btn-primary w-full">
                                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
