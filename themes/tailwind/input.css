@@ -169,7 +169,7 @@
         @apply bg-gdrcd-panel border-b border-gdrcd-border;
     }
     .gdrcd-topbar-inner {
-        @apply max-w-7xl mx-auto px-4 md:px-6 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4;
+        @apply w-full px-4 md:px-6 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4;
     }
     .gdrcd-brand {
         @apply font-display text-2xl md:text-3xl font-bold tracking-wide text-gdrcd-text;
@@ -181,7 +181,7 @@
         @apply mt-12 border-t border-gdrcd-border bg-gdrcd-panel-alt;
     }
     .gdrcd-page-footer-inner {
-        @apply max-w-7xl mx-auto px-4 md:px-6 py-6 text-xs text-gdrcd-muted leading-relaxed text-center;
+        @apply w-full px-4 md:px-6 py-6 text-xs text-gdrcd-muted leading-relaxed text-center;
     }
     .gdrcd-page-footer a { @apply gdrcd-link; }
 

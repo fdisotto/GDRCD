@@ -26,7 +26,7 @@ $result = gdrcd_query($query, 'result');
     </div>
 </header>
 
-<main class="flex-1 w-full max-w-5xl mx-auto px-4 md:px-6 py-8">
+<main class="flex-1 w-full px-4 md:px-6 py-8">
     <div class="space-y-6">
 
         <header class="space-y-2">

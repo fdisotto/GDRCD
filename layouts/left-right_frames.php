@@ -44,7 +44,7 @@ $me = htmlspecialchars($_SESSION['login'] ?? '');
     </div>
 </header>
 
-<main class="flex-1 w-full max-w-7xl mx-auto px-4 md:px-6 py-6">
+<main class="flex-1 w-full px-4 md:px-6 py-6">
     <div class="grid gap-6
                 <?= $has_left && $has_right ? 'lg:grid-cols-[16rem_minmax(0,1fr)_16rem]' : '' ?>
                 <?= $has_left && !$has_right ? 'lg:grid-cols-[16rem_minmax(0,1fr)]'      : '' ?>

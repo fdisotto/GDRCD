@@ -59,7 +59,7 @@ $users = gdrcd_query("SELECT COUNT(nome) AS online FROM personaggio WHERE ora_en
     </div>
 </header>
 
-<main class="flex-1 w-full max-w-7xl mx-auto px-4 md:px-6 py-8">
+<main class="flex-1 w-full px-4 md:px-6 py-8">
     <div class="grid grid-cols-1 lg:grid-cols-[18rem_minmax(0,1fr)] gap-6">
 
         <aside class="space-y-4">

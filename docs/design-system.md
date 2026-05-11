@@ -69,15 +69,27 @@ Sempre preferire componenti a combinazioni utility ad-hoc. Nuovo componente → 
 
 ### 3.1 Layout
 
+**App shell (pagine principali)** — usano l'intera larghezza dello schermo. Top bar, contenuto e footer NON applicano max-width: i contenuti respirano fino ai bordi (solo padding orizzontale).
+
+```html
+<header class="gdrcd-topbar"><div class="gdrcd-topbar-inner">...</div></header>
+<main class="flex-1 w-full px-4 md:px-6 py-6">
+    <!-- contenuto, eventualmente grid sidebar+main -->
+</main>
+<footer class="gdrcd-page-footer"><div class="gdrcd-page-footer-inner">...</div></footer>
+```
+
+**Schermate centrate stretto** (installer, sessione scaduta, conferme post-azione) — usano `gdrcd-shell` con `gdrcd-container` (max-w 3xl) o `gdrcd-container-sm` (max-w xl).
+
 ```html
 <div class="gdrcd-shell">
-    <div class="gdrcd-container">
+    <div class="gdrcd-container-sm">
         ...
     </div>
 </div>
 ```
 
-`gdrcd-shell` impone min-height schermo, sfondo, centramento. `gdrcd-container` (max-w 3xl) o `gdrcd-container-sm` (max-w xl).
+`gdrcd-shell` impone min-height schermo, sfondo e centramento. Da usare solo per pagine "card centrata".
 
 ### 3.2 Card
 
