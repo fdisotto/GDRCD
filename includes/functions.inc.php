@@ -1022,3 +1022,57 @@ function gdrcd_brute_debug($args)
     }
     die('FINE');
 }
+
+/**
+ * Conta i tentativi di login falliti dall'IP indicato nell'intervallo di minuti specificato.
+ * Usato per il rate limiting del login per prevenire attacchi di brute-force.
+ *
+ * @param string $ip      Indirizzo IP da controllare (tipicamente $_SERVER['REMOTE_ADDR']).
+ * @param int    $minutes Finestra temporale in minuti su cui contare i tentativi falliti.
+ * @return int Numero di tentativi falliti nell'intervallo.
+ */
+function gdrcd_login_attempts_count($ip, $minutes = 5)
+{
+    $ip = gdrcd_filter('in', (string)$ip);
+    $minutes = (int)$minutes;
+    if ($minutes <= 0) {
+        $minutes = 5;
+    }
+
+    $row = gdrcd_query("SELECT COUNT(*) AS n FROM login_attempts WHERE ip = '" . $ip . "' AND success = 0 AND attempted_at >= (NOW() - INTERVAL " . $minutes . " MINUTE)");
+    return (int)$row['n'];
+}
+
+/**
+ * Registra un tentativo di login (riuscito o fallito) nella tabella login_attempts.
+ *
+ * @param string      $ip       Indirizzo IP del tentativo.
+ * @param string|null $username Username tentato, oppure null se non disponibile.
+ * @param bool        $success  True se il login è riuscito, false altrimenti.
+ * @return void
+ */
+function gdrcd_login_attempt_log($ip, $username, $success)
+{
+    $ip = gdrcd_filter('in', (string)$ip);
+    $success_flag = $success ? 1 : 0;
+
+    if ($username === null || $username === '') {
+        gdrcd_query("INSERT INTO login_attempts (ip, username, attempted_at, success) VALUES ('" . $ip . "', NULL, NOW(), " . $success_flag . ")");
+    } else {
+        $username = gdrcd_filter('in', (string)$username);
+        gdrcd_query("INSERT INTO login_attempts (ip, username, attempted_at, success) VALUES ('" . $ip . "', '" . $username . "', NOW(), " . $success_flag . ")");
+    }
+}
+
+/**
+ * Rimuove i tentativi di login più vecchi di un'ora per l'IP indicato.
+ * Operazione di cleanup leggera, tipicamente chiamata dopo un login riuscito.
+ *
+ * @param string $ip Indirizzo IP per cui ripulire la cronologia.
+ * @return void
+ */
+function gdrcd_login_attempts_cleanup($ip)
+{
+    $ip = gdrcd_filter('in', (string)$ip);
+    gdrcd_query("DELETE FROM login_attempts WHERE ip = '" . $ip . "' AND attempted_at < (NOW() - INTERVAL 1 HOUR)");
+}

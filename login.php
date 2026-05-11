@@ -49,6 +49,18 @@ $login1=$Maiusc.substr($login1,1);
  */
 $login1 = ucwords(strtolower(trim($login1)));
 
+/*Rate limiting: blocchiamo i tentativi di brute force prima ancora di verificare le credenziali*/
+$rate_limit_ip = $_SERVER['REMOTE_ADDR'];
+$rate_limit_failures = gdrcd_login_attempts_count($rate_limit_ip, 5);
+if ($rate_limit_failures >= 5) {
+    /*Registriamo anche questo tentativo bloccato come fallimento, così la finestra rimane attiva*/
+    gdrcd_login_attempt_log($rate_limit_ip, $login1, false);
+    echo '<div class="error_box"><h2 class="error_major">Troppi tentativi falliti. Riprova tra qualche minuto.</h2></div>';
+    /*Registro l'evento (Tentativo di connessione bloccato per rate limit)*/
+    gdrcd_query("INSERT INTO log (nome_interessato, autore, data_evento, codice_evento ,descrizione_evento) VALUES ('".gdrcd_filter('in', $login1)."', 'Login_procedure', NOW(), ".BLOCKED.", '".$_SERVER['REMOTE_ADDR']." rate_limit')");
+    exit();
+}
+
 /*Carico dal database il profilo dell'account (personaggio)*/
 $record = gdrcd_query("SELECT personaggio.pass, personaggio.nome, personaggio.cognome, personaggio.permessi, personaggio.sesso, personaggio.ultima_mappa, personaggio.ultimo_luogo, personaggio.id_razza, personaggio.blocca_media, personaggio.ora_entrata, personaggio.ora_uscita, personaggio.ultimo_refresh, razza.sing_m, razza.sing_f, razza.icon AS url_img_razza FROM personaggio LEFT JOIN razza ON personaggio.id_razza = razza.id_razza WHERE nome = '".gdrcd_filter('in', $login1)."' LIMIT 1");
 
@@ -111,6 +123,10 @@ if( ! empty($record) and gdrcd_password_verify($pass1, $record['pass']) && ($rec
 
     /*Registro l'evento (Avvenuto login)*/
     gdrcd_query("INSERT INTO log (nome_interessato, autore, data_evento, codice_evento, descrizione_evento) VALUES ('".gdrcd_filter('in', $_SESSION['login'])."','".$_SERVER['REMOTE_ADDR']."', NOW(), ".LOGGEDIN." ,'".$_SERVER['REMOTE_ADDR']."')");
+
+    /*Rate limiting: tracciamo il login riuscito e ripuliamo i tentativi più vecchi di un'ora per questo IP*/
+    gdrcd_login_attempt_log($_SERVER['REMOTE_ADDR'], $_SESSION['login'], true);
+    gdrcd_login_attempts_cleanup($_SERVER['REMOTE_ADDR']);
 } elseif(strtotime($record['ora_entrata']) > strtotime($record['ora_uscita']) || (strtotime($record['ultimo_refresh']) + 300) > time()) {
     /*Se la postazione è stata esclusa*/
     echo '<div class="error_box"><h2 class="error_major">'.$MESSAGE['warning']['double_connection'].'</h2></div>';
@@ -124,6 +140,9 @@ if( ! empty($record) and gdrcd_password_verify($pass1, $record['pass']) && ($rec
     if(($login1 != '') && ($pass1 != '')) {
         /*Registro l'evento (Login errato)*/
         gdrcd_query("INSERT INTO log (nome_interessato, autore, data_evento, codice_evento, descrizione_evento) VALUES ('".gdrcd_filter('in', $_SESSION['login'])."','".$host."', NOW(), ".ERRORELOGIN." ,'".$_SERVER['REMOTE_ADDR']."')");
+
+        /*Rate limiting: registriamo il tentativo fallito per la finestra di brute-force protection*/
+        gdrcd_login_attempt_log($_SERVER['REMOTE_ADDR'], $login1, false);
 
         $record = gdrcd_query("SELECT count(*) FROM log WHERE descrizione_evento = '".$_SERVER['REMOTE_ADDR']."' AND codice_evento = ".ERRORELOGIN." AND DATE_ADD(data_evento, INTERVAL 60 MINUTE) > NOW()");
         /*Se ho tentato 10 login fallendo nel giro di un ora*/
