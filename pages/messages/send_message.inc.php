@@ -1,113 +1,111 @@
 <?php
-
 /**
- * In base alla tipologia di richiesta, eseguo le relative operazioni di invio messaggio
- *
- * La tipologia di richiesta viene determinata all'interno di $_POST['multipli'],
- * per aggiungere nuove richieste è sufficiente integrare un nuovo caso nello switch
+ * Handler POST: invia un messaggio (privato, ai presenti o broadcast).
  */
 
-// Ottengo la richiesta
-$opRequest = gdrcd_filter('get', $_POST['multipli']);
+$lbl = $MESSAGE['interface']['messages'];
+$me  = gdrcd_filter('in', $_SESSION['login']);
 
-switch($opRequest) {
-    /**
-     * INVIO MESSAGGIO STANDARD
-     * In caso di invio messaggio a destinatari multipli, occorre separare i destinatari da virgola
-     */
-    default:
-        // Ottengo i destinatari
-        $destinatari = explode(',', $_POST['destinatario']);
-        // Rimuovo eventuale sporcizia nella scrittura dei nomi dei Personaggi
-        $destinatari = array_map('trim', $destinatari);
+$opRequest    = gdrcd_filter('get', $_POST['multipli'] ?? '');
+$tipo_val     = gdrcd_filter('in',  $_POST['tipo']     ?? '');
+$oggetto_val  = gdrcd_filter('in',  $_POST['oggetto']  ?? '');
+$testo_val    = gdrcd_filter('in',  $_POST['testo']    ?? '');
 
-        /**
-         * Controllo che i destinatari siano effettivamente dei personaggi
-         * I personaggi vengono concatenati nel seguente formato:
-         *
-         * 'NOMEPERSONAGGIO','NOMEPERSONAGGIO2'
-         *
-         * in modo che poi possano essere inseriti nel controllo IN.
-         * Aggiungo che il campo personaggio.nome non sia NULL, per evitare possibili errori.
-         */
-        //
-        $destinatariCheck = "'".implode("','", $destinatari)."'";
-        $result = gdrcd_query("SELECT nome FROM personaggio WHERE nome IN (" . $destinatariCheck . ") AND nome IS NOT NULL GROUP BY nome ", 'result');
-        $sended = gdrcd_query($result,'num_rows');
-        $num_dest = count($destinatari);
+$success_alert = function (string $msg) {
+    return '<div class="gdrcd-alert-success">'
+         . '<svg class="w-5 h-5 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>'
+         . '<div>' . $msg . '</div></div>';
+};
+$warn_alert = function (string $msg) {
+    return '<div class="gdrcd-alert-warning">'
+         . '<svg class="w-5 h-5 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4c-.77-1.33-2.69-1.33-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3z"/></svg>'
+         . '<div>' . $msg . '</div></div>';
+};
 
-        $not_all_sended = ($num_dest > $sended);
+$out = '<div class="space-y-3">';
 
-        // Se sono stati individuati record,procedo
-        if(gdrcd_query($result, 'num_rows') > 0){
-            // In caso di segnalazione
-            if (gdrcd_filter('get', $_POST['url']) != "") {
-                $_POST['testo'] = $_SESSION['login'] . ' ti ha segnalato questo [url=' . $_POST['url'] . ']link[/url].';
-            }
-
-            // Scorro tutti i personaggi
-            while ($record = gdrcd_query($result, 'fetch')) {
-                // Creo l'inserimento
-                $queryInsert[] = "('" . $_SESSION['login'] . "', '" . $record['nome'] . "', NOW(), '" . gdrcd_filter('in', $_POST['tipo']) . "', '" . gdrcd_filter('in', $_POST['oggetto']) . "', '" . gdrcd_filter('in', $_POST['testo']) . "')";
-            }
-
-            // Se ho costruito delle query di inserimento, prevedo la query
-            if(isset($queryInsert)){
-                $query = gdrcd_query("INSERT INTO messaggi (mittente, destinatario, spedito, tipo, oggetto, testo) VALUES ".implode(",", $queryInsert));
-                $query = gdrcd_query("INSERT INTO backmessaggi (mittente, destinatario, spedito, tipo, oggetto, testo) VALUES ".implode(",", $queryInsert));
-            }
-
-
-            echo '<div class="warning">'.$PARAMETERS['names']['private_message']['sing'] . $MESSAGE['interface']['messages']['sent'].'</div>';
-        }
-        else{
-            echo '<div class="warning">Attenzione: Non hai selezionato nessun destinatario.</div>';
-        }
-
-        if($not_all_sended && ($num_dest > 0) ) {
-            echo '<div class="warning">Attenzione: Alcuni dei destinatari selezionati sono inesistenti.</div>';
-        }
-
-        break;
-
-    /**
-     * INVIO MESSAGGIO A TUTTI I PRESENTI
-     */
+switch ($opRequest) {
     case 'presenti':
-        // Ottengo i presenti correnti
-        $query = "SELECT personaggio.nome 
-                    FROM personaggio 
-                    WHERE personaggio.ora_entrata > personaggio.ora_uscita 
-                      AND DATE_ADD(personaggio.ultimo_refresh, INTERVAL 4 MINUTE) > NOW()";
-        $result = gdrcd_query($query, 'result');
-
-        // Scorro tutti i presenti individuati
-        while ($record = gdrcd_query($result, 'fetch')) {
-            gdrcd_query("INSERT INTO messaggi (mittente, destinatario, spedito, tipo, oggetto, testo) 
-                                VALUES ('" . $_SESSION['login'] . "', '" . $record['nome'] . "', NOW(), '" . gdrcd_filter('in', $_POST['tipo']) . "', '" . gdrcd_filter('in', $_POST['oggetto']) . "', '" . gdrcd_filter('in', $_POST['testo']) . "')");
+        $result = gdrcd_query(
+            "SELECT nome FROM personaggio
+             WHERE ora_entrata > ora_uscita
+               AND DATE_ADD(ultimo_refresh, INTERVAL 4 MINUTE) > NOW()",
+            'result'
+        );
+        while ($row = gdrcd_query($result, 'fetch')) {
+            gdrcd_query(
+                "INSERT INTO messaggi (mittente, destinatario, spedito, tipo, oggetto, testo) VALUES ("
+                . "'" . $me . "',"
+                . "'" . gdrcd_filter('in', $row['nome']) . "',"
+                . "NOW(), '" . $tipo_val . "', '" . $oggetto_val . "', '" . $testo_val . "')"
+            );
         }
-
-        echo '<div class="warning">'.$PARAMETERS['names']['private_message']['sing'] . $MESSAGE['interface']['messages']['sent'].'</div>';
+        $out .= $success_alert(gdrcd_filter('out', $PARAMETERS['names']['private_message']['sing'] . $lbl['sent']));
         break;
 
-
-    /**
-     * INVIO MESSAGGIO A TUTTI
-     */
     case 'broadcast':
-        // Controllo sui permessi dell'utente
-        if($_SESSION['permessi'] >= MODERATOR) {
-            // Ottengo tutti i personaggi e li scorro per l'invio del messaggio
+        if ($_SESSION['permessi'] >= MODERATOR) {
             $query = gdrcd_query("SELECT nome FROM personaggio", 'result');
             while ($row = gdrcd_query($query, 'fetch')) {
-                // Creo l'inserimento
-                gdrcd_query("INSERT INTO messaggi (mittente, destinatario, spedito, tipo, oggetto, testo) 
-                                    VALUES ('" . $_SESSION['login'] . "', '" . $row['nome'] . "' , NOW(), '" . gdrcd_filter('in', $_POST['tipo']) . "', '" . gdrcd_filter('in', $_POST['oggetto']) . "', '" . gdrcd_filter('in', $_POST['testo']) . "')");
+                gdrcd_query(
+                    "INSERT INTO messaggi (mittente, destinatario, spedito, tipo, oggetto, testo) VALUES ("
+                    . "'" . $me . "',"
+                    . "'" . gdrcd_filter('in', $row['nome']) . "',"
+                    . "NOW(), '" . $tipo_val . "', '" . $oggetto_val . "', '" . $testo_val . "')"
+                );
+            }
+            $out .= $success_alert(gdrcd_filter('out', $PARAMETERS['names']['private_message']['sing'] . $lbl['sent']));
+        }
+        break;
+
+    default:
+        $destinatari = array_map('trim', explode(',', $_POST['destinatario'] ?? ''));
+        $destinatari = array_filter($destinatari, fn($v) => $v !== '');
+        $num_dest    = count($destinatari);
+
+        $destinatariCheck = "'" . implode("','", array_map(fn($v) => gdrcd_filter('in', $v), $destinatari)) . "'";
+
+        $result = gdrcd_query(
+            "SELECT nome FROM personaggio
+             WHERE nome IN (" . $destinatariCheck . ")
+               AND nome IS NOT NULL
+             GROUP BY nome",
+            'result'
+        );
+        $sended = (int)gdrcd_query($result, 'num_rows');
+        $not_all_sended = ($num_dest > $sended);
+
+        if ($sended > 0) {
+            if (!empty($_POST['url'])) {
+                $testo_val = gdrcd_filter('in', $me . ' ti ha segnalato questo [url=' . $_POST['url'] . ']link[/url].');
             }
 
-            echo '<div class="warning">'.$PARAMETERS['names']['private_message']['sing'] . $MESSAGE['interface']['messages']['sent'].'</div>';
+            $queryInsert = [];
+            while ($record = gdrcd_query($result, 'fetch')) {
+                $queryInsert[] = "('" . $me . "',"
+                              . "'" . gdrcd_filter('in', $record['nome']) . "',"
+                              . "NOW(), '" . $tipo_val . "', '" . $oggetto_val . "', '" . $testo_val . "')";
+            }
+            if ($queryInsert) {
+                $values = implode(',', $queryInsert);
+                gdrcd_query("INSERT INTO messaggi    (mittente, destinatario, spedito, tipo, oggetto, testo) VALUES " . $values);
+                gdrcd_query("INSERT INTO backmessaggi (mittente, destinatario, spedito, tipo, oggetto, testo) VALUES " . $values);
+            }
+
+            $out .= $success_alert(gdrcd_filter('out', $PARAMETERS['names']['private_message']['sing'] . $lbl['sent']));
+        } else {
+            $out .= $warn_alert('Non hai selezionato nessun destinatario valido.');
+        }
+
+        if ($not_all_sended && $num_dest > 0) {
+            $out .= $warn_alert('Alcuni dei destinatari selezionati sono inesistenti.');
         }
         break;
 }
 
-?>
+$out .= '<div><a href="main.php?page=messages_center&offset=0" class="gdrcd-btn-ghost">'
+     .  '<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>'
+     .  gdrcd_filter('out', $lbl['go_back']) . '</a></div>';
+
+$out .= '</div>';
+echo $out;
