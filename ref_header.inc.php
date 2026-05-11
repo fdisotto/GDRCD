@@ -42,7 +42,7 @@ if((gdrcd_filter_get($_REQUEST['chat']) == 'yes') && (empty($_SESSION['login']) 
                 $rank = gdrcd_query("SELECT grado FROM clgpersonaggioabilita WHERE id_abilita=".gdrcd_filter('num', $_POST['id_ab'])." AND nome='".$_SESSION['login']."' LIMIT 1");
 
                 if($PARAMETERS['mode']['dices'] == 'ON') {
-                    mt_srand((double) microtime() * 1000000);
+                    mt_srand((float) microtime() * 1000000);
                     $dice=($_POST['dice']!='no_dice')?$_POST['dice']:'1';
 
                    $die = mt_rand(1, (int) $dice);
@@ -66,7 +66,7 @@ if((gdrcd_filter_get($_REQUEST['chat']) == 'yes') && (empty($_SESSION['login']) 
         } elseif( (gdrcd_filter('get', $_POST['id_stats']) != 'no_stats') && (gdrcd_filter('get', $_POST['dice']) != 'no_dice') && !empty($_POST['id_stats']) ) {
 
 
-            mt_srand((double) microtime() * 1000000);
+            mt_srand((float) microtime() * 1000000);
             $die = mt_rand(1, gdrcd_filter('num', (int) $_POST['dice']));
 
             $id_stats = explode('_', $_POST['id_stats']);
@@ -82,7 +82,7 @@ if((gdrcd_filter_get($_REQUEST['chat']) == 'yes') && (empty($_SESSION['login']) 
             gdrcd_query("INSERT INTO chat ( stanza, imgs, mittente, destinatario, ora, tipo, testo ) VALUES (".$_SESSION['luogo'].", '".$_SESSION['sesso'].";".$_SESSION['img_razza']."', '".$_SESSION['login']."', '', NOW(), 'C', '{$testo}')");
 
         } elseif( (gdrcd_filter('get', $_POST['dice']) != 'no_dice') && !empty($_POST['dice']) ){
-            mt_srand((double) microtime() * 1000000);
+            mt_srand((float) microtime() * 1000000);
             $die = mt_rand(1, gdrcd_filter('num', $_POST['dice']));
 
             gdrcd_query("INSERT INTO chat ( stanza, imgs, mittente, destinatario, ora, tipo, testo ) VALUES (".$_SESSION['luogo'].", '".$_SESSION['sesso'].";".$_SESSION['img_razza']."', '".$_SESSION['login']."', '', NOW(), 'D', '".$_SESSION['login'].' '.gdrcd_filter('in', $MESSAGE['chat']['commands']['die']['cast']).gdrcd_filter('num', $_POST['dice']).': '.gdrcd_filter('in', $MESSAGE['chat']['commands']['die']['sum']).' '.gdrcd_filter('num', $die)."')");
