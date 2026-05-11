@@ -29,8 +29,7 @@ if ($current_mappa > 0) {
         $cur = gdrcd_query(
             "SELECT id_mappa, id_mappa_collegata
              FROM mappa
-             WHERE id = " . $current_luogo,
-            'fetch'
+             WHERE id = " . $current_luogo . " LIMIT 1"
         );
         if (!empty($cur['id_mappa'])) {
             $id_mappa_click = (int)$cur['id_mappa'];
@@ -39,8 +38,7 @@ if ($current_mappa > 0) {
         if (!empty($cur['id_mappa_collegata']) && (int)$cur['id_mappa_collegata'] !== 0) {
             $target_click = (int)$cur['id_mappa_collegata'];
             $exit_row = gdrcd_query(
-                "SELECT nome FROM mappa_click WHERE id_click = " . $target_click,
-                'fetch'
+                "SELECT nome FROM mappa_click WHERE id_click = " . $target_click . " LIMIT 1"
             );
             if (!empty($exit_row['nome'])) {
                 $exit_link = [
