@@ -275,40 +275,36 @@ e `gdrcd_stmt_all` (vedi `CONTRIBUTING.md`).
 
 Lo schema iniziale è in `gdrcd_db.sql` e viene caricato solo per
 nuove installazioni. Tutte le evoluzioni successive avvengono come
-migrazioni incrementali in `db_versions/`, secondo il pattern di nome:
+migrazioni incrementali in `db_versions/`, secondo il pattern di nome
+`YYYYMMDDHH_NomeClasse.php`. Ogni classe estende `DbMigration` ed
+implementa i metodi `up()` e `down()`.
 
+Documentazione completa (convenzioni, template e flusso operativo) in
+[`db_versions/README.md`](db_versions/README.md), file di partenza per
+nuove migrazioni in [`db_versions/_TEMPLATE.php`](db_versions/_TEMPLATE.php).
+
+Per applicare manualmente le migrazioni (anche in CI o restore) e'
+disponibile il wrapper CLI [`bin/gdrcd-migrate`](bin/gdrcd-migrate):
+
+```bash
+# Stato corrente (applicate vs pendenti)
+bin/gdrcd-migrate --status
+
+# Applica tutte le migrazioni pendenti
+bin/gdrcd-migrate --up
+
+# Rollback fino ad una migrazione specifica
+bin/gdrcd-migrate --down=2026051112
+
+# Dentro Docker
+docker compose exec web bin/gdrcd-migrate --status
 ```
-YYYYMMDDHH_NomeClasse.php
-```
 
-Esempi presenti:
-
-```
-2020072500_GDRCD551.php
-2021103018_GDRCD56.php
-2023021608_GDRCD5606.php
-2026051112_GDRCDLoginAttempts.php
-2026051113_GDRCDPerformanceIndexes.php
-```
-
-Ogni classe estende `DbMigration` ed implementa i metodi `up()` e
-`down()`. L'engine `DbMigrationEngine` viene invocato:
-
-- al primo avvio (`installer.php`)
-- ogni volta che la tabella di tracciamento `_gdrcd_db_versions` indica
-  che ci sono migrazioni non ancora applicate
-
-Le migrazioni vengono applicate dentro una transazione quando possibile;
-attenzione che le istruzioni DDL (CREATE/ALTER TABLE) provocano un
-commit implicito in MySQL/MariaDB, quindi il rollback ha effetti
-limitati su quel tipo di operazioni.
-
-Per aggiungere una migrazione:
-
-1. Creare un file `db_versions/YYYYMMDDHH_Nome.php`
-2. Definire una classe omonima che estende `DbMigration`
-3. Implementare `up()` (e idealmente `down()`)
-4. Riavviare il container `web` o richiamare manualmente l'aggiornamento
+Lo stesso codice viene richiamato dall'installer web (`installer.php`)
+al primo avvio. Le migrazioni vengono applicate dentro una transazione
+quando possibile, ma le istruzioni DDL (CREATE/ALTER TABLE) provocano
+un commit implicito in MySQL/MariaDB: il rollback ha effetti limitati
+su quel tipo di operazioni — preferire sempre operazioni idempotenti.
 
 ---
 

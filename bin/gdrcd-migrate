@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+#
+# gdrcd-migrate - CLI wrapper per il motore di migrazioni del DB.
+#
+# Usage:
+#   bin/gdrcd-migrate [--status] [--up] [--down=<migration_id>]
+#
+# Flags:
+#   --status            elenca migrazioni applicate e pendenti
+#   --up (default)      applica tutte le migrazioni pendenti
+#   --down=<id>         rollback fino alla migrazione indicata
+#   -h, --help          stampa questo aiuto
+#
+# Funziona sia in ambiente Docker (docker exec gdrcd-web bin/gdrcd-migrate)
+# sia standalone richiedendo solo un binario `php` raggiungibile via PATH.
+#
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+RUNNER="${SCRIPT_DIR}/gdrcd-migrate-runner.php"
+
+usage() {
+    sed -n '2,16p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+}
+
+# ----- arg validation -----------------------------------------------------
+
+ARGS=()
+for arg in "$@"; do
+    case "$arg" in
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        --status|--up)
+            ARGS+=("$arg")
+            ;;
+        --down=*)
+            value="${arg#*=}"
+            if [ -z "${value}" ]; then
+                echo "gdrcd-migrate: --down richiede un migration_id." >&2
+                exit 2
+            fi
+            ARGS+=("$arg")
+            ;;
+        *)
+            echo "gdrcd-migrate: argomento sconosciuto: ${arg}" >&2
+            usage >&2
+            exit 2
+            ;;
+    esac
+done
+
+# ----- prerequisites ------------------------------------------------------
+
+command -v php >/dev/null 2>&1 || {
+    echo "gdrcd-migrate: php non trovato nel PATH." >&2
+    exit 1
+}
+
+[ -r "${RUNNER}" ] || {
+    echo "gdrcd-migrate: runner mancante (${RUNNER})." >&2
+    exit 1
+}
+
+# ----- dispatch -----------------------------------------------------------
+
+# Esegui sempre dalla root del progetto, cosi' i require_once relativi
+# in includes/required.php trovano i file (l'entry point comunque fa chdir).
+cd "${ROOT_DIR}"
+exec php "${RUNNER}" "${ARGS[@]}"

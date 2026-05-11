@@ -298,6 +298,34 @@ INSERT INTO `codtipooggetto` (`cod_tipo`, `descrizione`) VALUES
 -- --------------------------------------------------------
 
 --
+-- Struttura della tabella `config_settings` (override runtime delle feature gate
+-- costanti definite in includes/constant_values.inc.php).
+--
+
+CREATE TABLE IF NOT EXISTS `config_settings` (
+  `setting_key`   varchar(64) NOT NULL,
+  `setting_value` text,
+  `setting_type`  varchar(16) NOT NULL DEFAULT 'string',
+  `description`   varchar(255) DEFAULT NULL,
+  `updated_at`    datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`setting_key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+--
+-- Dump dei dati per la tabella `config_settings`
+--
+
+INSERT INTO `config_settings` (`setting_key`, `setting_value`, `setting_type`, `description`) VALUES
+('role_perm',      '2', 'int',  'Livello minimo permesso per gestire registrazioni role (default GAMEMASTER)'),
+('log_perm',       '2', 'int',  'Livello minimo permesso per accedere ai log chat (default GAMEMASTER)'),
+('edit_perm',      '2', 'int',  'Livello minimo permesso per modificare registrazioni role oltre i 30 giorni (default GAMEMASTER)'),
+('send_gm',        '1', 'bool', 'Abilita la funzione "Segnala ai Master" nelle giocate'),
+('save_role',      '1', 'bool', 'Abilita il download della giocata in HTML'),
+('reg_min_azioni', '4', 'int',  'Numero minimo di azioni per validare una registrazione di giocata');
+
+-- --------------------------------------------------------
+
+--
 -- Struttura della tabella `diario`
 --
 

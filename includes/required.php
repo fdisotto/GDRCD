@@ -16,6 +16,7 @@ require_once(dirname(__FILE__) . '/Db.class.php');
 require_once(dirname(__FILE__) . '/logger.inc.php');
 require_once(dirname(__FILE__) . '/csrf.inc.php');
 require_once(dirname(__FILE__) . '/icons.inc.php');
+require_once(dirname(__FILE__) . '/uploads.inc.php');
 
 /** Gestione dei Suoni */
 require_once(dirname(__FILE__) . '/AudioController.class.php');

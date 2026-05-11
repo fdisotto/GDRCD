@@ -772,6 +772,9 @@ $PARAMETERS['administration']['rules']['access_level'] = SUPERUSER;
 $PARAMETERS['administration']['maintenance']['text'] = 'Manutenzione';
 $PARAMETERS['administration']['maintenance']['url'] = 'main.php?page=gestione/manutenzione';
 $PARAMETERS['administration']['maintenance']['access_level'] = SUPERUSER;
+$PARAMETERS['administration']['configurazioni']['text'] = 'Configurazioni sistema';
+$PARAMETERS['administration']['configurazioni']['url'] = 'main.php?page=gestione/configurazioni';
+$PARAMETERS['administration']['configurazioni']['access_level'] = SUPERUSER;
 
 
 /* HELP: Elenco delle voci dei menu' dei servizi e di gestione. E' sconsigliato operare modifiche. Le opzioni sono disponibili solo agli account con il livello d'accesso specificato o superiore.

@@ -1296,6 +1296,290 @@ function gdrcd_login_attempts_cleanup($ip)
 }
 
 /**
+ * Crea la tabella `config_settings` se non esiste. Operazione idempotente,
+ * eseguita una sola volta per request, ignora gli errori (es. permessi DDL
+ * mancanti su DB già in produzione).
+ *
+ * Stesso pattern di gdrcd_login_attempts_table_ready(): consente al sistema
+ * di funzionare anche se la migrazione non è ancora stata eseguita,
+ * cadendo silenziosamente sui default delle costanti PHP.
+ *
+ * @return bool true se la tabella è pronta all'uso.
+ */
+function gdrcd_config_settings_table_ready()
+{
+    static $ready = null;
+    if ($ready !== null) {
+        return $ready;
+    }
+    try {
+        gdrcd_query("CREATE TABLE IF NOT EXISTS config_settings (
+            setting_key   VARCHAR(64) NOT NULL,
+            setting_value TEXT NULL,
+            setting_type  VARCHAR(16) NOT NULL DEFAULT 'string',
+            description   VARCHAR(255) NULL,
+            updated_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (setting_key)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        $ready = true;
+    } catch (\Throwable $e) {
+        if (function_exists('gdrcd_log_error')) {
+            gdrcd_log_error('cannot ensure config_settings table', array(
+                'exception' => $e->getMessage(),
+            ));
+        }
+        $ready = false;
+    }
+    return $ready;
+}
+
+/**
+ * Carica (la prima volta) e mette in cache l'intera tabella config_settings.
+ * Le letture successive nello stesso request non toccano il DB.
+ *
+ * @return array<string, array{value:?string, type:string, description:?string}>
+ */
+function gdrcd_config_settings_cache()
+{
+    static $cache = null;
+    if ($cache !== null) {
+        return $cache;
+    }
+    $cache = array();
+
+    if (!gdrcd_config_settings_table_ready()) {
+        return $cache;
+    }
+
+    try {
+        $res = gdrcd_query("SELECT setting_key, setting_value, setting_type, description FROM config_settings", 'result');
+        while ($row = gdrcd_query($res, 'assoc')) {
+            $cache[(string)$row['setting_key']] = array(
+                'value'       => $row['setting_value'],
+                'type'        => (string)$row['setting_type'],
+                'description' => $row['description'],
+            );
+        }
+        gdrcd_query($res, 'free');
+    } catch (\Throwable $e) {
+        if (function_exists('gdrcd_log_error')) {
+            gdrcd_log_error('config_settings load failed', array(
+                'exception' => $e->getMessage(),
+            ));
+        }
+    }
+    return $cache;
+}
+
+/**
+ * Forza il reload della cache config_settings (da chiamare dopo una scrittura).
+ *
+ * @return void
+ */
+function gdrcd_config_settings_invalidate()
+{
+    // Sfrutta il fatto che static $cache è inizializzata solo se ===null.
+    // Reimpostarla richiede un wrapper: usiamo una closure-friendly riassegnazione
+    // sostituendo l'intera entry tramite un re-fetch on-demand.
+    // Trick semplice: marcare un flag globale che il prossimo accessor riconosce.
+    $GLOBALS['__gdrcd_config_settings_dirty'] = true;
+}
+
+/**
+ * Restituisce il valore tipizzato di una chiave di config dal DB,
+ * con fallback al default fornito dal chiamante.
+ *
+ * Tipi supportati:
+ *  - 'int'    -> (int)
+ *  - 'bool'   -> 1/0/true/false/'on'/'off' interpretati come bool
+ *  - 'string' -> stringa così com'è (o $default se NULL/assente)
+ *
+ * Errori di DB / migrazione non eseguita ritornano $default in modo silenzioso:
+ * questa funzione è progettata per essere "fail-open" verso le costanti di base.
+ *
+ * @param string $key     Chiave (es. 'role_perm').
+ * @param mixed  $default Valore da restituire se la chiave manca.
+ * @return mixed
+ */
+function gdrcd_config_get($key, $default = null)
+{
+    $key = (string)$key;
+    if ($key === '') {
+        return $default;
+    }
+
+    // Se è stata invalidata la cache, ricarichiamo bypassando la static.
+    if (!empty($GLOBALS['__gdrcd_config_settings_dirty'])) {
+        unset($GLOBALS['__gdrcd_config_settings_dirty']);
+        $fresh = array();
+        if (gdrcd_config_settings_table_ready()) {
+            try {
+                $res = gdrcd_query("SELECT setting_key, setting_value, setting_type, description FROM config_settings", 'result');
+                while ($row = gdrcd_query($res, 'assoc')) {
+                    $fresh[(string)$row['setting_key']] = array(
+                        'value'       => $row['setting_value'],
+                        'type'        => (string)$row['setting_type'],
+                        'description' => $row['description'],
+                    );
+                }
+                gdrcd_query($res, 'free');
+            } catch (\Throwable $e) {
+                // ignora, useremo cache vecchia
+            }
+        }
+        $GLOBALS['__gdrcd_config_settings_override'] = $fresh;
+    }
+
+    if (!empty($GLOBALS['__gdrcd_config_settings_override'])) {
+        $cache = $GLOBALS['__gdrcd_config_settings_override'];
+    } else {
+        $cache = gdrcd_config_settings_cache();
+    }
+
+    if (!isset($cache[$key])) {
+        return $default;
+    }
+    $entry = $cache[$key];
+    $val   = $entry['value'];
+    $type  = isset($entry['type']) ? strtolower($entry['type']) : 'string';
+
+    if ($val === null) {
+        return $default;
+    }
+
+    switch ($type) {
+        case 'int':
+            return (int)$val;
+        case 'bool':
+            if (is_bool($val)) {
+                return $val;
+            }
+            $v = strtolower(trim((string)$val));
+            return in_array($v, array('1', 'true', 'on', 'yes', 'y'), true);
+        default:
+            return (string)$val;
+    }
+}
+
+/**
+ * Salva (UPSERT) il valore di una chiave di config nel DB e invalida la cache.
+ *
+ * Riservato all'admin UI: chiamanti devono già aver verificato i permessi
+ * dell'utente (es. $_SESSION['permessi'] >= SUPERUSER) e il token CSRF.
+ *
+ * @param string $key   Chiave (es. 'role_perm').
+ * @param mixed  $value Valore da serializzare (int/bool/string).
+ * @param string $type  Uno tra 'int', 'bool', 'string'.
+ * @return bool true se scritto correttamente.
+ */
+function gdrcd_config_set($key, $value, $type = 'string')
+{
+    if (!gdrcd_config_settings_table_ready()) {
+        return false;
+    }
+    $key  = (string)$key;
+    $type = strtolower((string)$type);
+    if (!in_array($type, array('int', 'bool', 'string'), true)) {
+        $type = 'string';
+    }
+
+    // Normalizza value -> stringa da memorizzare.
+    switch ($type) {
+        case 'int':
+            $serialized = (string)(int)$value;
+            break;
+        case 'bool':
+            $bool = is_bool($value)
+                ? $value
+                : in_array(strtolower(trim((string)$value)), array('1', 'true', 'on', 'yes', 'y'), true);
+            $serialized = $bool ? '1' : '0';
+            break;
+        default:
+            $serialized = (string)$value;
+            break;
+    }
+
+    $k = gdrcd_filter('in', $key);
+    $v = gdrcd_filter('in', $serialized);
+    $t = gdrcd_filter('in', $type);
+
+    try {
+        gdrcd_query(
+            "INSERT INTO config_settings (setting_key, setting_value, setting_type) VALUES "
+            . "('" . $k . "', '" . $v . "', '" . $t . "') "
+            . "ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value), setting_type = VALUES(setting_type)"
+        );
+        gdrcd_config_settings_invalidate();
+        return true;
+    } catch (\Throwable $e) {
+        if (function_exists('gdrcd_log_error')) {
+            gdrcd_log_error('config_settings set failed', array(
+                'key'       => $key,
+                'exception' => $e->getMessage(),
+            ));
+        }
+        return false;
+    }
+}
+
+/**
+ * Helper tipizzati per le costanti "gate" gestite via config_settings.
+ * Ognuno legge dal DB e fa fallback al valore della costante PHP corrispondente,
+ * così il codice esistente che usa direttamente la const continua a funzionare.
+ *
+ * I chiamanti dei vecchi `if ($x >= ROLE_PERM)` possono migrare a `gdrcd_role_perm()`
+ * in modo incrementale: nessuna modifica forzata.
+ */
+
+/**
+ * @return int Livello minimo per gestire registrazioni role.
+ */
+function gdrcd_role_perm()
+{
+    return (int)gdrcd_config_get('role_perm', defined('ROLE_PERM') ? ROLE_PERM : 2);
+}
+
+/**
+ * @return int Livello minimo per accedere ai log chat.
+ */
+function gdrcd_log_perm()
+{
+    return (int)gdrcd_config_get('log_perm', defined('LOG_PERM') ? LOG_PERM : 2);
+}
+
+/**
+ * @return int Livello minimo per editare registrazioni oltre la soglia temporale.
+ */
+function gdrcd_edit_perm()
+{
+    return (int)gdrcd_config_get('edit_perm', defined('EDIT_PERM') ? EDIT_PERM : 2);
+}
+
+/**
+ * @return bool Abilita "Segnala ai Master" nelle giocate.
+ */
+function gdrcd_send_gm()
+{
+    return (bool)gdrcd_config_get('send_gm', defined('SEND_GM') ? SEND_GM : true);
+}
+
+/**
+ * @return bool Abilita download HTML della giocata.
+ */
+function gdrcd_save_role()
+{
+    return (bool)gdrcd_config_get('save_role', defined('SAVE_ROLE') ? SAVE_ROLE : true);
+}
+
+/**
+ * @return int Azioni minime per validare una registrazione di giocata.
+ */
+function gdrcd_reg_min_azioni()
+{
+    return (int)gdrcd_config_get('reg_min_azioni', defined('REG_MIN_AZIONI') ? REG_MIN_AZIONI : 4);
+}
+
+/**
  * Converte un file immagine locale in una data URL base64.
  * Usata per generare log di chat HTML autonomi (offline-friendly).
  *
