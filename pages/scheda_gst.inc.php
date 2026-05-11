@@ -1,283 +1,176 @@
-<div class="pagina_schedam_odifica">
-    <?php /*HELP: */
+<?php
+/**
+ * Scheda PG — gestione admin (MODERATOR+).
+ * Modifica anagrafica, razza, sesso, immagine, media, banca, salute max, caratteristiche.
+ */
 
-    if (isset($_REQUEST['pg']) === false)
-    {
-        echo gdrcd_filter('out', $MESSAGE['error']['unknown_character_sheet']);
-    } else
-    {
-    if ($_SESSION['permessi'] < MODERATOR)
-    {
-        echo gdrcd_filter('out', $MESSAGE['error']['access_denied']);
-    } else
-    {
-    if ($_POST['op'] == 'modify')
-    {
-        gdrcd_query(
-            "UPDATE personaggio 
-                    SET affetti = '" . gdrcd_filter('in', $_POST['modifica_affetti']) . "', 
-                        descrizione = '" . gdrcd_filter('in', $_POST['modifica_background']) . "', 
-                        url_media = '" . gdrcd_filter('in', gdrcd_filter('fullurl', $_POST['modifica_url_media'])) . "', 
-                        url_img = '" . gdrcd_filter('in', gdrcd_filter('fullurl', $_POST['modifica_url_img'])) . "', 
-                        car0 = " . gdrcd_filter('num', $_POST['car0']) . ", 
-                        car1 = " . gdrcd_filter('num', $_POST['car1']) . ", 
-                        car2 = " . gdrcd_filter('num', $_POST['car2']) . ", 
-                        car3 = " . gdrcd_filter('num', $_POST['car3']) . ", 
-                        car4 = " . gdrcd_filter('num', $_POST['car4']) . ",  
-                        car5 = " . gdrcd_filter('num', $_POST['car5']) . ", 
-                        sesso = '" . gdrcd_filter('in', $_POST['modifica_sesso']) . "', 
-                        id_razza = " . gdrcd_filter('num', $_POST['modifica_razza']) . ", 
-                        banca=" . gdrcd_filter('num', $_POST['modifica_banca']) . ", 
-                        salute_max=" . gdrcd_filter('num', $_POST['modifica_salute_max']) . " 
-                    WHERE   nome = '" . gdrcd_filter('in', $_REQUEST['pg']) . "' 
-                        AND permessi <= " . $_SESSION['permessi']);
-        echo '<div class="warning">' . gdrcd_filter('out', $MESSAGE['warning']['modified']) . '</div>';
-    } else
-    {
-        /*Carico le informazioni del PG*/
+if (!isset($_REQUEST['pg'])) {
+    echo '<div class="gdrcd-alert-error">' . gdrcd_filter('out', $MESSAGE['error']['unknown_character_sheet']) . '</div>';
+    return;
+}
+if ((int)$_SESSION['permessi'] < MODERATOR) {
+    echo '<div class="gdrcd-alert-error">' . gdrcd_filter('out', $MESSAGE['error']['access_denied'] ?? $MESSAGE['error']['not_allowed']) . '</div>';
+    return;
+}
 
-        $record = gdrcd_query("SELECT sesso, id_razza, descrizione, affetti, url_img, url_media, car0, car1, car2, car3, car4, car5, salute_max, banca  FROM personaggio WHERE nome='" . gdrcd_filter('in',
-                $_REQUEST['pg']) . "'");
-    }
-    ?>
+$pg     = $_REQUEST['pg'];
+$alerts = [];
 
-    <div class="page_title">
-        <h2><?php echo gdrcd_filter('out', $MESSAGE['interface']['sheet']['page_name']); ?></h2>
-    </div>
+if (($_POST['op'] ?? '') === 'modify') {
+    gdrcd_query(
+        "UPDATE personaggio SET
+            affetti = '" . gdrcd_filter('in', $_POST['modifica_affetti'] ?? '') . "',
+            descrizione = '" . gdrcd_filter('in', $_POST['modifica_background'] ?? '') . "',
+            url_media = '" . gdrcd_filter('in', gdrcd_filter('fullurl', $_POST['modifica_url_media'] ?? '')) . "',
+            url_img = '" . gdrcd_filter('in', gdrcd_filter('fullurl', $_POST['modifica_url_img'] ?? '')) . "',
+            car0 = " . gdrcd_filter('num', $_POST['car0']) . ",
+            car1 = " . gdrcd_filter('num', $_POST['car1']) . ",
+            car2 = " . gdrcd_filter('num', $_POST['car2']) . ",
+            car3 = " . gdrcd_filter('num', $_POST['car3']) . ",
+            car4 = " . gdrcd_filter('num', $_POST['car4']) . ",
+            car5 = " . gdrcd_filter('num', $_POST['car5']) . ",
+            sesso = '" . gdrcd_filter('in', $_POST['modifica_sesso']) . "',
+            id_razza = " . gdrcd_filter('num', $_POST['modifica_razza']) . ",
+            banca = " . gdrcd_filter('num', $_POST['modifica_banca']) . ",
+            salute_max = " . gdrcd_filter('num', $_POST['modifica_salute_max']) . "
+         WHERE nome = '" . gdrcd_filter('in', $pg) . "'
+           AND permessi <= " . (int)$_SESSION['permessi']
+    );
+    $alerts[] = ['success', gdrcd_filter('out', $MESSAGE['warning']['modified'])];
+}
 
-    <div class="page_body">
-        <?php if (isset($_POST['op']) === false)
-        { ?>
-            <div class="panels_box">
-            <?php
-            if ($_SESSION['permessi'] >= MODERATOR)
-            {
-                ?>
-                <div class="form_gioco">
-                    <!-- Form utente modifica -->
-                    <form action="main.php?page=scheda_gst" method="post">
+$record = gdrcd_query(
+    "SELECT sesso, id_razza, descrizione, affetti, url_img, url_media,
+            car0, car1, car2, car3, car4, car5, salute_max, banca
+     FROM personaggio WHERE nome = '" . gdrcd_filter('in', $pg) . "'"
+);
 
-                        <div class='form_label'>
-                            <?php echo gdrcd_filter('out',
-                                $MESSAGE['interface']['sheet']['modify_form']['admin']['gender']); ?>
-                        </div>
-                        <div class='form_field'>
-                            <select name="modifica_sesso">
-                                <option value="m" <?php if ($record['sesso'] == 'm')
-                                {
-                                    echo 'selected';
-                                } ?> />
-                                m</option>
-                                <option value="f" <?php if ($record['sesso'] == 'f')
-                                {
-                                    echo 'selected';
-                                } ?> />
-                                f</option>
-                            </select>
-                        </div>
+$lbl_a = $MESSAGE['interface']['sheet']['modify_form']['admin'];
+$lbl_m = $MESSAGE['interface']['sheet']['menu'];
+$cars_cap = (int)($PARAMETERS['settings']['cars_cap'] ?? 5);
+?>
 
+<div class="space-y-6">
+    <header class="space-y-2">
+        <h2 class="gdrcd-h1">
+            <?= gdrcd_filter('out', $lbl_m['gst']) ?>
+            <span class="text-gdrcd-accent">·</span>
+            <span class="text-gdrcd-text-soft text-2xl"><?= gdrcd_filter('out', $pg) ?></span>
+        </h2>
+    </header>
 
-                        <?php $query = "SELECT id_razza, nome_razza FROM razza ORDER BY nome_razza";
-                        $razza_r = gdrcd_query($query, 'result'); ?>
-                        <div class='form_label'>
-                            <?php echo gdrcd_filter('out', $PARAMETERS['names']['race']['sing']); ?>
-                        </div>
-                        <div class='form_field'>
-                            <select name="modifica_razza">
-                                <?php while($razza_row=gdrcd_query($razza_r, 'fetch')){ ?>
-	   <option value="<?php echo $razza_row['id_razza']; ?>" <?php if($razza_row['id_razza']==$record['id_razza']){echo 'selected';} ?> /><?php echo $razza_row['nome_razza']; ?></option>
-       <?php }
-                                gdrcd_query($razza_r, 'free');
+    <nav class="flex flex-wrap gap-2 border-b border-gdrcd-border pb-3" aria-label="Sezioni scheda">
+        <?php include 'scheda/menu.inc.php'; ?>
+    </nav>
 
+    <?php foreach ($alerts as [$kind, $msg]): ?>
+        <div class="gdrcd-alert-<?= $kind ?>">
+            <svg class="w-5 h-5 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+            <div><?= $msg ?></div>
+        </div>
+    <?php endforeach; ?>
+
+    <form action="main.php?page=scheda_gst" method="post" class="space-y-5">
+        <section class="gdrcd-card">
+            <div class="gdrcd-card-header">
+                <h3 class="gdrcd-h3">Anagrafica</h3>
+            </div>
+            <div class="gdrcd-card-body">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="gdrcd-label" for="g_sesso"><?= gdrcd_filter('out', $lbl_a['gender']) ?></label>
+                        <select class="gdrcd-select" id="g_sesso" name="modifica_sesso">
+                            <option value="m" <?= $record['sesso'] === 'm' ? 'selected' : '' ?>>M</option>
+                            <option value="f" <?= $record['sesso'] === 'f' ? 'selected' : '' ?>>F</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="gdrcd-label" for="g_razza"><?= gdrcd_filter('out', $PARAMETERS['names']['race']['sing']) ?></label>
+                        <select class="gdrcd-select" id="g_razza" name="modifica_razza">
+                            <?php $razze = gdrcd_query("SELECT id_razza, nome_razza FROM razza ORDER BY nome_razza", 'result');
+                            while ($r = gdrcd_query($razze, 'fetch')):
+                                $sel = ((int)$record['id_razza'] === (int)$r['id_razza']) ? 'selected' : '';
                                 ?>
+                                <option value="<?= (int)$r['id_razza'] ?>" <?= $sel ?>><?= gdrcd_filter('out', $r['nome_razza']) ?></option>
+                            <?php endwhile;
+                            gdrcd_query($razze, 'free');
+                            ?>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="gdrcd-label" for="g_img"><?= gdrcd_filter('out', $lbl_a['url_img']) ?></label>
+                        <input class="gdrcd-input" type="url" id="g_img" name="modifica_url_img"
+                               value="<?= gdrcd_filter('out', $record['url_img']) ?>"/>
+                    </div>
+                    <div>
+                        <label class="gdrcd-label" for="g_med"><?= gdrcd_filter('out', $lbl_a['url_media']) ?></label>
+                        <input class="gdrcd-input" type="url" id="g_med" name="modifica_url_media"
+                               value="<?= gdrcd_filter('out', $record['url_media']) ?>"/>
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <label class="gdrcd-label" for="g_descr"><?= gdrcd_filter('out', $lbl_a['background']) ?></label>
+                    <textarea class="gdrcd-textarea" id="g_descr" name="modifica_background" rows="6"><?= gdrcd_filter('out', $record['descrizione']) ?></textarea>
+                    <p class="gdrcd-help"><?= gdrcd_filter('out', $MESSAGE['interface']['help']['bbcode']) ?></p>
+                </div>
+                <div>
+                    <label class="gdrcd-label" for="g_aff"><?= gdrcd_filter('out', $lbl_a['relationships']) ?></label>
+                    <textarea class="gdrcd-textarea" id="g_aff" name="modifica_affetti" rows="4"><?= gdrcd_filter('out', $record['affetti']) ?></textarea>
+                    <p class="gdrcd-help"><?= gdrcd_filter('out', $MESSAGE['interface']['help']['bbcode']) ?></p>
+                </div>
+            </div>
+        </section>
+
+        <section class="gdrcd-card">
+            <div class="gdrcd-card-header">
+                <h3 class="gdrcd-h3">Risorse</h3>
+            </div>
+            <div class="gdrcd-card-body grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="gdrcd-label" for="g_banca"><?= gdrcd_filter('out', $lbl_a['bank']) ?></label>
+                    <input class="gdrcd-input" type="number" id="g_banca" name="modifica_banca"
+                           value="<?= (int)$record['banca'] ?>"/>
+                </div>
+                <div>
+                    <label class="gdrcd-label" for="g_hpmax"><?= gdrcd_filter('out', $lbl_a['max_hp']) ?></label>
+                    <input class="gdrcd-input" type="number" id="g_hpmax" name="modifica_salute_max"
+                           value="<?= (int)$record['salute_max'] ?>"/>
+                </div>
+            </div>
+        </section>
+
+        <section class="gdrcd-card">
+            <div class="gdrcd-card-header">
+                <h3 class="gdrcd-h3"><?= gdrcd_filter('out', $MESSAGE['register']['fields']['stats']) ?></h3>
+            </div>
+            <div class="gdrcd-card-body">
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                    <?php for ($i = 0; $i < 6; $i++): ?>
+                        <div>
+                            <label class="block text-xs font-medium text-gdrcd-muted mb-1" for="g_car<?= $i ?>">
+                                <?= gdrcd_filter('out', $PARAMETERS['names']['stats']['car'.$i]) ?>
+                            </label>
+                            <select class="gdrcd-select" id="g_car<?= $i ?>" name="car<?= $i ?>">
+                                <?php for ($v = 1; $v <= $cars_cap; $v++):
+                                    $sel = ((int)$record['car'.$i] === $v) ? 'selected' : '';
+                                    ?>
+                                    <option value="<?= $v ?>" <?= $sel ?>><?= $v ?></option>
+                                <?php endfor; ?>
                             </select>
                         </div>
-
-
-                        <div class='form_label'>
-                            <?php echo gdrcd_filter('out',
-                                $MESSAGE['interface']['sheet']['modify_form']['admin']['url_img']); ?>
-                        </div>
-                        <div class='form_field'>
-                            <input type="text" name="modifica_url_img"
-                                   value="<?php echo gdrcd_filter('out', $record['url_img']); ?>" class="form_input"/>
-                        </div>
-
-                        <div class='form_label'>
-                            <?php echo gdrcd_filter('out',
-                                $MESSAGE['interface']['sheet']['modify_form']['admin']['background']); ?>
-                        </div>
-                        <div class='form_field'>
-                            <textarea type="textbox" name="modifica_background"
-                                      class="form_textarea"><?php echo gdrcd_filter('out',
-                                    $record['descrizione']); ?></textarea>
-                        </div>
-                        <div class="form_info">
-                            <?php echo gdrcd_filter('out', $MESSAGE['interface']['help']['bbcode']); ?>
-                        </div>
-
-                        <div class='form_label'>
-                            <?php echo gdrcd_filter('out',
-                                $MESSAGE['interface']['sheet']['modify_form']['admin']['relationships']); ?>
-                        </div>
-                        <div class='form_field'>
-                            <textarea type="textbox" name="modifica_affetti"
-                                      class="form_textarea"><?php echo gdrcd_filter('out',
-                                    $record['affetti']); ?></textarea>
-                        </div>
-                        <div class="form_info">
-                            <?php echo gdrcd_filter('out', $MESSAGE['interface']['help']['bbcode']); ?>
-                        </div>
-
-                        <div class='form_label'>
-                            <?php echo gdrcd_filter('out',
-                                $MESSAGE['interface']['sheet']['modify_form']['admin']['url_media']); ?>
-                        </div>
-                        <div class='form_field'>
-                            <input type="text" name="modifica_url_media"
-                                   value="<?php echo gdrcd_filter('out', $record['url_media']); ?>" class="form_input"/>
-                        </div>
-
-                        <div class='form_label'>
-                            <?php echo gdrcd_filter('out',
-                                $MESSAGE['interface']['sheet']['modify_form']['admin']['bank']); ?>
-                        </div>
-                        <div class='form_field'>
-                            <input name="modifica_banca" value="<?php echo $record['banca']; ?>" class="form_input"/>
-                        </div>
-
-                        <div class='form_label'>
-                            <?php echo gdrcd_filter('out',
-                                $MESSAGE['interface']['sheet']['modify_form']['admin']['max_hp']); ?>
-                        </div>
-                        <div class='form_field'>
-                            <input name="modifica_salute_max" value="<?php echo $record['salute_max']; ?>"
-                                   class="form_input"/>
-                        </div>
-
-                        <!-- Caratteristiche -->
-                        <div class="form_label">
-                            <?php echo gdrcd_filter('out', $MESSAGE['register']['fields']['stats']); ?>
-                        </div>
-                        <div class="form_field">
-                            <table>
-                                <tr>
-                                    <td>
-                                        <?php echo gdrcd_filter('out', $PARAMETERS['names']['stats']['car0']); ?><br/>
-                                        <select name="car0">
-                                            <?php for ($i = 1; $i <= $PARAMETERS['settings']['cars_cap']; $i++)
-                                            { ?>
-                                                <option value="<?php echo $i; ?>" <?php if ($record['car0'] == $i)
-                                                {
-                                                    echo 'SELECTED';
-                                                } ?> >
-                                                    <?php echo $i; ?>
-                                                </option>
-                                            <?php } ?>
-                                        </select>
-                                    </td>
-                                    <td>
-                                        <?php echo gdrcd_filter('out', $PARAMETERS['names']['stats']['car1']); ?><br/>
-                                        <select name="car1">
-                                            <?php for ($i = 1; $i <= $PARAMETERS['settings']['cars_cap']; $i++)
-                                            { ?>
-                                                <option value="<?php echo $i; ?>" <?php if ($record['car1'] == $i)
-                                                {
-                                                    echo 'SELECTED';
-                                                } ?> >
-                                                    <?php echo $i; ?>
-                                                </option>
-                                            <?php } ?>
-                                        </select>
-                                    </td>
-                                    <td>
-                                        <?php echo gdrcd_filter('out', $PARAMETERS['names']['stats']['car2']); ?><br/>
-                                        <select name="car2">
-                                            <?php for ($i = 1; $i <= $PARAMETERS['settings']['cars_cap']; $i++)
-                                            { ?>
-                                                <option value="<?php echo $i; ?>" <?php if ($record['car2'] == $i)
-                                                {
-                                                    echo 'SELECTED';
-                                                } ?> >
-                                                    <?php echo $i; ?>
-                                                </option>
-                                            <?php } ?>
-                                        </select>
-                                    </td>
-                                    <td>
-                                        <?php echo gdrcd_filter('out', $PARAMETERS['names']['stats']['car3']); ?><br/>
-                                        <select name="car3">
-                                            <?php for ($i = 1; $i <= $PARAMETERS['settings']['cars_cap']; $i++)
-                                            { ?>
-                                                <option value="<?php echo $i; ?>" <?php if ($record['car3'] == $i)
-                                                {
-                                                    echo 'SELECTED';
-                                                } ?> >
-                                                    <?php echo $i; ?>
-                                                </option>
-                                            <?php } ?>
-                                        </select>
-                                    </td>
-                                    <td>
-                                        <?php echo gdrcd_filter('out', $PARAMETERS['names']['stats']['car4']); ?><br/>
-                                        <select name="car4">
-                                            <?php for ($i = 1; $i <= $PARAMETERS['settings']['cars_cap']; $i++)
-                                            { ?>
-                                                <option value="<?php echo $i; ?>" <?php if ($record['car4'] == $i)
-                                                {
-                                                    echo 'SELECTED';
-                                                } ?> >
-                                                    <?php echo $i; ?>
-                                                </option>
-                                            <?php } ?>
-                                        </select>
-                                    </td>
-                                    <td>
-                                        <?php echo gdrcd_filter('out', $PARAMETERS['names']['stats']['car5']); ?><br/>
-                                        <select name="car5">
-                                            <?php for ($i = 1; $i <= $PARAMETERS['settings']['cars_cap']; $i++)
-                                            { ?>
-                                                <option value="<?php echo $i; ?>" <?php if ($record['car5'] == $i)
-                                                {
-                                                    echo 'SELECTED';
-                                                } ?> >
-                                                    <?php echo $i; ?>
-                                                </option>
-                                            <?php } ?>
-                                        </select>
-                                    </td>
-                                <tr>
-                            </table>
-                        </div>
-
-
-                        <input type="hidden" name="op" value="modify"/>
-                        <input type="hidden"
-                               value="<?php echo gdrcd_filter('get', $_REQUEST['pg']); ?>"
-                               name="pg"/>
-
-                        <div class='form_submit'>
-                            <input type="submit" value="<?php echo $MESSAGE['interface']['forms']['submit']; ?>"
-                                   class="form_submit"/>
-                        </div>
-
-                    </form>
+                    <?php endfor; ?>
                 </div>
+            </div>
+        </section>
 
-                </div>
-
-                <?php
-            }//if
-        }//if
-        }
-        }//else?>
-
-
-    </div>
-    <!-- Link a piè di pagina -->
-    <div class="link_back">
-        <a href="main.php?page=scheda&pg=<?php echo gdrcd_filter('url',
-            $_REQUEST['pg']); ?>"><?php echo gdrcd_filter('out', $MESSAGE['interface']['sheet']['link']['back']); ?></a>
-    </div>
-
-</div><!-- pagina -->
+        <div class="flex justify-end">
+            <input type="hidden" name="op" value="modify"/>
+            <input type="hidden" name="pg" value="<?= htmlspecialchars($pg) ?>"/>
+            <button type="submit" class="gdrcd-btn-primary">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                <?= gdrcd_filter('out', $MESSAGE['interface']['forms']['submit']) ?>
+            </button>
+        </div>
+    </form>
+</div>

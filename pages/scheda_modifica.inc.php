@@ -1,411 +1,286 @@
-<div class="pagina_schedam_odifica">
-    <?php /*HELP: */
+<?php
+/**
+ * Scheda PG — modifica (utente + master).
+ * 3 form: dati utente (self), status/salute (GUILDMODERATOR+), esilio (GAMEMASTER+).
+ */
 
-    if (isset($_REQUEST['pg']) === false)
-    {
-        echo gdrcd_filter('out', $MESSAGE['error']['unknown_character_sheet']);
-    } else
-    {
-    /*Se ho ricevuto informazioni per modificare*/
+if (!isset($_REQUEST['pg'])) {
+    echo '<div class="gdrcd-alert-error">' . gdrcd_filter('out', $MESSAGE['error']['unknown_character_sheet']) . '</div>';
+    return;
+}
 
+$pg     = $_REQUEST['pg'];
+$op     = $_POST['op'] ?? null;
+$alerts = [];
 
-    $confirm_updating = true;
+$confirm = true;
 
+/* ============================================================
+ * Handler POST
+ * ============================================================ */
+if ($op !== null) {
 
-    /** * Controllo sul file audio
-     * @author Blancks
-     */
-    if ($PARAMETERS['mode']['allow_audio'] == 'ON')
-    {
-
-        if ( ! empty($_POST['modifica_url_media']) && ! isset($PARAMETERS['settings']['audiotype']['.' . strtolower(end(explode('.', $_POST['modifica_url_media'])))]) )
-        {
-            echo '<div class="warning">' . gdrcd_filter('out', $MESSAGE['warning']['media_not_allowed']) . '</div>';
-            $confirm_updating = false;
+    // Check audio mime
+    if (($PARAMETERS['mode']['allow_audio'] ?? 'OFF') === 'ON'
+        && !empty($_POST['modifica_url_media'])) {
+        $ext = '.' . strtolower(pathinfo($_POST['modifica_url_media'], PATHINFO_EXTENSION));
+        if (!isset($PARAMETERS['settings']['audiotype'][$ext])) {
+            $alerts[] = ['error', gdrcd_filter('out', $MESSAGE['warning']['media_not_allowed'])];
+            $confirm = false;
         }
-
-
-    } elseif ($_POST['op'] == 'modify')
-    {
+    } elseif ($op === 'modify') {
         $_POST['modifica_url_media'] = '';
     }
+}
 
-
-    /** * Se non sono occorsi errori durante i controlli precedenti
-     * @author Blancks
-     */
-    if ($confirm_updating)
-    {
-
-        if (isset($_POST['op']) === true)
-        {
-
-            /** * Controllo sul bloccaggio dei suoni per l'utente
-             * @author Blancks
-             */
-            $blocca_media = (strtolower($_POST['blocca_media']) == 'on') ? 1 : 0;
-
-            if ($_SESSION['login'] == $_REQUEST['pg'])
-            {
-                $_SESSION['blocca_media'] = $blocca_media;
-            }
-
-
-            /*Se l'utente ha richiesto di modificare la propria scheda*/
-            if ((gdrcd_filter('get', $_REQUEST['pg']) == $_SESSION['login']) && (gdrcd_filter('get',
-                        $_POST['op']) == 'modify')
-            )
-            {
-                /** * Html, BBcode or both ?
-                 * @author Blancks
-                 */
-                $modifica_affetti = gdrcd_filter('in', $_POST['modifica_affetti']);
-                $modifica_background = gdrcd_filter('in', $_POST['modifica_background']);
-                $modifica_storia = gdrcd_filter('in', $_POST['modifica_storia']);
-
-
-                if ($PARAMETERS['mode']['user_bbcode'] == 'OFF' || ($PARAMETERS['mode']['user_bbcode'] == 'ON' && $PARAMETERS['settings']['forum_bbcode']['type'] == 'bbd' && $PARAMETERS['settings']['bbd']['free_html'] == 'ON'))
-                {
-                    $modifica_affetti = gdrcd_filter('addslashes', $_POST['modifica_affetti']);
-                    $modifica_background = gdrcd_filter('addslashes', $_POST['modifica_background']);
-                    $modifica_storia = gdrcd_filter('addslashes', $_POST['modifica_storia']);
-                }
-
-                /** * Online status allowed ?
-                 * @author Blancks
-                 */
-                $online_state = '';
-
-                if ($PARAMETERS['mode']['user_online_state'] == 'ON')
-                {
-                    $online_state = gdrcd_filter('in', $_POST['online_state']);
-                }
-
-
-                gdrcd_query("UPDATE personaggio SET cognome = '" . gdrcd_filter('in',
-                        $_POST['modifica_cognome']) . "', storia = '" . $modifica_storia . "',  affetti = '" . $modifica_affetti . "', descrizione = '" . $modifica_background . "', url_media = '" . gdrcd_filter('in',
-                        gdrcd_filter('fullurl',
-                            $_POST['modifica_url_media'])) . "', blocca_media = " . (int) $blocca_media . ", url_img = '" . gdrcd_filter('in',
-                        gdrcd_filter('fullurl',
-                            $_POST['modifica_url_img'])) . "', url_img_chat = '" . gdrcd_filter('in',
-                        gdrcd_filter('fullurl',
-                            $_POST['modifica_url_img_chat'])) . "', online_status = '" . $online_state . "' WHERE nome = '" . gdrcd_filter('in',
-                        $_REQUEST['pg']) . "'");
-
-                echo '<div class="warning">' . gdrcd_filter('out', $MESSAGE['warning']['modified']) . '</div>';
-
-
-                /*Se un master o superiore ha richiesto di modificare lo status del pg*/
-            } elseif (($_SESSION['permessi'] >= GUILDMODERATOR) && (gdrcd_filter('get',
-                        $_POST['op']) == 'modify_status')
-            )
-            {
-                gdrcd_query("UPDATE personaggio SET stato = '" . gdrcd_filter('in',
-                        $_POST['modifica_status']) . "', salute = " . gdrcd_filter('num',
-                        $_POST['modifica_salute']) . " WHERE nome = '" . gdrcd_filter('in', $_REQUEST['pg']) . "'");
-
-                echo '<div class="warning">' . gdrcd_filter('out', $MESSAGE['warning']['modified']) . '</div>';
-
-                /*Se un master o superiore ha richiesto l'arresto del pg*/
-            } elseif (($_SESSION['permessi'] >= GAMEMASTER) && (gdrcd_filter('get', $_POST['op']) == 'arrest'))
-            {
-                /** * Da implementare */
-
-
-                /*Se un admin o superiore ha richiesto l'esilio dell'utente*/
-            } elseif (($_SESSION['permessi'] >= GAMEMASTER) && (gdrcd_filter('get', $_POST['op']) == 'exile'))
-            {
-                gdrcd_query("UPDATE personaggio SET esilio = '" . gdrcd_filter('num',
-                        $_POST['year']) . '-' . gdrcd_filter('num', $_POST['month']) . '-' . gdrcd_filter('num',
-                        $_POST['day']) . "', data_esilio=NOW(), autore_esilio = '" . $_SESSION['login'] . "', motivo_esilio = '" . gdrcd_filter('in',
-                        $_POST['causale']) . "' WHERE nome = '" . gdrcd_filter('in',
-                        $_REQUEST['pg']) . "' AND permessi <=" . $_SESSION['permessi'] . "");
-
-                echo '<div class="warning">' . gdrcd_filter('out', $MESSAGE['warning']['done']) . '</div>';
-
-            } else
-            {
-                echo '<div class="error">' . gdrcd_filter('out', $MESSAGE['error']['unknown_operation']) . '</div>';
-
-            }
-
-        } else
-        {
-            /*Carico le informazioni del PG*/
-            $record = gdrcd_query("SELECT descrizione, storia, affetti, cognome, online_status, url_img, url_img_chat, url_media, blocca_media, stato, salute FROM personaggio WHERE nome='" . gdrcd_filter('get',
-                    $_REQUEST['pg']) . "'");
-        }
-
+if ($confirm && $op !== null) {
+    $blocca_media = (strtolower($_POST['blocca_media'] ?? '') === 'on') ? 1 : 0;
+    if ($_SESSION['login'] === $pg) {
+        $_SESSION['blocca_media'] = $blocca_media;
     }
-    ?>
 
-    <div class="page_title">
-        <h2><?php echo gdrcd_filter('out', $MESSAGE['interface']['sheet']['page_name']); ?></h2>
-    </div>
+    if ($op === 'modify' && $pg === $_SESSION['login']) {
+        $bbcode_on = (($PARAMETERS['mode']['user_bbcode'] ?? 'OFF') === 'ON');
+        $free_html = (($PARAMETERS['settings']['bbd']['free_html'] ?? 'OFF') === 'ON'
+                     && ($PARAMETERS['settings']['forum_bbcode']['type'] ?? '') === 'bbd');
+        $filter_text = (!$bbcode_on || $free_html) ? 'addslashes' : 'in';
 
-    <div class="page_body">
-        <?php if (isset($_POST['op']) === false)
-        { ?>
-            <div class="panels_box">
-                <?php
-                if ($_SESSION['login'] == $_REQUEST['pg'])
-                {
-                    ?>
-                    <div class="form_gioco">
-                        <!-- Form utente modifica -->
-                        <form action="main.php?page=scheda_modifica" method="post">
+        $online_state = (($PARAMETERS['mode']['user_online_state'] ?? 'OFF') === 'ON')
+            ? gdrcd_filter('in', $_POST['online_state'] ?? '')
+            : '';
 
-                            <div class='form_label'>
-                                <?php echo gdrcd_filter('out',
-                                    $MESSAGE['interface']['sheet']['modify_form']['last_name']); ?>
-                            </div>
-                            <div class='form_field'>
-                                <input type="text" name="modifica_cognome"
-                                       value="<?php echo gdrcd_filter('out', $record['cognome']); ?>"
-                                       class="form_input"/>
-                            </div>
+        gdrcd_query(
+            "UPDATE personaggio SET
+                cognome = '" . gdrcd_filter('in', $_POST['modifica_cognome'] ?? '') . "',
+                storia = '" . gdrcd_filter($filter_text, $_POST['modifica_storia'] ?? '') . "',
+                affetti = '" . gdrcd_filter($filter_text, $_POST['modifica_affetti'] ?? '') . "',
+                descrizione = '" . gdrcd_filter($filter_text, $_POST['modifica_background'] ?? '') . "',
+                url_media = '" . gdrcd_filter('in', gdrcd_filter('fullurl', $_POST['modifica_url_media'] ?? '')) . "',
+                blocca_media = " . (int)$blocca_media . ",
+                url_img = '" . gdrcd_filter('in', gdrcd_filter('fullurl', $_POST['modifica_url_img'] ?? '')) . "',
+                url_img_chat = '" . gdrcd_filter('in', gdrcd_filter('fullurl', $_POST['modifica_url_img_chat'] ?? '')) . "',
+                online_status = '" . $online_state . "'
+             WHERE nome = '" . gdrcd_filter('in', $pg) . "'"
+        );
+        $alerts[] = ['success', gdrcd_filter('out', $MESSAGE['warning']['modified'])];
 
-                            <div class='form_label'>
-                                <?php echo gdrcd_filter('out',
-                                    $MESSAGE['interface']['sheet']['modify_form']['url_img']); ?>
-                            </div>
-                            <div class='form_field'>
-                                <input type="text" name="modifica_url_img"
-                                       value="<?php echo gdrcd_filter('out', $record['url_img']); ?>"
-                                       class="form_input"/>
-                            </div>
-                            <?php
-                            /** * Avatar di chat
-                             * @author Blancks
-                             */
-                            if ($PARAMETERS['mode']['chat_avatar'] == 'ON')
-                            {
-                                ?>
-                                <div class='form_label'>
-                                    <?php echo gdrcd_filter('out',
-                                        $MESSAGE['interface']['sheet']['modify_form']['url_img_chat']); ?>
-                                </div>
-                                <div class='form_field'>
-                                    <input type="text" name="modifica_url_img_chat"
-                                           value="<?php echo gdrcd_filter('out', $record['url_img_chat']); ?>"
-                                           class="form_input"/>
-                                </div>
-                                <?php
-                            }
-                            ?>
+    } elseif ($op === 'modify_status' && (int)$_SESSION['permessi'] >= GUILDMODERATOR) {
+        gdrcd_query(
+            "UPDATE personaggio SET
+                stato = '" . gdrcd_filter('in', $_POST['modifica_status'] ?? '') . "',
+                salute = " . gdrcd_filter('num', $_POST['modifica_salute'] ?? 0) . "
+             WHERE nome = '" . gdrcd_filter('in', $pg) . "'"
+        );
+        $alerts[] = ['success', gdrcd_filter('out', $MESSAGE['warning']['modified'])];
 
+    } elseif ($op === 'exile' && (int)$_SESSION['permessi'] >= GAMEMASTER) {
+        gdrcd_query(
+            "UPDATE personaggio SET
+                esilio = '" . gdrcd_filter('num', $_POST['year']) . '-'
+                          . gdrcd_filter('num', $_POST['month']) . '-'
+                          . gdrcd_filter('num', $_POST['day']) . "',
+                data_esilio = NOW(),
+                autore_esilio = '" . gdrcd_filter('in', $_SESSION['login']) . "',
+                motivo_esilio = '" . gdrcd_filter('in', $_POST['causale'] ?? '') . "'
+             WHERE nome = '" . gdrcd_filter('in', $pg) . "'
+               AND permessi <= " . (int)$_SESSION['permessi']
+        );
+        $alerts[] = ['success', gdrcd_filter('out', $MESSAGE['warning']['done'])];
+    } else {
+        $alerts[] = ['error', gdrcd_filter('out', $MESSAGE['error']['unknown_operation'] ?? 'Operazione non riconosciuta')];
+    }
+}
 
-                            <?php
-                            if ($PARAMETERS['mode']['user_online_state'] == 'ON')
-                            {
-                                ?>
-                                <div class='form_label'>
-                                    <?php echo gdrcd_filter('out',
-                                        $MESSAGE['interface']['sheet']['modify_form']['online_state']); ?>
-                                </div>
-                                <div class='form_field'>
-                                    <input type="text" name="online_state" class="form_input"
-                                           value="<?php echo gdrcd_filter('out', $record['online_status']); ?>"
-                                           maxlength="100"/>
-                                </div>
-                                <?php
-                            }
-                            ?>
+$record = gdrcd_query(
+    "SELECT descrizione, storia, affetti, cognome, online_status, url_img, url_img_chat,
+            url_media, blocca_media, stato, salute
+     FROM personaggio WHERE nome = '" . gdrcd_filter('in', $pg) . "'"
+);
 
-                            <div class='form_label'>
-                                <?php echo gdrcd_filter('out',
-                                    $MESSAGE['interface']['sheet']['menu']['description']); ?>
-                            </div>
-                            <div class='form_field'>
-                                <textarea type="textbox" name="modifica_background"
-                                          class="form_textarea"><?php echo gdrcd_filter('out',
-                                        $record['descrizione']); ?></textarea>
-                            </div>
-                            <div class="form_info">
-                                <?php echo gdrcd_filter('out', $MESSAGE['interface']['help']['bbcode']); ?>
-                            </div>
-                            <div class='form_label'>
-                                <?php echo gdrcd_filter('out',
-                                    $MESSAGE['interface']['sheet']['modify_form']['background']); ?>
-                            </div>
-                            <div class='form_field'>
-                                <textarea type="textbox" name="modifica_storia"
-                                          class="form_textarea"><?php echo gdrcd_filter('out',
-                                        $record['storia']); ?></textarea>
-                            </div>
-                            <div class="form_info">
-                                <?php echo gdrcd_filter('out', $MESSAGE['interface']['help']['bbcode']); ?>
-                            </div>
+$lbl_mf = $MESSAGE['interface']['sheet']['modify_form'];
+$lbl_m  = $MESSAGE['interface']['sheet']['menu'];
+$is_self = ($_SESSION['login'] === $pg);
+$is_gmod = ((int)$_SESSION['permessi'] >= GUILDMODERATOR);
+$is_gm   = ((int)$_SESSION['permessi'] >= GAMEMASTER);
+?>
 
-                            <div class='form_label'>
-                                <?php echo gdrcd_filter('out',
-                                    $MESSAGE['interface']['sheet']['modify_form']['relationships']); ?>
-                            </div>
-                            <div class='form_field'>
-                                <textarea type="textbox" name="modifica_affetti"
-                                          class="form_textarea"><?php echo gdrcd_filter('out',
-                                        $record['affetti']); ?></textarea>
-                            </div>
-                            <div class="form_info">
-                                <?php echo gdrcd_filter('out', $MESSAGE['interface']['help']['bbcode']); ?>
-                            </div>
+<div class="space-y-6">
+    <header class="space-y-2">
+        <h2 class="gdrcd-h1">
+            <?= gdrcd_filter('out', $lbl_m['update']) ?>
+            <span class="text-gdrcd-accent">·</span>
+            <span class="text-gdrcd-text-soft text-2xl"><?= gdrcd_filter('out', $pg) ?></span>
+        </h2>
+    </header>
 
-                            <div class='form_label'>
-                                <?php echo gdrcd_filter('out',
-                                    $MESSAGE['interface']['sheet']['modify_form']['block_media']); ?>
-                            </div>
-                            <div class='form_field'>
-                                <input type="checkbox"
-                                       name="blocca_media" <?php echo ($record['blocca_media']) ? 'checked="checked"' : ''; ?>
-                                       class="form_input"/>
-                            </div>
+    <nav class="flex flex-wrap gap-2 border-b border-gdrcd-border pb-3" aria-label="Sezioni scheda">
+        <?php include 'scheda/menu.inc.php'; ?>
+    </nav>
 
-                            <?php
-                            if ($PARAMETERS['mode']['allow_audio'] == 'ON')
-                            {
-                                ?>
-                                <div class='form_label'>
-                                    <?php echo gdrcd_filter('out',
-                                        $MESSAGE['interface']['sheet']['modify_form']['url_media']); ?>
-                                </div>
-                                <div class='form_field'>
-                                    <input type="text" name="modifica_url_media"
-                                           value="<?php echo gdrcd_filter('out', $record['url_media']); ?>"
-                                           class="form_input"/>
-                                </div>
-                                <?php
-                            }
-                            ?>
-                            <input type="hidden" name="op" value="modify"/>
+    <?php foreach ($alerts as [$kind, $msg]): ?>
+        <div class="gdrcd-alert-<?= $kind ?>">
+            <svg class="w-5 h-5 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+            <div><?= $msg ?></div>
+        </div>
+    <?php endforeach; ?>
 
-                            <div class='form_submit'>
-                                <input type="submit" value="<?php echo $MESSAGE['interface']['forms']['submit']; ?>"
-                                       class="form_submit"/>
-                                <input type="hidden"
-                                       value="<?php echo gdrcd_filter('get', $_REQUEST['pg']); ?>"
-                                       name="pg"/>
-                            </div>
-
-                        </form>
-                    </div>
-
-                    <?php
-                }//if
-                if ($_SESSION['permessi'] >= GUILDMODERATOR)
-                {
-                    ?>
-
-                    <div class='form_gioco'>
-
-                        <!-- Form master status -->
-                        <form action="main.php?page=scheda_modifica" method="post">
-
-                            <input type="hidden" name="op" value="modify_status"/>
-
-                            <div class='form_label'>
-                                <?php echo gdrcd_filter('out',
-                                    $MESSAGE['interface']['sheet']['modify_form']['status']); ?>
-                            </div>
-                            <div class='form_field'>
-                                <textarea type="textbox" name="modifica_status"
-                                          class="form_textarea"><?php echo gdrcd_filter('out',
-                                        $record['stato']); ?></textarea>
-                            </div>
-
-                            <div class='form_label'>
-                                <?php echo gdrcd_filter('out',
-                                    $MESSAGE['interface']['sheet']['modify_form']['healt']); ?>
-                            </div>
-                            <div class='form_field'>
-                                <input class="healt_input" name="modifica_salute"
-                                       value="<?php echo $record['salute']; ?>"/>/100
-                            </div>
-
-                            <div class='form_submit'>
-                                <input type="submit" value="<?php echo $MESSAGE['interface']['forms']['submit']; ?>"/>
-                                <input type="hidden"
-                                       value="<?php echo gdrcd_filter('get', $_REQUEST['pg']); ?>"
-                                       name="pg"/>
-                            </div>
-
-                        </form>
-                        <!-- Form master esilio -->
-                        <form action="main.php?page=scheda_modifica" method="post">
-
-
-                            <input type="hidden" name="op" value="exile"/>
-
-                            <div class='form_label'>
-                                <?php echo gdrcd_filter('out',
-                                    $MESSAGE['interface']['sheet']['modify_form']['exile']); ?>
-                            </div>
-                            <div class='form_field'>
-                                <!-- Giorno -->
-                                <select name="day" class="day">
-                                    <?php for ($i = 1; $i <= 31; $i++)
-                                    { ?>
-                                        <option value="<?php echo $i; ?>" <?php if (strftime('%d') == $i)
-                                        {
-                                            echo 'selected';
-                                        } ?>><?php echo $i; ?></option>
-                                    <?php }//for
-                                    ?>
-                                </select>
-                                <!-- Mese -->
-                                <select name="month" class="month">
-                                    <?php for ($i = 1; $i <= 12; $i++)
-                                    { ?>
-                                        <option value="<?php echo $i; ?>" <?php if (strftime('%m') == $i)
-                                        {
-                                            echo 'selected';
-                                        } ?>><?php echo $i; ?></option>
-                                    <?php }//for
-                                    ?>
-                                </select>
-                                <!-- Anno -->
-                                <select name="year" class="year">
-                                    <?php for ($i = strftime('%Y'); $i <= strftime('%Y') + 20; $i++)
-                                    { ?>
-                                        <option value="<?php echo $i; ?>"><?php echo $i; ?></option>
-                                    <?php }//for
-                                    ?>
-                                </select>
-                            </div>
-                            <div class='form_label'>
-                                <?php echo gdrcd_filter('out',
-                                    $MESSAGE['interface']['sheet']['modify_form']['why_exiled']); ?>
-                            </div>
-                            <div class='form_field'>
-                                <input name="causale"/>
-                            </div>
-
-                            <div class='form_submit'>
-                                <input type="submit" value="<?php echo $MESSAGE['interface']['forms']['submit']; ?>"/>
-                                <input type="hidden"
-                                       value="<?php echo gdrcd_filter('get', $_REQUEST['pg']); ?>"
-                                       name="pg"/>
-                            </div>
-
-                        </form>
-
-
-                    </div>
-                    <?php
-                }//if
-                ?>
+    <?php if ($is_self): ?>
+        <!-- Form utente: dati personali -->
+        <section class="gdrcd-card">
+            <div class="gdrcd-card-header">
+                <h3 class="gdrcd-h3">I miei dati</h3>
             </div>
+            <div class="gdrcd-card-body">
+                <form action="main.php?page=scheda_modifica" method="post" class="space-y-5">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="gdrcd-label" for="sm_cog"><?= gdrcd_filter('out', $lbl_mf['last_name']) ?></label>
+                            <input class="gdrcd-input" type="text" id="sm_cog" name="modifica_cognome"
+                                   value="<?= gdrcd_filter('out', $record['cognome']) ?>"/>
+                        </div>
+                        <?php if (($PARAMETERS['mode']['user_online_state'] ?? 'OFF') === 'ON'): ?>
+                            <div>
+                                <label class="gdrcd-label" for="sm_online"><?= gdrcd_filter('out', $lbl_mf['online_state']) ?></label>
+                                <input class="gdrcd-input" type="text" id="sm_online" name="online_state"
+                                       value="<?= gdrcd_filter('out', $record['online_status']) ?>" maxlength="100"/>
+                            </div>
+                        <?php endif; ?>
+                        <div>
+                            <label class="gdrcd-label" for="sm_img"><?= gdrcd_filter('out', $lbl_mf['url_img']) ?></label>
+                            <input class="gdrcd-input" type="url" id="sm_img" name="modifica_url_img"
+                                   value="<?= gdrcd_filter('out', $record['url_img']) ?>"/>
+                        </div>
+                        <?php if (($PARAMETERS['mode']['chat_avatar'] ?? 'OFF') === 'ON'): ?>
+                            <div>
+                                <label class="gdrcd-label" for="sm_imgc"><?= gdrcd_filter('out', $lbl_mf['url_img_chat']) ?></label>
+                                <input class="gdrcd-input" type="url" id="sm_imgc" name="modifica_url_img_chat"
+                                       value="<?= gdrcd_filter('out', $record['url_img_chat']) ?>"/>
+                            </div>
+                        <?php endif; ?>
+                    </div>
 
-            <?php
-        }//else
+                    <div>
+                        <label class="gdrcd-label" for="sm_descr"><?= gdrcd_filter('out', $lbl_m['description']) ?></label>
+                        <textarea class="gdrcd-textarea" id="sm_descr" name="modifica_background" rows="6"><?= gdrcd_filter('out', $record['descrizione']) ?></textarea>
+                        <p class="gdrcd-help"><?= gdrcd_filter('out', $MESSAGE['interface']['help']['bbcode']) ?></p>
+                    </div>
+                    <div>
+                        <label class="gdrcd-label" for="sm_sto"><?= gdrcd_filter('out', $lbl_mf['background']) ?></label>
+                        <textarea class="gdrcd-textarea" id="sm_sto" name="modifica_storia" rows="8"><?= gdrcd_filter('out', $record['storia']) ?></textarea>
+                        <p class="gdrcd-help"><?= gdrcd_filter('out', $MESSAGE['interface']['help']['bbcode']) ?></p>
+                    </div>
+                    <div>
+                        <label class="gdrcd-label" for="sm_aff"><?= gdrcd_filter('out', $lbl_mf['relationships']) ?></label>
+                        <textarea class="gdrcd-textarea" id="sm_aff" name="modifica_affetti" rows="5"><?= gdrcd_filter('out', $record['affetti']) ?></textarea>
+                        <p class="gdrcd-help"><?= gdrcd_filter('out', $MESSAGE['interface']['help']['bbcode']) ?></p>
+                    </div>
 
-        }//if?>
+                    <?php if (($PARAMETERS['mode']['allow_audio'] ?? 'OFF') === 'ON'): ?>
+                        <div>
+                            <label class="gdrcd-label" for="sm_med"><?= gdrcd_filter('out', $lbl_mf['url_media']) ?></label>
+                            <input class="gdrcd-input" type="url" id="sm_med" name="modifica_url_media"
+                                   value="<?= gdrcd_filter('out', $record['url_media']) ?>"/>
+                        </div>
+                    <?php endif; ?>
 
+                    <label class="inline-flex items-center gap-2 text-sm text-gdrcd-text-soft cursor-pointer">
+                        <input type="checkbox" name="blocca_media"
+                               <?= !empty($record['blocca_media']) ? 'checked' : '' ?>
+                               class="rounded border-gdrcd-border text-gdrcd-accent focus:ring-gdrcd-accent-ring"/>
+                        <span><?= gdrcd_filter('out', $lbl_mf['block_media']) ?></span>
+                    </label>
 
-    </div>
-    <!-- Link a piè di pagina -->
-    <div class="link_back">
-        <a href="main.php?page=scheda&pg=<?php echo gdrcd_filter('url',
-            $_REQUEST['pg']); ?>"><?php echo gdrcd_filter('out', $MESSAGE['interface']['sheet']['link']['back']); ?></a>
-    </div>
+                    <div class="flex justify-end pt-2 border-t border-gdrcd-border">
+                        <input type="hidden" name="op" value="modify"/>
+                        <input type="hidden" name="pg" value="<?= htmlspecialchars($pg) ?>"/>
+                        <button type="submit" class="gdrcd-btn-primary">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                            <?= gdrcd_filter('out', $MESSAGE['interface']['forms']['submit']) ?>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </section>
+    <?php endif; ?>
 
-</div><!-- pagina -->
+    <?php if ($is_gmod): ?>
+        <!-- Form master: status + salute -->
+        <section class="gdrcd-card">
+            <div class="gdrcd-card-header">
+                <h3 class="gdrcd-h3">Stato e salute (master)</h3>
+            </div>
+            <div class="gdrcd-card-body">
+                <form action="main.php?page=scheda_modifica" method="post" class="space-y-4">
+                    <div>
+                        <label class="gdrcd-label" for="sm_status"><?= gdrcd_filter('out', $lbl_mf['status']) ?></label>
+                        <textarea class="gdrcd-textarea" id="sm_status" name="modifica_status" rows="4"><?= gdrcd_filter('out', $record['stato']) ?></textarea>
+                    </div>
+                    <div>
+                        <label class="gdrcd-label" for="sm_hp"><?= gdrcd_filter('out', $lbl_mf['healt']) ?></label>
+                        <div class="flex items-center gap-2 max-w-xs">
+                            <input class="gdrcd-input" type="number" id="sm_hp" name="modifica_salute"
+                                   value="<?= (int)$record['salute'] ?>" min="0" max="100"/>
+                            <span class="text-gdrcd-muted">/ 100</span>
+                        </div>
+                    </div>
+                    <div class="flex justify-end pt-2 border-t border-gdrcd-border">
+                        <input type="hidden" name="op" value="modify_status"/>
+                        <input type="hidden" name="pg" value="<?= htmlspecialchars($pg) ?>"/>
+                        <button type="submit" class="gdrcd-btn-primary">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                            <?= gdrcd_filter('out', $MESSAGE['interface']['forms']['submit']) ?>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </section>
+    <?php endif; ?>
+
+    <?php if ($is_gm): ?>
+        <!-- Form admin: esilio -->
+        <section class="gdrcd-card">
+            <div class="gdrcd-card-header">
+                <h3 class="gdrcd-h3"><?= gdrcd_filter('out', $lbl_mf['exile']) ?></h3>
+                <p class="gdrcd-muted text-xs">Imposta data fine esilio e motivazione.</p>
+            </div>
+            <div class="gdrcd-card-body">
+                <form action="main.php?page=scheda_modifica" method="post" class="space-y-4">
+                    <div>
+                        <label class="gdrcd-label"><?= gdrcd_filter('out', $lbl_mf['exile']) ?> (data fine)</label>
+                        <div class="grid grid-cols-3 gap-2 max-w-md">
+                            <select class="gdrcd-select" name="day">
+                                <?php for ($i = 1; $i <= 31; $i++): ?>
+                                    <option value="<?= $i ?>" <?= (int)date('d') === $i ? 'selected' : '' ?>><?= $i ?></option>
+                                <?php endfor; ?>
+                            </select>
+                            <select class="gdrcd-select" name="month">
+                                <?php for ($i = 1; $i <= 12; $i++): ?>
+                                    <option value="<?= $i ?>" <?= (int)date('m') === $i ? 'selected' : '' ?>><?= $i ?></option>
+                                <?php endfor; ?>
+                            </select>
+                            <select class="gdrcd-select" name="year">
+                                <?php for ($i = (int)date('Y'); $i <= (int)date('Y') + 20; $i++): ?>
+                                    <option value="<?= $i ?>"><?= $i ?></option>
+                                <?php endfor; ?>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="gdrcd-label" for="sm_causale"><?= gdrcd_filter('out', $lbl_mf['why_exiled']) ?></label>
+                        <input class="gdrcd-input" type="text" id="sm_causale" name="causale" required/>
+                    </div>
+                    <div class="flex justify-end pt-2 border-t border-gdrcd-border">
+                        <input type="hidden" name="op" value="exile"/>
+                        <input type="hidden" name="pg" value="<?= htmlspecialchars($pg) ?>"/>
+                        <button type="submit" class="gdrcd-btn-danger"
+                                onclick="return confirm('Confermi esilio fino alla data selezionata?');">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+                            Applica esilio
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </section>
+    <?php endif; ?>
+
+</div>
