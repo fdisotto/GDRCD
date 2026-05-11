@@ -1,0 +1,21 @@
+{
+    "name": "gdrcd/gdrcd",
+    "description": "GDRCD - Gioco di Ruolo Chat Driven. CMS PHP per giochi di ruolo via chat in tempo reale.",
+    "type": "project",
+    "license": "CC-BY-SA-3.0",
+    "require": {
+        "php": "^8.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "GDRCD\\": "src/"
+        }
+    },
+    "config": {
+        "sort-packages": true,
+        "optimize-autoloader": true
+    },
+    "scripts": {
+        "lint": "find src includes pages layouts bin -type f -name '*.php' -print0 | xargs -0 -n1 php -l"
+    }
+}

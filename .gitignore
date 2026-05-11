@@ -191,3 +191,7 @@ backups/
 # esplicitamente la directory bin/ e i suoi file.
 !bin/
 !bin/*
+
+# Composer
+vendor/
+composer.phar

@@ -156,6 +156,49 @@ docker compose exec db mariadb -u gdrcd -pgdrcd gdrcd
 docker compose exec web php -l pages/scheda.inc.php
 ```
 
+### Composer / PSR-4 autoloader
+
+GDRCD include un `composer.json` con autoloader PSR-4 mappato sul namespace
+`GDRCD\` (directory `src/`). L'infrastruttura e' **additiva**: oggi non ci
+sono dipendenze esterne e i `require_once` legacy in `includes/required.php`
+continuano a funzionare. L'autoloader si attiva automaticamente non appena
+`vendor/autoload.php` esiste.
+
+Installare Composer (una volta sola, fuori o dentro il container):
+
+```bash
+# Sull'host (Debian/Ubuntu):
+sudo apt-get install -y composer
+
+# Oppure dentro il container web (immagine ufficiale di composer):
+docker compose exec web bash -c "curl -fsSL https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer"
+```
+
+Generare l'autoloader (non sono richieste dipendenze esterne):
+
+```bash
+docker compose exec web composer dump-autoload --optimize
+```
+
+Layout dei sorgenti namespaced:
+
+```
+src/
+├── Db.php                       # GDRCD\Db
+├── PasswordHash.php             # GDRCD\PasswordHash
+├── AudioController.php          # GDRCD\AudioController
+└── DbMigration/
+    ├── Engine.php               # GDRCD\DbMigration\Engine
+    └── Migration.php            # GDRCD\DbMigration\Migration
+```
+
+Le classi storiche in `includes/*.class.php` restano in piedi e definiscono
+le stesse API nel namespace globale (`Db`, `DbMigration`, ecc.). Il nuovo
+codice puo' gia' usare i FQN namespaced (`use GDRCD\Db;`) sfruttando
+l'autoloader, mentre i ~100 call site esistenti continuano a funzionare
+senza modifiche. La migrazione verso i namespace puo' avvenire in modo
+incrementale.
+
 ---
 
 ## Architettura

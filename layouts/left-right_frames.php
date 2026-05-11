@@ -33,6 +33,27 @@ $me = htmlspecialchars($_SESSION['login'] ?? '');
         </div>
         <div class="flex flex-wrap items-center gap-2">
             <?php if ($me !== ''): ?>
+            <form id="gdrcd-global-search" role="search" class="flex items-center gap-2 relative order-first md:order-none w-full md:w-auto">
+                <label for="gdrcd-global-search-input" class="sr-only">Cerca</label>
+                <input id="gdrcd-global-search-input"
+                       type="search"
+                       class="gdrcd-input w-full md:w-64"
+                       placeholder="Cerca..."
+                       autocomplete="off"
+                       aria-controls="gdrcd-global-search-results"
+                       aria-expanded="false">
+                <button type="submit" class="gdrcd-btn-ghost" aria-label="Cerca" title="Cerca">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z"/>
+                    </svg>
+                </button>
+                <div id="gdrcd-global-search-results"
+                     class="absolute top-full right-0 mt-1 w-80 max-h-[70vh] overflow-y-auto bg-gdrcd-panel border border-gdrcd-border rounded-md shadow-gdrcd-elev z-50 hidden"
+                     role="listbox"
+                     aria-label="Risultati ricerca">
+                    <!-- popolato da includes/search.js -->
+                </div>
+            </form>
             <a href="main.php?page=scheda&pg=<?= urlencode($_SESSION['login']) ?>" class="gdrcd-btn-secondary">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 Scheda

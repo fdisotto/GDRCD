@@ -7,6 +7,19 @@ if(file_exists(dirname(__FILE__).'/config-overrides.php')){
     include_once dirname(__FILE__).'/config-overrides.php';
 }
 
+/*
+ * Composer autoloader (additive).
+ * Se presente, abilita il caricamento PSR-4 delle classi sotto il namespace
+ * GDRCD\ (vedi composer.json: "GDRCD\\": "src/"). I require_once legacy
+ * qui sotto restano in piedi e continuano a definire le classi nel namespace
+ * globale per retrocompatibilita' con i call site esistenti.
+ */
+$gdrcdAutoloader = dirname(__FILE__) . '/../vendor/autoload.php';
+if (file_exists($gdrcdAutoloader)) {
+    require_once $gdrcdAutoloader;
+}
+unset($gdrcdAutoloader);
+
 require_once dirname(__FILE__) . '/DbMigration/DbMigrationEngine.class.php';
 require_once dirname(__FILE__) . '/DbMigration/DbMigration.class.php';
 
