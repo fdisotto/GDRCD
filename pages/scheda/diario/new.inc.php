@@ -1,51 +1,51 @@
-<?php /*HELP: */
-//Se non e' stato specificato il nome del pg
-if (isset($_REQUEST['pg']) === false) {
-    echo gdrcd_filter('out', $MESSAGE['error']['unknonw_character_sheet']);
-    exit();
-}
+<?php
+/**
+ * Diario PG — form nuova pagina.
+ */
+
+$lbl = $MESSAGE['interface']['sheet']['diary'];
 ?>
 
-<div class="form_container">
-    <form class="form"
-          action="main.php?page=scheda_diario&pg=<?php echo gdrcd_filter('url', $_REQUEST['pg']); ?>" method="post">
+<section class="gdrcd-card">
+    <div class="gdrcd-card-header">
+        <h3 class="gdrcd-h3">Nuova pagina</h3>
+    </div>
+    <div class="gdrcd-card-body">
+        <form action="main.php?page=scheda_diario&pg=<?= urlencode($_REQUEST['pg']) ?>" method="post" class="space-y-5">
+            <div class="grid grid-cols-1 md:grid-cols-[1fr_12rem] gap-4">
+                <div>
+                    <label class="gdrcd-label" for="dia_tit"><?= gdrcd_filter('out', $lbl['title']) ?></label>
+                    <input class="gdrcd-input" type="text" id="dia_tit" name="titolo" required/>
+                </div>
+                <div>
+                    <label class="gdrcd-label" for="dia_data"><?= gdrcd_filter('out', $lbl['date']) ?></label>
+                    <input class="gdrcd-input" type="date" id="dia_data" name="data"
+                           value="<?= date('Y-m-d') ?>" required/>
+                </div>
+            </div>
 
-        <!-- TITOLO -->
-        <div class="single_input">
-            <div class="label"><?= gdrcd_filter('out', $MESSAGE['interface']['sheet']['diary']['title']); ?></div>
-            <input type="text" name="titolo" class="form_input" required/>
-        </div>
+            <div>
+                <label class="gdrcd-label" for="dia_vis"><?= gdrcd_filter('out', $lbl['visible']) ?></label>
+                <select class="gdrcd-select max-w-xs" id="dia_vis" name="visibile" required>
+                    <option value="si">Pubblica</option>
+                    <option value="no">Privata</option>
+                </select>
+            </div>
 
-        <!-- DATA -->
-        <div class="single_input">
-            <div class="label"><?= gdrcd_filter('out', $MESSAGE['interface']['sheet']['diary']['date']); ?></div>
-            <input required type="date" name="data" class="form_input" value="<?= date('Y-m-d'); ?>"/>
-        </div>
+            <div>
+                <label class="gdrcd-label" for="dia_testo"><?= gdrcd_filter('out', $lbl['text']) ?></label>
+                <textarea class="gdrcd-textarea" id="dia_testo" name="testo" rows="12"></textarea>
+            </div>
 
-        <!-- VISIBILE -->
-        <div class="single_input">
-            <div class="label"><?= gdrcd_filter('out', $MESSAGE['interface']['sheet']['diary']['visible']); ?></div>
-            <select name="visibile" required>
-                <option value="si">si</option>
-                <option value="no">no</option>
-            </select>
-        </div>
-
-        <!-- TESTO -->
-        <div class="single_input">
-            <div class="label"><?= gdrcd_filter('out', $MESSAGE['interface']['sheet']['diary']['text']); ?></div>
-            <textarea name="testo"></textarea>
-        </div>
-
-        <!-- SUBMIT -->
-        <div class="single_input">
-            <input type="submit" name="submit" value="Salva"/>
-            <input type="hidden" name="op" value="save_new">
-            <input type="hidden" name="pg" value="<?= gdrcd_filter('out', $_REQUEST['pg']); ?>">
-        </div>
-</div>
-<!-- Link a piè di pagina -->
-<div class="link_back">
-    <a href="main.php?page=scheda_diario&pg=<?php echo gdrcd_filter('url', $_REQUEST['pg']); ?>"><?php echo gdrcd_filter('out',
-            $MESSAGE['interface']['sheet']['diary']['back']); ?></a>
-</div>
+            <div class="flex flex-col-reverse sm:flex-row gap-3 sm:justify-end pt-2 border-t border-gdrcd-border">
+                <a href="main.php?page=scheda_diario&pg=<?= urlencode($_REQUEST['pg']) ?>" class="gdrcd-btn-ghost">Annulla</a>
+                <input type="hidden" name="op" value="save_new"/>
+                <input type="hidden" name="pg" value="<?= htmlspecialchars($_REQUEST['pg']) ?>"/>
+                <button type="submit" class="gdrcd-btn-primary">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                    Salva
+                </button>
+            </div>
+        </form>
+    </div>
+</section>
