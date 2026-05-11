@@ -129,7 +129,7 @@ $op = $_POST['op'] ?? null;
                                         <li><strong>Successo critico:</strong> <?= gdrcd_filter('out', $row['CD_4']) ?></li>
                                     </ul>
                                 <?php else: ?>
-                                    <?= $row['contenuto'] ?>
+                                    <?= gdrcd_bbcoder(gdrcd_filter('out', $row['contenuto'])) ?>
                                 <?php endif; ?>
                             </div>
 

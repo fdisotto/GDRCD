@@ -151,7 +151,7 @@ $handleDBConnection = gdrcd_connect();
                  * @author Blancks
                  */
                 if ($PARAMETERS['mode']['chat_avatar'] == 'ON' && !empty($row['url_img_chat'])) {
-                    $add_chat .= '<img src="' . $row['url_img_chat'] . '" class="chat_avatar" style="width:' . $PARAMETERS['settings']['chat_avatar']['width'] . 'px; height:' . $PARAMETERS['settings']['chat_avatar']['height'] . 'px;" />';
+                    $add_chat .= '<img src="' . htmlspecialchars($row['url_img_chat'], ENT_QUOTES) . '" class="chat_avatar" style="width:' . (int)$PARAMETERS['settings']['chat_avatar']['width'] . 'px; height:' . (int)$PARAMETERS['settings']['chat_avatar']['height'] . 'px;" />';
                 }
 
 
@@ -161,7 +161,9 @@ $handleDBConnection = gdrcd_connect();
                     $add_chat .= $add_icon;
                 }
 
-                $add_chat .= '<span class="chat_name"><a href="#" onclick="Javascript: document.getElementById(\'tag\').value=\'' . $row['mittente'] . '\'; document.getElementById(\'type\')[2].selected = \'1\'; document.getElementById(\'message\').focus();">' . $row['mittente'] . '</a>';
+                $mittente_js   = htmlspecialchars(addslashes($row['mittente']), ENT_QUOTES);
+                $mittente_html = gdrcd_filter('out', $row['mittente']);
+                $add_chat .= '<span class="chat_name"><a href="#" onclick="Javascript: document.getElementById(\'tag\').value=\'' . $mittente_js . '\'; document.getElementById(\'type\')[2].selected = \'1\'; document.getElementById(\'message\').focus();">' . $mittente_html . '</a>';
 
                 if (empty ($row['destinatario']) === false) {
                     $add_chat .= '<span class="chat_tag"> [' . gdrcd_filter('out', $row['destinatario']) . ']</span>';
@@ -192,7 +194,7 @@ $handleDBConnection = gdrcd_connect();
                  * @author Blancks
                  */
                 if ($PARAMETERS['mode']['chat_avatar'] == 'ON' && !empty($row['url_img_chat'])) {
-                    $add_chat .= '<img src="' . $row['url_img_chat'] . '" class="chat_avatar" style="width:' . $PARAMETERS['settings']['chat_avatar']['width'] . 'px; height:' . $PARAMETERS['settings']['chat_avatar']['height'] . 'px;" />';
+                    $add_chat .= '<img src="' . htmlspecialchars($row['url_img_chat'], ENT_QUOTES) . '" class="chat_avatar" style="width:' . (int)$PARAMETERS['settings']['chat_avatar']['width'] . 'px; height:' . (int)$PARAMETERS['settings']['chat_avatar']['height'] . 'px;" />';
                 }
 
 
@@ -202,7 +204,9 @@ $handleDBConnection = gdrcd_connect();
                     $add_chat .= $add_icon;
                 }
 
-                $add_chat .= '<span class="chat_name"><a href="#" onclick="Javascript: document.getElementById(\'tag\').value=\'' . $row['mittente'] . '\';  document.getElementById(\'type\')[2].selected = \'1\'; document.getElementById(\'message\').focus();">' . $row['mittente'] . '</a>';
+                $mittente_js   = htmlspecialchars(addslashes($row['mittente']), ENT_QUOTES);
+                $mittente_html = gdrcd_filter('out', $row['mittente']);
+                $add_chat .= '<span class="chat_name"><a href="#" onclick="Javascript: document.getElementById(\'tag\').value=\'' . $mittente_js . '\';  document.getElementById(\'type\')[2].selected = \'1\'; document.getElementById(\'message\').focus();">' . $mittente_html . '</a>';
 
                 if (empty ($row['destinatario']) === false) {
                     $add_chat .= '<span class="chat_tag"> [' . gdrcd_filter('out', $row['destinatario']) . ']</span>';
@@ -229,7 +233,7 @@ $handleDBConnection = gdrcd_connect();
                      */
                     $add_chat .= '<div class="chat_row_' . $row['tipo'] . '">';
 
-                    $add_chat .= '<span class="chat_name">' . $row['mittente'] . ' ' . $MESSAGE['chat']['whisper']['by'] . ': </span> ';
+                    $add_chat .= '<span class="chat_name">' . gdrcd_filter('out', $row['mittente']) . ' ' . $MESSAGE['chat']['whisper']['by'] . ': </span> ';
                     $add_chat .= '<span class="chat_msg">' . gdrcd_filter('out', $row['testo']) . '</span>';
 
                     /**    * Fix problema visualizzazione spazi vuoti con i sussurri
@@ -260,7 +264,7 @@ $handleDBConnection = gdrcd_connect();
                              */
                             $add_chat .= '<div class="chat_row_' . $row['tipo'] . '">';
 
-                            $add_chat .= '<span class="chat_msg">' . $row['mittente'] . ' ' . $MESSAGE['chat']['whisper']['from_to'] . ' ' . gdrcd_filter('out',
+                            $add_chat .= '<span class="chat_msg">' . gdrcd_filter('out', $row['mittente']) . ' ' . $MESSAGE['chat']['whisper']['from_to'] . ' ' . gdrcd_filter('out',
                                     $row['destinatario']) . ' </span>';
                             $add_chat .= '<span class="chat_msg">' . gdrcd_filter('out', $row['testo']) . '</span>';
 
@@ -282,7 +286,7 @@ $handleDBConnection = gdrcd_connect();
                 $add_chat .= '<div class="chat_row_' . $row['tipo'] . '">';
 
                 $add_chat .= '<span class="chat_time">' . gdrcd_format_time($row['ora']) . '</span>';
-                $add_chat .= '<span class="chat_name">' . $row['destinatario'] . '</span> ';
+                $add_chat .= '<span class="chat_name">' . gdrcd_filter('out', $row['destinatario']) . '</span> ';
                 $add_chat .= '<span class="chat_msg">' . gdrcd_chatcolor(gdrcd_filter('out', $row['testo'])) . '</span>';
 
                 /**    * Fix problema visualizzazione spazi vuoti con i sussurri

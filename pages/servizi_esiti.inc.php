@@ -58,7 +58,7 @@ $op = $_POST['op'] ?? null;
                             </div>
                         <?php endif; ?>
                         <div class="mt-2 text-sm text-gdrcd-text leading-relaxed">
-                            <?= $r['contenuto'] ?>
+                            <?= gdrcd_bbcoder(gdrcd_filter('out', $r['contenuto'])) ?>
                         </div>
                         <?php if (!empty($r['noteoff'])): ?>
                             <div class="mt-2 text-xs italic text-gdrcd-muted border-l-2 border-gdrcd-border pl-2">

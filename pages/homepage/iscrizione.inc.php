@@ -193,7 +193,7 @@ $action = htmlspecialchars($_SERVER['SCRIPT_NAME'] . '?' . $_SERVER['QUERY_STRIN
                                 while ($row = gdrcd_query($result, 'fetch')):
                                     $sel = (gdrcd_filter('get', $_POST['razza'] ?? '') == $row['id_razza']) ? 'selected' : '';
                                     ?>
-                                    <option value="<?= $row['id_razza'] ?>" <?= $sel ?>>
+                                    <option value="<?= (int)$row['id_razza'] ?>" <?= $sel ?>>
                                         <?= gdrcd_filter('out', $row['nome_razza']) ?>
                                     </option>
                                 <?php endwhile; ?>

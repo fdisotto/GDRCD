@@ -6,7 +6,7 @@ if (gdrcd_filter('num',$blocco['id'])>0) {
     ?>
 
     <div class="page_title">
-        <h2>Serie di esiti: <?php echo $blocco['titolo'];?></h2>
+        <h2>Serie di esiti: <?php echo gdrcd_filter('out', $blocco['titolo']);?></h2>
     </div>
 
     <div class="form_info">
@@ -56,7 +56,7 @@ if (gdrcd_filter('num',$blocco['id'])>0) {
                    value="add">
             <input type="hidden"
                    name="id"
-                   value="<?php echo $_GET['blocco'];?>">
+                   value="<?php echo (int)$_GET['blocco'];?>">
             <input type="submit"
                    value="<?php echo gdrcd_filter('out',$MESSAGE['interface']['forms']['submit']);?>" />
         </div>

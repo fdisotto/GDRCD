@@ -363,13 +363,16 @@ if((gdrcd_filter_get($_REQUEST['chat']) == 'yes') && (empty($_SESSION['login']) 
                  * @author Blancks
                  */
                 if($PARAMETERS['mode']['chat_avatar'] == 'ON' && ! empty($row['url_img_chat'])) {
-                    $chat_avatar = '<img src="'.$row['url_img_chat'].'" class="chat_avatar" alt="" />';
+                    $chat_avatar = '<img src="'.htmlspecialchars($row['url_img_chat'], ENT_QUOTES).'" class="chat_avatar" alt="" />';
 
                     // Se è stato impostato il link sull'avatar di chat, avvio la costruzione
                     if(isset($PARAMETERS['settings']['chat_avatar']['link']['mode']) and ($PARAMETERS['settings']['chat_avatar']['link']['mode']  == 'ON')) {
+                        // Per il link al popup: encode JS string + URL component per evitare XSS via mittente
+                        $mittente_url = urlencode($row['mittente']);
+                        $mittente_js  = htmlspecialchars(addslashes($row['mittente']), ENT_QUOTES);
                         $chat_avatar_url = ( isset($PARAMETERS['settings']['chat_avatar']['link']['popup']) and ($PARAMETERS['settings']['chat_avatar']['link']['popup'] == 'ON') )
-                            ? "javascript:modalWindow('scheda', 'Scheda di ". $row['mittente'] ."', 'popup.php?page=scheda&pg=". $row['mittente'] ."');"
-                            : "main.php?page=scheda&pg=".$row['mittente'];
+                            ? "javascript:modalWindow('scheda', 'Scheda di ". $mittente_js ."', 'popup.php?page=scheda&amp;pg=". $mittente_url ."');"
+                            : "main.php?page=scheda&amp;pg=".$mittente_url;
 
                         // Inserisco l'avatar di chat cliccabile
                         $add_chat .= '<a href="'.$chat_avatar_url.'">'.$chat_avatar.'</a>';
@@ -385,7 +388,10 @@ if((gdrcd_filter_get($_REQUEST['chat']) == 'yes') && (empty($_SESSION['login']) 
                 if($PARAMETERS['mode']['chaticons'] == 'ON') {
                     $add_chat .= $add_icon;
                 }
-                $add_chat .= '<span class="chat_name"><a href="#" onclick="Javascript: document.getElementById(\'tag\').value=\''.$row['mittente'].'\'; document.getElementById(\'type\')[2].selected = \'1\'; document.getElementById(\'message\').focus();">'.$row['mittente'].'</a>';
+                // Encode mittente per JS-string e per testo HTML (XSS hardening)
+                $mittente_js   = htmlspecialchars(addslashes($row['mittente']), ENT_QUOTES);
+                $mittente_html = gdrcd_filter('out', $row['mittente']);
+                $add_chat .= '<span class="chat_name"><a href="#" onclick="Javascript: document.getElementById(\'tag\').value=\''.$mittente_js.'\'; document.getElementById(\'type\')[2].selected = \'1\'; document.getElementById(\'message\').focus();">'.$mittente_html.'</a>';
 
                 if(empty ($row['destinatario']) === false) {
                     $add_chat .= '<span class="chat_tag"> ['.gdrcd_filter('out', $row['destinatario']).']</span>';
@@ -402,19 +408,19 @@ if((gdrcd_filter_get($_REQUEST['chat']) == 'yes') && (empty($_SESSION['login']) 
                 break;
             case 'S':
                 if($_SESSION['login'] == $row['destinatario']) {
-                    $add_chat .= '<span class="chat_name">'.$row['mittente'].' '.$MESSAGE['chat']['whisper']['by'].': </span> ';
+                    $add_chat .= '<span class="chat_name">'.gdrcd_filter('out', $row['mittente']).' '.$MESSAGE['chat']['whisper']['by'].': </span> ';
                     $add_chat .= '<span class="chat_msg">'.gdrcd_filter('out', $row['testo']).'</span>';
                 } elseif($_SESSION['login'] == $row['mittente']) {
                     $add_chat .= '<span class="chat_msg">'.$MESSAGE['chat']['whisper']['to'].' '.gdrcd_filter('out', $row['destinatario']).': </span>';
                     $add_chat .= '<span class="chat_msg">'.gdrcd_filter('out', $row['testo']).'</span>';
                 } elseif(($_SESSION['permessi'] >= MODERATOR) && ($PARAMETERS['mode']['spyprivaterooms'] == 'ON')) {
-                    $add_chat .= '<span class="chat_msg">'.$row['mittente'].' '.$MESSAGE['chat']['whisper']['from_to'].' '.gdrcd_filter('out', $row['destinatario']).' </span>';
+                    $add_chat .= '<span class="chat_msg">'.gdrcd_filter('out', $row['mittente']).' '.$MESSAGE['chat']['whisper']['from_to'].' '.gdrcd_filter('out', $row['destinatario']).' </span>';
                     $add_chat .= '<span class="chat_msg">'.gdrcd_filter('out', $row['testo']).'</span>';
                 }
                 break;
             case 'N':
                 $add_chat .= '<span class="chat_time">'.gdrcd_format_time($row['ora']).'</span>';
-                $add_chat .= '<span class="chat_name">'.$row['destinatario'].'</span> ';
+                $add_chat .= '<span class="chat_name">'.gdrcd_filter('out', $row['destinatario']).'</span> ';
                 $add_chat .= '<span class="chat_msg">'.gdrcd_chatcolor(gdrcd_filter('out', $row['testo'])).'</span>';
                 break;
             case 'M':

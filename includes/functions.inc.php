@@ -972,7 +972,7 @@ function gdrcd_list($str)
             $characters = gdrcd_query($query, 'result');
 
             while ($option = gdrcd_query($characters, 'fetch')) {
-                $list .= '<option value="' . $option['nome'] . '" />';//TODO escape HTMl del nome!
+                $list .= '<option value="' . htmlspecialchars($option['nome'], ENT_QUOTES) . '" />';
             }
             gdrcd_query($characters, 'free');
             $list .= '</datalist>';

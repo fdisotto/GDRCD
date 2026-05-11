@@ -75,7 +75,7 @@ gdrcd_query($result, 'free');
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <?php foreach ($boards as $b): ?>
-                        <a href="main.php?page=forum&op=visit&what=<?= $b['id'] ?>"
+                        <a href="main.php?page=forum&op=visit&what=<?= (int)$b['id'] ?>"
                            class="group gdrcd-card h-full block hover:border-gdrcd-accent-ring/60 hover:shadow-gdrcd-elev transition-all">
                             <div class="p-4 flex items-center gap-3">
                                 <span class="inline-flex items-center justify-center w-10 h-10 rounded-lg <?= $b['has_new'] ? 'bg-gdrcd-accent text-white' : 'bg-gdrcd-accent-soft text-gdrcd-accent border border-gdrcd-accent-ring/30' ?> shrink-0">
@@ -88,7 +88,7 @@ gdrcd_query($result, 'free');
                                         <?= gdrcd_filter('out', $b['nome']) ?>
                                     </div>
                                     <div class="text-xs text-gdrcd-muted mt-0.5">
-                                        <?= $b['topics'] ?> topic
+                                        <?= (int)$b['topics'] ?> topic
                                         <?php if ($b['has_new']): ?>
                                             <span class="gdrcd-badge-error ml-1 text-[10px]">
                                                 <?= gdrcd_filter('out', $MESSAGE['interface']['forums']['topic']['new_posts_forum']) ?>

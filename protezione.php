@@ -58,11 +58,11 @@ class Protector {
     <div id="container">
         <div id="header">
             <div id="header_left"></div>
-            <div id="header_main"><?php echo $this->appName; ?></div>
+            <div id="header_main"><?php echo htmlspecialchars($this->appName); ?></div>
             <div id="header_right"></div>
         </div>
         <div id="content">
-            <form action="<?php echo $_SERVER['PHP_SELF']; ?>" method="post">
+            <form action="<?php echo htmlspecialchars($_SERVER['PHP_SELF'], ENT_QUOTES); ?>" method="post">
                 <label>Password:
                     <input name="passwd" type="password" size="20" />
                 </label><br />

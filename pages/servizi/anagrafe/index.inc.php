@@ -132,7 +132,7 @@ $generi = ['m', 'f'];
                 <select name="razza" class="gdrcd-select mt-1 w-full">
                     <option value=""></option>
                     <?php foreach ($razze as $r): ?>
-                        <option value="<?= $r['id_razza'] ?>"<?= (gdrcd_filter('get', $_REQUEST['razza'] ?? '') == $r['id_razza']) ? ' selected' : '' ?>>
+                        <option value="<?= (int)$r['id_razza'] ?>"<?= (gdrcd_filter('get', $_REQUEST['razza'] ?? '') == $r['id_razza']) ? ' selected' : '' ?>>
                             <?= gdrcd_filter('out', $r['nome_razza']) ?>
                         </option>
                     <?php endforeach; ?>
