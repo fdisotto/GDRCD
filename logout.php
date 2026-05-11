@@ -1,44 +1,73 @@
 <?php
+/**
+ * Logout — chiude sessione e aggiorna ora_uscita PG.
+ */
 
-//Includio i parametri, la configurazione, la lingua e le funzioni
-require ('includes/required.php');
+require 'includes/required.php';
 
-//Eseguo la connessione al database
 $handleDBConnection = gdrcd_connect();
 
-/** * Aggiorno l'ora di uscita del pg
-* @author Blancks
-*/
-gdrcd_query("UPDATE personaggio SET ora_uscita = NOW() WHERE nome='" . gdrcd_filter('in', $_SESSION['login']) . "'");
+$user = $_SESSION['login'] ?? '';
+if ($user !== '') {
+    gdrcd_query("UPDATE personaggio SET ora_uscita = NOW()
+                 WHERE nome = '" . gdrcd_filter('in', $user) . "'");
+}
+
+$theme = htmlspecialchars($PARAMETERS['themes']['current_theme']);
+$home_name = gdrcd_filter('out', $PARAMETERS['info']['homepage_name'] ?? 'Homepage');
+$site_name = htmlspecialchars($PARAMETERS['info']['site_name'] ?? '');
 ?>
-<html>
+<!DOCTYPE html>
+<html lang="it">
 <head>
-    <meta http-equiv="Content-Type" content='text/html; charset=utf-8'>
-    <link rel="stylesheet" href="themes/<?php echo $PARAMETERS['themes']['current_theme']; ?>/main.css" type='text/css'>
-    <link rel="shortcut icon" href="imgs/favicon.ico"/>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Logout · <?= $site_name ?></title>
+    <link rel="stylesheet" href="themes/<?= $theme ?>/main.css" type="text/css">
+    <link rel="stylesheet" href="themes/tailwind/output.css" type="text/css">
+    <link rel="shortcut icon" href="imgs/favicon.ico">
 </head>
-<body class="logout_body">
-    <div class="logout_box">
-        <span class="logout_text"><?php echo gdrcd_filter('out', $_SESSION['login']) . ' ' . $MESSAGE['logout']['confirmation']; ?></span>
-        <span class="logout_text">
-            <?php echo gdrcd_filter('out', $MESSAGE['logout']['logbackin']) . ' '; ?>
-            <a href="index.php">
-                <?php echo gdrcd_filter('out', $PARAMETERS['info']['homepage_name']); ?>
+<body class="min-h-screen bg-gdrcd-bg flex items-center justify-center px-4 py-10">
+
+    <main class="gdrcd-card max-w-md w-full text-center space-y-5 p-8">
+        <div class="flex justify-center">
+            <span class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gdrcd-accent-soft text-gdrcd-accent">
+                <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                </svg>
+            </span>
+        </div>
+
+        <header class="space-y-1">
+            <?php if ($user !== ''): ?>
+                <h1 class="font-display text-2xl text-gdrcd-text">
+                    <?= gdrcd_filter('out', $user) ?>
+                </h1>
+            <?php endif; ?>
+            <p class="text-gdrcd-text-soft">
+                <?= gdrcd_filter('out', $MESSAGE['logout']['confirmation']) ?>
+            </p>
+        </header>
+
+        <div class="text-sm text-gdrcd-text-soft">
+            <?= gdrcd_filter('out', $MESSAGE['logout']['greeting']) ?>
+        </div>
+
+        <div class="pt-2 border-t border-gdrcd-border">
+            <a href="index.php" class="gdrcd-btn-primary inline-flex">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                <?= gdrcd_filter('out', $MESSAGE['logout']['logbackin']) ?> <?= $home_name ?>
             </a>
-        </span>
-        <span class="logout_text"><?php echo gdrcd_filter('out', $MESSAGE['logout']['greeting']); ?></span>
-    </div>
+        </div>
+    </main>
+
 </body>
 </html>
 <?php
-/*Chiudo la connessione al database*/
 gdrcd_close_connection($handleDBConnection);
 
-/** * Per ottimizzare le risorse impiegate le liberiamo dopo che non ne abbiamo più bisogno
-* @author Blancks
-*/
-unset($MESSAGE);
-unset($PARAMETERS);
+unset($MESSAGE, $PARAMETERS);
 
 session_unset();
 session_destroy();
