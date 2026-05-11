@@ -13,6 +13,9 @@ session_start();
 /* Includo i file necessari */
 include('includes/constant_values.inc.php');
 include('config.inc.php');
+if (file_exists(__DIR__ . '/includes/config-overrides.php')) {
+    include __DIR__ . '/includes/config-overrides.php';
+}
 include('vocabulary/' . $PARAMETERS['languages']['set'] . '.vocabulary.php');
 include('includes/functions.inc.php');
 
@@ -39,22 +42,47 @@ if ($PARAMETERS['mode']['chatsavepvt'] == 'ON') {
         'result');
 }
 /*Inizio a preparare il testo da inserire poi nel file da salvare.*/
-$add_chat = '
-        <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-        <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="it" lang="it">
-        <head>
-        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-        <link rel="shortcut icon" href="imgs/favicon.ico" type="image/gif" />
-        <link rel="stylesheet" href="' . $PARAMETERS['info']['site_url'] . '/css/homepage.css" type="text/css" />
-        <link rel="stylesheet" href="' . $PARAMETERS['info']['site_url'] . '/themes/' . $PARAMETERS['themes']['current_theme'] . '/main.css" type="text/css" />
-        <link rel="stylesheet" href="' . $PARAMETERS['info']['site_url'] . '/themes/' . $PARAMETERS['themes']['current_theme'] . '/chat.css" type="text/css" />
-        <link rel="stylesheet" href="' . $PARAMETERS['info']['site_url'] . '/layouts/' . $PARAMETERS['themes']['kind_of_layout'] . '_frames.php?css=true" type="text/css" />
-        </head>
-
-        <body class="main_body" style="overflow:auto; text-align:justify;">
-        ';
+$add_chat = '<!DOCTYPE html>
+<html xml:lang="it" lang="it">
+<head>
+<meta charset="utf-8" />
+<title>Log chat — ' . htmlspecialchars($PARAMETERS['info']['site_name']) . '</title>
+<style>
+    :root {
+        --bg:#f8f7f4; --panel:#fff; --border:#e5e0d4;
+        --text:#1f2937; --soft:#374151; --muted:#6b7280; --subtle:#9ca3af;
+        --accent:#a47e3b; --accent-soft:#f3ead4;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;padding:24px;background:var(--bg);color:var(--text);
+         font-family:Inter,system-ui,sans-serif;line-height:1.5;font-size:14px}
+    .wrap{max-width:880px;margin:0 auto;background:var(--panel);border:1px solid var(--border);
+          border-radius:12px;padding:24px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+    h1{font-family:"Cinzel",serif;margin:0 0 16px;font-size:22px;font-weight:700}
+    [class^="chat_row_"]{padding:8px 0;border-bottom:1px solid var(--border);
+                        display:flex;flex-wrap:wrap;align-items:flex-start;gap:6px}
+    [class^="chat_row_"]:last-child{border-bottom:0}
+    .chat_avatar{width:40px;height:40px;border-radius:50%;object-fit:cover;
+                 border:1px solid var(--border);flex-shrink:0;margin-right:4px}
+    .chat_time{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;flex-shrink:0;margin-top:2px}
+    .chat_name{font-weight:600;color:var(--accent);flex-shrink:0}
+    .chat_name a{color:var(--accent);text-decoration:none}
+    .chat_tag{font-size:12px;color:var(--muted)}
+    .chat_msg{color:var(--soft);flex:1;min-width:0;word-wrap:break-word}
+    .chat_master{color:var(--accent);font-weight:600;font-style:italic}
+    .chat_icons{display:inline-flex;align-items:center;gap:4px;flex-shrink:0}
+    .presenti_ico{width:16px;height:16px;border-radius:2px}
+    .chat_img{max-width:320px;border-radius:6px;border:1px solid var(--border)}
+    .chat_row_A{font-style:italic}
+    .chat_row_S{color:var(--muted);font-size:12px;font-style:italic}
+    .chat_row_M{background:var(--accent-soft);padding:4px 12px;border-radius:6px}
+    .chat_row_I{justify-content:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Log chat</h1>
+';
 
 
 $i = 0;
@@ -146,7 +174,7 @@ while ($row = gdrcd_query($query, 'fetch')) {
              * @author Blancks
              */
             if ($PARAMETERS['mode']['chat_avatar'] == 'ON' && !empty($row['url_img_chat'])) {
-                $add_chat .= '<img src="' . $row['url_img_chat'] . '" class="chat_avatar" style="width:' . $PARAMETERS['settings']['chat_avatar']['width'] . 'px; height:' . $PARAMETERS['settings']['chat_avatar']['height'] . 'px;" />';
+                $add_chat .= '<img src="' . $row['url_img_chat'] . '" class="chat_avatar" alt="" />';
             }
 
 
@@ -187,7 +215,7 @@ while ($row = gdrcd_query($query, 'fetch')) {
              * @author Blancks
              */
             if ($PARAMETERS['mode']['chat_avatar'] == 'ON' && !empty($row['url_img_chat'])) {
-                $add_chat .= '<img src="' . $row['url_img_chat'] . '" class="chat_avatar" style="width:' . $PARAMETERS['settings']['chat_avatar']['width'] . 'px; height:' . $PARAMETERS['settings']['chat_avatar']['height'] . 'px;" />';
+                $add_chat .= '<img src="' . $row['url_img_chat'] . '" class="chat_avatar" alt="" />';
             }
 
 
@@ -368,9 +396,10 @@ while ($row = gdrcd_query($query, 'fetch')) {
     $add_chat .= '#stop#';
 }
 $add_chat .= '
-        </body>
-        </html>
-        ';
+</div>
+</body>
+</html>
+';
 /* Scrivo tutto in un file di testo */
 $start = gdrcd_format_datetime_cat($start_time);
 $end = gdrcd_format_datetime_cat($end_time);

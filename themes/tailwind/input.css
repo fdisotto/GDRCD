@@ -222,6 +222,52 @@
         @apply bg-gdrcd-accent text-white border-gdrcd-accent;
     }
 
+    /* ---------- Chat (rendered via iframe in #pagina_chat) ---------- */
+    #pagina_chat {
+        @apply text-sm text-gdrcd-text-soft;
+    }
+    #pagina_chat > div[class^="chat_row_"] {
+        @apply py-2 border-b border-gdrcd-border last:border-0 flex flex-wrap items-start gap-x-2 gap-y-1;
+    }
+    #pagina_chat .chat_avatar {
+        @apply w-10 h-10 rounded-full object-cover border border-gdrcd-border shrink-0 mr-1;
+        width: 2.5rem !important;
+        height: 2.5rem !important;
+    }
+    #pagina_chat .chat_time {
+        @apply text-xs text-gdrcd-muted shrink-0 mt-0.5 tabular-nums;
+    }
+    #pagina_chat .chat_name {
+        @apply font-semibold text-gdrcd-accent shrink-0;
+    }
+    #pagina_chat .chat_name a {
+        @apply text-gdrcd-accent hover:text-gdrcd-accent-hover no-underline;
+    }
+    #pagina_chat .chat_tag {
+        @apply text-xs text-gdrcd-muted;
+    }
+    #pagina_chat .chat_msg {
+        @apply text-gdrcd-text-soft flex-1 min-w-0 break-words;
+    }
+    #pagina_chat .chat_master {
+        @apply text-gdrcd-accent font-semibold italic;
+    }
+    #pagina_chat .chat_icons {
+        @apply inline-flex items-center gap-1 shrink-0;
+    }
+    #pagina_chat .presenti_ico {
+        @apply w-4 h-4 rounded;
+    }
+    #pagina_chat .chat_img {
+        @apply max-w-xs rounded border border-gdrcd-border;
+    }
+    /* Tipi specifici (azione, sussurro, master, narrazione, immagine) */
+    #pagina_chat .chat_row_A { @apply italic; }
+    #pagina_chat .chat_row_S { @apply text-gdrcd-muted text-xs italic; }
+    #pagina_chat .chat_row_M { @apply bg-gdrcd-accent-soft/30 px-3 rounded-md; }
+    #pagina_chat .chat_row_N { @apply text-gdrcd-text-soft; }
+    #pagina_chat .chat_row_I { @apply justify-center; }
+
     /* ---------- Stepper ---------- */
     .gdrcd-stepper {
         @apply flex items-center gap-2 md:gap-3 flex-wrap;
