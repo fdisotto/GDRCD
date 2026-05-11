@@ -107,7 +107,10 @@ $is_gm = ((int)$_SESSION['permessi'] >= GAMEMASTER);
                         </div>
                         <div class="col-span-2 md:col-span-1 min-w-0">
                             <label class="gdrcd-label" for="message">Messaggio</label>
-                            <input class="gdrcd-input" type="text" name="message" id="message" autocomplete="off"/>
+                            <textarea class="gdrcd-textarea resize-none leading-snug" name="message" id="message"
+                                      rows="1" autocomplete="off"
+                                      data-autoresize-max="3"
+                                      style="overflow-y:auto;"></textarea>
                         </div>
                         <div class="col-span-2 md:col-span-1">
                             <input type="hidden" name="op" value="new_chat_message"/>
@@ -148,6 +151,37 @@ $is_gm = ((int)$_SESSION['permessi'] >= GAMEMASTER);
                 </form>
             </div>
         </section>
+
+        <script>
+        (function () {
+            var ta = document.getElementById('message');
+            if (!ta) return;
+            var maxRows = parseInt(ta.getAttribute('data-autoresize-max'), 10) || 3;
+            var cs = window.getComputedStyle(ta);
+            var lh = parseFloat(cs.lineHeight) || 20;
+            var padT = parseFloat(cs.paddingTop) || 0;
+            var padB = parseFloat(cs.paddingBottom) || 0;
+            var maxH = (lh * maxRows) + padT + padB;
+            function resize() {
+                ta.style.height = 'auto';
+                var h = Math.min(ta.scrollHeight, maxH);
+                ta.style.height = h + 'px';
+                ta.style.overflowY = (ta.scrollHeight > maxH) ? 'auto' : 'hidden';
+            }
+            ta.addEventListener('input', resize);
+            ta.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    var form = document.getElementById('chat_form_messages');
+                    if (form && typeof form.requestSubmit === 'function') form.requestSubmit();
+                    else if (form) form.submit();
+                }
+            });
+            var form = document.getElementById('chat_form_messages');
+            if (form) form.addEventListener('reset', function () { setTimeout(resize, 0); });
+            resize();
+        })();
+        </script>
 
         <!-- Form azioni: skill, dadi, oggetti -->
         <?php $skills_on = (($PARAMETERS['mode']['skillsystem'] ?? 'OFF') === 'ON');
