@@ -1,0 +1,58 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: gdrcd:latest
+    container_name: gdrcd-web
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      GDRCD_DB_HOST: db
+      GDRCD_DB_NAME: gdrcd
+      GDRCD_DB_USER: gdrcd
+      GDRCD_DB_PASSWORD: gdrcd
+    ports:
+      - "8080:80"
+    volumes:
+      - ./imgs/avatars:/var/www/html/imgs/avatars
+      - giocate_data:/var/www/html/giocate
+    restart: unless-stopped
+
+  db:
+    image: mariadb:10.11
+    container_name: gdrcd-db
+    environment:
+      MARIADB_DATABASE: gdrcd
+      MARIADB_USER: gdrcd
+      MARIADB_PASSWORD: gdrcd
+      MARIADB_ROOT_PASSWORD: rootpassword
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    ports:
+      - "3306:3306"
+    restart: unless-stopped
+
+  phpmyadmin:
+    image: phpmyadmin:5
+    container_name: gdrcd-pma
+    depends_on:
+      - db
+    environment:
+      PMA_HOST: db
+      PMA_USER: gdrcd
+      PMA_PASSWORD: gdrcd
+      UPLOAD_LIMIT: 64M
+    ports:
+      - "8081:80"
+    restart: unless-stopped
+
+volumes:
+  db_data:
+  giocate_data:

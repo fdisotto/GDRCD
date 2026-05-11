@@ -1,0 +1,23 @@
+# Auto-loaded by `docker compose up` for development.
+# Overrides production compose with:
+#  - source bind mount on web (live PHP edits)
+#  - Tailwind watcher rebuilding output.css on .php changes
+
+services:
+  web:
+    volumes:
+      - ./:/var/www/html
+      - giocate_data:/var/www/html/giocate
+
+  tailwind:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: tailwind-builder
+    image: gdrcd-tailwind:latest
+    container_name: gdrcd-tailwind
+    working_dir: /build
+    volumes:
+      - ./:/build
+    command: ["bash", "/build/docker/tailwind-watch.sh", "/build"]
+    restart: unless-stopped
