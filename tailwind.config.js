@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+    darkMode: 'class',
     content: [
         './*.php',
         './pages/**/*.php',
@@ -41,6 +42,36 @@ module.exports = {
                     'warning-soft': '#fef3c7',
                     info:           '#1d4ed8',
                     'info-soft':    '#dbeafe',
+
+                    // ----- DARK THEME -----
+                    // Surface (warm dark, slight brown tone to match parchment vibe)
+                    'dark-bg':           '#1a1816',
+                    'dark-panel':        '#26221d',
+                    'dark-panel-alt':    '#2f2a24',
+                    'dark-border':       '#3d362e',
+                    'dark-border-strong':'#544a3e',
+
+                    // Text (high contrast, off-white warm tones)
+                    'dark-text':       '#e8e3d8',
+                    'dark-text-soft':  '#bdb7a8',
+                    'dark-muted':      '#8a8377',
+                    'dark-subtle':     '#6a6457',
+
+                    // Brand accent (brighter gold for AA contrast on dark)
+                    'dark-accent':       '#d6b066',
+                    'dark-accent-hover': '#e8c889',
+                    'dark-accent-soft':  '#3a2f1c',
+                    'dark-accent-ring':  '#a47e3b',
+
+                    // Semantic states (lighter shades for dark bg)
+                    'dark-success':      '#4ade80',
+                    'dark-success-soft': '#14301f',
+                    'dark-error':        '#f87171',
+                    'dark-error-soft':   '#3a1818',
+                    'dark-warning':      '#fbbf24',
+                    'dark-warning-soft': '#3a2a10',
+                    'dark-info':         '#60a5fa',
+                    'dark-info-soft':    '#172a47',
                 },
             },
             fontFamily: {

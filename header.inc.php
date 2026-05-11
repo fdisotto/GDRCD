@@ -56,12 +56,21 @@ if(($PARAMETERS['mode']['user_bbcode'] == 'ON' && $PARAMETERS['settings']['user_
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script>
+        // Apply saved theme before paint to avoid FOUC.
+        (function() {
+            try {
+                var saved = localStorage.getItem('gdrcd_theme');
+                if (saved === 'dark') document.documentElement.classList.add('dark');
+            } catch (e) {}
+        })();
+    </script>
     <link rel="shortcut icon" href="imgs/favicon.ico" type="image/png" />
     <link rel="stylesheet" href="/themes/tailwind/output.css" type="text/css" />
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <title><?= htmlspecialchars($PARAMETERS['info']['site_name']) ?></title>
 </head>
-<body class="bg-gdrcd-bg text-gdrcd-text font-sans min-h-screen flex flex-col">
+<body class="bg-gdrcd-bg text-gdrcd-text font-sans min-h-screen flex flex-col dark:bg-gdrcd-dark-bg dark:text-gdrcd-dark-text">
 <?php
 /** * CONTROLLO PER AGGIORNAMENTO DB
  * Il controllo viene lanciato solo in index e nelle pagine di installer/upgrade.

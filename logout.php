@@ -27,12 +27,20 @@ $site_name = htmlspecialchars($PARAMETERS['info']['site_name'] ?? '');
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script>
+        (function() {
+            try {
+                var saved = localStorage.getItem('gdrcd_theme');
+                if (saved === 'dark') document.documentElement.classList.add('dark');
+            } catch (e) {}
+        })();
+    </script>
     <title>Logout · <?= $site_name ?></title>
     <link rel="stylesheet" href="themes/<?= $theme ?>/main.css" type="text/css">
     <link rel="stylesheet" href="themes/tailwind/output.css" type="text/css">
     <link rel="shortcut icon" href="imgs/favicon.ico">
 </head>
-<body class="min-h-screen bg-gdrcd-bg flex items-center justify-center px-4 py-10">
+<body class="min-h-screen bg-gdrcd-bg flex items-center justify-center px-4 py-10 dark:bg-gdrcd-dark-bg dark:text-gdrcd-dark-text">
 
     <main class="gdrcd-card max-w-md w-full text-center space-y-5 p-8">
         <div class="flex justify-center">

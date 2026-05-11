@@ -2,6 +2,7 @@
 <!--<script type="text/javascript" src="includes/gdrcdskills.js"></script>-->
 <script type="text/javascript" src="/includes/modal.js"></script>
 <script type="text/javascript" src="/includes/toast.js"></script>
+<script type="text/javascript" src="/includes/theme-toggle.js" defer></script>
 <?php
 /**
  * Notifiche desktop (PM + segnalazioni GM).

@@ -11,7 +11,9 @@
 
 @layer base {
     html { @apply text-gdrcd-text bg-gdrcd-bg; }
+    html.dark { @apply text-gdrcd-dark-text bg-gdrcd-dark-bg; }
     body { @apply font-sans antialiased; }
+    html.dark body { @apply bg-gdrcd-dark-bg text-gdrcd-dark-text; }
     h1, h2, h3, h4 { @apply font-display tracking-wide; }
 }
 
@@ -20,7 +22,8 @@
     /* ---------- Layout ---------- */
     .gdrcd-shell {
         @apply min-h-screen w-full bg-gdrcd-bg text-gdrcd-text px-4 py-10
-               flex items-start md:items-center justify-center;
+               flex items-start md:items-center justify-center
+               dark:bg-gdrcd-dark-bg dark:text-gdrcd-dark-text;
     }
     .gdrcd-container { @apply w-full max-w-3xl mx-auto; }
     .gdrcd-container-sm { @apply w-full max-w-xl mx-auto; }
@@ -28,22 +31,25 @@
     /* ---------- Card ---------- */
     .gdrcd-card {
         @apply bg-gdrcd-panel border border-gdrcd-border rounded-gdrcd
-               shadow-gdrcd-card overflow-hidden;
+               shadow-gdrcd-card overflow-hidden
+               dark:bg-gdrcd-dark-panel dark:border-gdrcd-dark-border;
     }
     .gdrcd-card-elev { @apply gdrcd-card shadow-gdrcd-elev; }
     .gdrcd-card-body  { @apply p-4 sm:p-6 md:p-8; }
     .gdrcd-card-header {
-        @apply px-4 sm:px-6 md:px-8 py-4 border-b border-gdrcd-border bg-gdrcd-panel-alt;
+        @apply px-4 sm:px-6 md:px-8 py-4 border-b border-gdrcd-border bg-gdrcd-panel-alt
+               dark:border-gdrcd-dark-border dark:bg-gdrcd-dark-panel-alt;
     }
 
     /* ---------- Typography ---------- */
-    .gdrcd-h1 { @apply font-display text-3xl md:text-4xl font-bold text-gdrcd-text; }
-    .gdrcd-h2 { @apply font-display text-2xl font-semibold text-gdrcd-text; }
-    .gdrcd-h3 { @apply font-display text-xl font-semibold text-gdrcd-text; }
-    .gdrcd-prose { @apply text-sm leading-relaxed text-gdrcd-text-soft; }
-    .gdrcd-muted { @apply text-sm text-gdrcd-muted; }
+    .gdrcd-h1 { @apply font-display text-3xl md:text-4xl font-bold text-gdrcd-text dark:text-gdrcd-dark-text; }
+    .gdrcd-h2 { @apply font-display text-2xl font-semibold text-gdrcd-text dark:text-gdrcd-dark-text; }
+    .gdrcd-h3 { @apply font-display text-xl font-semibold text-gdrcd-text dark:text-gdrcd-dark-text; }
+    .gdrcd-prose { @apply text-sm leading-relaxed text-gdrcd-text-soft dark:text-gdrcd-dark-text-soft; }
+    .gdrcd-muted { @apply text-sm text-gdrcd-muted dark:text-gdrcd-dark-muted; }
     .gdrcd-eyebrow {
-        @apply uppercase tracking-[0.18em] text-xs font-semibold text-gdrcd-muted;
+        @apply uppercase tracking-[0.18em] text-xs font-semibold text-gdrcd-muted
+               dark:text-gdrcd-dark-muted;
     }
 
     /* ---------- Buttons ---------- */
@@ -53,25 +59,33 @@
                transition-colors duration-150
                focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2
                focus-visible:ring-gdrcd-accent-ring focus-visible:ring-offset-gdrcd-bg
-               disabled:opacity-50 disabled:cursor-not-allowed;
+               disabled:opacity-50 disabled:cursor-not-allowed
+               dark:focus-visible:ring-gdrcd-dark-accent-ring dark:focus-visible:ring-offset-gdrcd-dark-bg;
     }
     .gdrcd-btn-primary {
-        @apply gdrcd-btn bg-gdrcd-accent text-white hover:bg-gdrcd-accent-hover;
+        @apply gdrcd-btn bg-gdrcd-accent text-white hover:bg-gdrcd-accent-hover
+               dark:bg-gdrcd-dark-accent dark:text-gdrcd-dark-bg dark:hover:bg-gdrcd-dark-accent-hover;
     }
     .gdrcd-btn-secondary {
         @apply gdrcd-btn bg-gdrcd-panel text-gdrcd-text border border-gdrcd-border
-               hover:bg-gdrcd-panel-alt;
+               hover:bg-gdrcd-panel-alt
+               dark:bg-gdrcd-dark-panel dark:text-gdrcd-dark-text dark:border-gdrcd-dark-border
+               dark:hover:bg-gdrcd-dark-panel-alt;
     }
     .gdrcd-btn-ghost {
-        @apply gdrcd-btn text-gdrcd-muted hover:text-gdrcd-text hover:bg-gdrcd-panel-alt;
+        @apply gdrcd-btn text-gdrcd-muted hover:text-gdrcd-text hover:bg-gdrcd-panel-alt
+               dark:text-gdrcd-dark-muted dark:hover:text-gdrcd-dark-text
+               dark:hover:bg-gdrcd-dark-panel-alt;
     }
     .gdrcd-btn-danger {
-        @apply gdrcd-btn bg-gdrcd-error text-white hover:bg-red-800;
+        @apply gdrcd-btn bg-gdrcd-error text-white hover:bg-red-800
+               dark:bg-gdrcd-dark-error dark:text-gdrcd-dark-bg dark:hover:bg-red-400;
     }
 
     /* ---------- Forms ---------- */
     .gdrcd-label {
-        @apply block text-sm font-medium text-gdrcd-text-soft mb-1.5;
+        @apply block text-sm font-medium text-gdrcd-text-soft mb-1.5
+               dark:text-gdrcd-dark-text-soft;
     }
     .gdrcd-input,
     .gdrcd-select,
@@ -80,34 +94,44 @@
                px-3 py-2 text-sm text-gdrcd-text placeholder-gdrcd-subtle
                focus:outline-none focus:border-gdrcd-accent
                focus:ring-2 focus:ring-gdrcd-accent-ring/40
-               transition-colors;
+               transition-colors
+               dark:border-gdrcd-dark-border dark:bg-gdrcd-dark-panel-alt
+               dark:text-gdrcd-dark-text dark:placeholder-gdrcd-dark-subtle
+               dark:focus:border-gdrcd-dark-accent dark:focus:ring-gdrcd-dark-accent-ring/40;
     }
-    .gdrcd-help { @apply text-xs text-gdrcd-muted mt-1; }
+    .gdrcd-help { @apply text-xs text-gdrcd-muted mt-1 dark:text-gdrcd-dark-muted; }
 
     /* ---------- Alerts ---------- */
     .gdrcd-alert {
         @apply flex items-start gap-3 px-4 py-3 rounded-lg border text-sm leading-relaxed;
     }
     .gdrcd-alert-success {
-        @apply gdrcd-alert bg-gdrcd-success-soft border-green-200 text-gdrcd-success;
+        @apply gdrcd-alert bg-gdrcd-success-soft border-green-200 text-gdrcd-success
+               dark:bg-gdrcd-dark-success-soft dark:border-green-900/50 dark:text-gdrcd-dark-success;
     }
     .gdrcd-alert-error {
-        @apply gdrcd-alert bg-gdrcd-error-soft border-red-200 text-gdrcd-error;
+        @apply gdrcd-alert bg-gdrcd-error-soft border-red-200 text-gdrcd-error
+               dark:bg-gdrcd-dark-error-soft dark:border-red-900/50 dark:text-gdrcd-dark-error;
     }
     .gdrcd-alert-warning {
-        @apply gdrcd-alert bg-gdrcd-warning-soft border-amber-200 text-gdrcd-warning;
+        @apply gdrcd-alert bg-gdrcd-warning-soft border-amber-200 text-gdrcd-warning
+               dark:bg-gdrcd-dark-warning-soft dark:border-amber-900/50 dark:text-gdrcd-dark-warning;
     }
     .gdrcd-alert-info {
-        @apply gdrcd-alert bg-gdrcd-info-soft border-blue-200 text-gdrcd-info;
+        @apply gdrcd-alert bg-gdrcd-info-soft border-blue-200 text-gdrcd-info
+               dark:bg-gdrcd-dark-info-soft dark:border-blue-900/50 dark:text-gdrcd-dark-info;
     }
 
     /* ---------- Links ---------- */
     .gdrcd-link {
         @apply text-gdrcd-accent hover:text-gdrcd-accent-hover underline underline-offset-2
-               decoration-gdrcd-accent-ring/50 hover:decoration-gdrcd-accent-hover transition-colors;
+               decoration-gdrcd-accent-ring/50 hover:decoration-gdrcd-accent-hover transition-colors
+               dark:text-gdrcd-dark-accent dark:hover:text-gdrcd-dark-accent-hover
+               dark:decoration-gdrcd-dark-accent-ring/50 dark:hover:decoration-gdrcd-dark-accent-hover;
     }
     .gdrcd-link-quiet {
-        @apply text-gdrcd-muted hover:text-gdrcd-accent transition-colors;
+        @apply text-gdrcd-muted hover:text-gdrcd-accent transition-colors
+               dark:text-gdrcd-dark-muted dark:hover:text-gdrcd-dark-accent;
     }
 
     /* ---------- Badges ---------- */
@@ -115,75 +139,116 @@
         @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full
                text-xs font-medium border;
     }
-    .gdrcd-badge-neutral { @apply gdrcd-badge bg-gdrcd-panel-alt text-gdrcd-muted border-gdrcd-border; }
-    .gdrcd-badge-accent  { @apply gdrcd-badge bg-gdrcd-accent-soft text-gdrcd-accent-hover border-gdrcd-accent-ring/40; }
-    .gdrcd-badge-success { @apply gdrcd-badge bg-gdrcd-success-soft text-gdrcd-success border-green-200; }
-    .gdrcd-badge-error   { @apply gdrcd-badge bg-gdrcd-error-soft text-gdrcd-error border-red-200; }
+    .gdrcd-badge-neutral {
+        @apply gdrcd-badge bg-gdrcd-panel-alt text-gdrcd-muted border-gdrcd-border
+               dark:bg-gdrcd-dark-panel-alt dark:text-gdrcd-dark-muted dark:border-gdrcd-dark-border;
+    }
+    .gdrcd-badge-accent  {
+        @apply gdrcd-badge bg-gdrcd-accent-soft text-gdrcd-accent-hover border-gdrcd-accent-ring/40
+               dark:bg-gdrcd-dark-accent-soft dark:text-gdrcd-dark-accent dark:border-gdrcd-dark-accent-ring/40;
+    }
+    .gdrcd-badge-success {
+        @apply gdrcd-badge bg-gdrcd-success-soft text-gdrcd-success border-green-200
+               dark:bg-gdrcd-dark-success-soft dark:text-gdrcd-dark-success dark:border-green-900/50;
+    }
+    .gdrcd-badge-error   {
+        @apply gdrcd-badge bg-gdrcd-error-soft text-gdrcd-error border-red-200
+               dark:bg-gdrcd-dark-error-soft dark:text-gdrcd-dark-error dark:border-red-900/50;
+    }
 
     /* ---------- Divider ---------- */
-    .gdrcd-divider { @apply border-t border-gdrcd-border my-6; }
+    .gdrcd-divider { @apply border-t border-gdrcd-border my-6 dark:border-gdrcd-dark-border; }
 
     /* ---------- Icon dot ---------- */
     .gdrcd-icon-circle {
         @apply inline-flex items-center justify-center
                w-12 h-12 rounded-full bg-gdrcd-accent-soft text-gdrcd-accent
-               border border-gdrcd-accent-ring/30;
+               border border-gdrcd-accent-ring/30
+               dark:bg-gdrcd-dark-accent-soft dark:text-gdrcd-dark-accent
+               dark:border-gdrcd-dark-accent-ring/40;
     }
 
     /* ---------- Sidebar widget ---------- */
     .gdrcd-widget {
         @apply bg-gdrcd-panel border border-gdrcd-border rounded-gdrcd
-               shadow-gdrcd-card overflow-hidden;
+               shadow-gdrcd-card overflow-hidden
+               dark:bg-gdrcd-dark-panel dark:border-gdrcd-dark-border;
     }
     .gdrcd-widget-title {
         @apply px-4 py-3 border-b border-gdrcd-border bg-gdrcd-panel-alt
-               font-display text-sm font-semibold tracking-wide uppercase text-gdrcd-text-soft;
+               font-display text-sm font-semibold tracking-wide uppercase text-gdrcd-text-soft
+               dark:border-gdrcd-dark-border dark:bg-gdrcd-dark-panel-alt
+               dark:text-gdrcd-dark-text-soft;
     }
     .gdrcd-widget-body { @apply p-4 space-y-3 text-sm; }
 
     /* ---------- Nav list (sidebar links) ---------- */
     .gdrcd-nav-list {
-        @apply flex flex-col divide-y divide-gdrcd-border;
+        @apply flex flex-col divide-y divide-gdrcd-border dark:divide-gdrcd-dark-border;
     }
     .gdrcd-nav-list a {
         @apply flex items-center gap-2 px-4 py-3 text-sm text-gdrcd-text-soft
-               hover:bg-gdrcd-accent-soft/60 hover:text-gdrcd-accent-hover transition-colors;
+               hover:bg-gdrcd-accent-soft/60 hover:text-gdrcd-accent-hover transition-colors
+               dark:text-gdrcd-dark-text-soft
+               dark:hover:bg-gdrcd-dark-accent-soft/60 dark:hover:text-gdrcd-dark-accent;
     }
 
     /* ---------- Stat list (key/value rows) ---------- */
     .gdrcd-stat-list {
         @apply w-full text-sm;
     }
-    .gdrcd-stat-list tr { @apply border-b border-gdrcd-border last:border-0; }
+    .gdrcd-stat-list tr { @apply border-b border-gdrcd-border last:border-0 dark:border-gdrcd-dark-border; }
     .gdrcd-stat-list td { @apply py-2; }
     .gdrcd-stat-list td.label,
     .gdrcd-stat-list td:first-child {
-        @apply text-gdrcd-muted pr-3;
+        @apply text-gdrcd-muted pr-3 dark:text-gdrcd-dark-muted;
     }
     .gdrcd-stat-list td:last-child {
-        @apply text-right font-medium text-gdrcd-text;
+        @apply text-right font-medium text-gdrcd-text dark:text-gdrcd-dark-text;
     }
 
     /* ---------- Page chrome (top bar / footer) ---------- */
     .gdrcd-topbar {
-        @apply bg-gdrcd-panel border-b border-gdrcd-border;
+        @apply bg-gdrcd-panel border-b border-gdrcd-border
+               dark:bg-gdrcd-dark-panel dark:border-gdrcd-dark-border;
     }
     .gdrcd-topbar-inner {
         @apply w-full px-4 md:px-6 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4;
     }
     .gdrcd-brand {
-        @apply font-display text-2xl md:text-3xl font-bold tracking-wide text-gdrcd-text;
+        @apply font-display text-2xl md:text-3xl font-bold tracking-wide text-gdrcd-text
+               dark:text-gdrcd-dark-text;
     }
-    .gdrcd-brand a { @apply text-gdrcd-text hover:text-gdrcd-accent transition-colors no-underline; }
-    .gdrcd-brand-subtitle { @apply text-xs text-gdrcd-muted mt-1; }
+    .gdrcd-brand a {
+        @apply text-gdrcd-text hover:text-gdrcd-accent transition-colors no-underline
+               dark:text-gdrcd-dark-text dark:hover:text-gdrcd-dark-accent;
+    }
+    .gdrcd-brand-subtitle { @apply text-xs text-gdrcd-muted mt-1 dark:text-gdrcd-dark-muted; }
 
     .gdrcd-page-footer {
-        @apply mt-12 border-t border-gdrcd-border bg-gdrcd-panel-alt;
+        @apply mt-12 border-t border-gdrcd-border bg-gdrcd-panel-alt
+               dark:border-gdrcd-dark-border dark:bg-gdrcd-dark-panel-alt;
     }
     .gdrcd-page-footer-inner {
-        @apply w-full px-4 md:px-6 py-6 text-xs text-gdrcd-muted leading-relaxed text-center;
+        @apply w-full px-4 md:px-6 py-6 text-xs text-gdrcd-muted leading-relaxed text-center
+               dark:text-gdrcd-dark-muted;
     }
     .gdrcd-page-footer a { @apply gdrcd-link; }
+
+    /* ---------- Theme toggle button ---------- */
+    .gdrcd-theme-toggle {
+        @apply inline-flex items-center justify-center w-9 h-9 rounded-lg
+               text-gdrcd-muted hover:text-gdrcd-text hover:bg-gdrcd-panel-alt
+               border border-gdrcd-border transition-colors
+               focus:outline-none focus-visible:ring-2 focus-visible:ring-gdrcd-accent-ring
+               dark:text-gdrcd-dark-muted dark:hover:text-gdrcd-dark-text
+               dark:hover:bg-gdrcd-dark-panel-alt dark:border-gdrcd-dark-border
+               dark:focus-visible:ring-gdrcd-dark-accent-ring;
+    }
+    .gdrcd-theme-toggle .icon-sun { @apply hidden; }
+    .gdrcd-theme-toggle .icon-moon { @apply block; }
+    html.dark .gdrcd-theme-toggle .icon-sun { @apply block; }
+    html.dark .gdrcd-theme-toggle .icon-moon { @apply hidden; }
 
     /* ---------- Table ---------- */
     .gdrcd-table {
@@ -191,12 +256,15 @@
     }
     .gdrcd-table thead th {
         @apply px-3 py-2.5 font-display font-semibold text-xs uppercase tracking-wide
-               text-gdrcd-text-soft bg-gdrcd-panel-alt border-b border-gdrcd-border;
+               text-gdrcd-text-soft bg-gdrcd-panel-alt border-b border-gdrcd-border
+               dark:text-gdrcd-dark-text-soft dark:bg-gdrcd-dark-panel-alt
+               dark:border-gdrcd-dark-border;
     }
     .gdrcd-table tbody td {
-        @apply px-3 py-2.5 align-middle border-b border-gdrcd-border text-gdrcd-text-soft;
+        @apply px-3 py-2.5 align-middle border-b border-gdrcd-border text-gdrcd-text-soft
+               dark:border-gdrcd-dark-border dark:text-gdrcd-dark-text-soft;
     }
-    .gdrcd-table tbody tr:hover td { @apply bg-gdrcd-accent-soft/30; }
+    .gdrcd-table tbody tr:hover td { @apply bg-gdrcd-accent-soft/30 dark:bg-gdrcd-dark-accent-soft/40; }
     .gdrcd-table tbody tr:last-child td { @apply border-b-0; }
     .gdrcd-table-wrap {
         @apply gdrcd-card overflow-x-auto;
@@ -207,19 +275,24 @@
         @apply flex flex-wrap items-center justify-center gap-1 mt-4;
     }
     .gdrcd-pager-label {
-        @apply text-xs text-gdrcd-muted mr-2;
+        @apply text-xs text-gdrcd-muted mr-2 dark:text-gdrcd-dark-muted;
     }
     .gdrcd-pager a,
     .gdrcd-pager span {
         @apply inline-flex items-center justify-center min-w-[2rem] h-8 px-2
                rounded-md border border-gdrcd-border text-xs font-medium
-               text-gdrcd-text-soft bg-gdrcd-panel transition-colors;
+               text-gdrcd-text-soft bg-gdrcd-panel transition-colors
+               dark:border-gdrcd-dark-border dark:text-gdrcd-dark-text-soft
+               dark:bg-gdrcd-dark-panel;
     }
     .gdrcd-pager a:hover {
-        @apply border-gdrcd-accent text-gdrcd-accent-hover bg-gdrcd-accent-soft;
+        @apply border-gdrcd-accent text-gdrcd-accent-hover bg-gdrcd-accent-soft
+               dark:border-gdrcd-dark-accent dark:text-gdrcd-dark-accent
+               dark:bg-gdrcd-dark-accent-soft;
     }
     .gdrcd-pager span.is-current {
-        @apply bg-gdrcd-accent text-white border-gdrcd-accent;
+        @apply bg-gdrcd-accent text-white border-gdrcd-accent
+               dark:bg-gdrcd-dark-accent dark:text-gdrcd-dark-bg dark:border-gdrcd-dark-accent;
     }
 
     /* ---------- Chat (rendered via iframe in #pagina_chat) ---------- */
@@ -330,7 +403,8 @@
                px-4 py-3 rounded-lg border border-l-4 text-sm leading-relaxed
                bg-gdrcd-panel shadow-gdrcd-elev
                transition-all duration-200 ease-out
-               translate-x-0 opacity-100;
+               translate-x-0 opacity-100
+               dark:bg-gdrcd-dark-panel;
     }
     .gdrcd-toast.is-entering {
         @apply translate-x-6 opacity-0;
@@ -342,25 +416,36 @@
         @apply shrink-0;
     }
     .gdrcd-toast-msg {
-        @apply flex-1 min-w-0 break-words text-gdrcd-text-soft;
+        @apply flex-1 min-w-0 break-words text-gdrcd-text-soft dark:text-gdrcd-dark-text-soft;
     }
     .gdrcd-toast-close {
         @apply shrink-0 inline-flex items-center justify-center w-6 h-6 rounded-md
                text-gdrcd-muted hover:text-gdrcd-text hover:bg-gdrcd-panel-alt
                transition-colors focus:outline-none
-               focus-visible:ring-2 focus-visible:ring-gdrcd-accent-ring;
+               focus-visible:ring-2 focus-visible:ring-gdrcd-accent-ring
+               dark:text-gdrcd-dark-muted dark:hover:text-gdrcd-dark-text
+               dark:hover:bg-gdrcd-dark-panel-alt
+               dark:focus-visible:ring-gdrcd-dark-accent-ring;
     }
     .gdrcd-toast-success {
-        @apply gdrcd-toast bg-gdrcd-success-soft border-green-200 border-l-gdrcd-success text-gdrcd-success;
+        @apply gdrcd-toast bg-gdrcd-success-soft border-green-200 border-l-gdrcd-success text-gdrcd-success
+               dark:bg-gdrcd-dark-success-soft dark:border-green-900/50
+               dark:border-l-gdrcd-dark-success dark:text-gdrcd-dark-success;
     }
     .gdrcd-toast-error {
-        @apply gdrcd-toast bg-gdrcd-error-soft border-red-200 border-l-gdrcd-error text-gdrcd-error;
+        @apply gdrcd-toast bg-gdrcd-error-soft border-red-200 border-l-gdrcd-error text-gdrcd-error
+               dark:bg-gdrcd-dark-error-soft dark:border-red-900/50
+               dark:border-l-gdrcd-dark-error dark:text-gdrcd-dark-error;
     }
     .gdrcd-toast-warning {
-        @apply gdrcd-toast bg-gdrcd-warning-soft border-amber-200 border-l-gdrcd-warning text-gdrcd-warning;
+        @apply gdrcd-toast bg-gdrcd-warning-soft border-amber-200 border-l-gdrcd-warning text-gdrcd-warning
+               dark:bg-gdrcd-dark-warning-soft dark:border-amber-900/50
+               dark:border-l-gdrcd-dark-warning dark:text-gdrcd-dark-warning;
     }
     .gdrcd-toast-info {
-        @apply gdrcd-toast bg-gdrcd-info-soft border-blue-200 border-l-gdrcd-info text-gdrcd-info;
+        @apply gdrcd-toast bg-gdrcd-info-soft border-blue-200 border-l-gdrcd-info text-gdrcd-info
+               dark:bg-gdrcd-dark-info-soft dark:border-blue-900/50
+               dark:border-l-gdrcd-dark-info dark:text-gdrcd-dark-info;
     }
 
     /* ---------- Inline login bar ---------- */
