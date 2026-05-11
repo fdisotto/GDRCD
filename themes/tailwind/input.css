@@ -277,9 +277,20 @@
     #pagina_chat .chat_row_S {
         @apply italic text-gdrcd-text-soft bg-gdrcd-panel-alt/40
                border-l-2 border-gdrcd-accent/40 pl-2 rounded-r;
+        display: grid !important;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem 1rem;
+        align-items: start;
     }
-    #pagina_chat .chat_row_S .chat_name { @apply text-gdrcd-accent/80 font-medium; }
-    #pagina_chat .chat_row_S .chat_msg  { @apply text-gdrcd-text-soft; }
+    #pagina_chat .chat_row_S .chat_name {
+        @apply text-gdrcd-accent/80 font-medium text-right pr-2 border-r border-gdrcd-border/60 break-words;
+        justify-self: stretch;
+    }
+    #pagina_chat .chat_row_S .chat_msg {
+        @apply text-gdrcd-text-soft break-words text-left;
+        justify-self: stretch;
+        min-width: 0;
+    }
     #pagina_chat .chat_row_M { @apply bg-gdrcd-accent-soft/30 px-3 rounded-md justify-center text-center; }
     #pagina_chat .chat_row_N { @apply text-gdrcd-text-soft; }
     #pagina_chat .chat_row_I { @apply justify-center; }
