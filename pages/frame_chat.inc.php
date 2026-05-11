@@ -20,7 +20,7 @@ if (!empty($info['privata']) && (int)$info['privata'] === 1) {
                || in_array($me_cap, $invitati, true);
     $spy_master = (($PARAMETERS['mode']['spyprivaterooms'] ?? 'OFF') === 'ON')
                && ((int)$_SESSION['permessi'] > MODERATOR);
-    $not_expired = (($info['scadenza'] ?? '0') > strftime('%Y-%m-%d %H:%M:%S'));
+    $not_expired = (($info['scadenza'] ?? '0') > date('Y-m-d H:i:s'));
     if (($owner_ok || $spy_master) && $not_expired) {
         $allowance = true;
     }

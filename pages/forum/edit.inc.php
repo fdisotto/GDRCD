@@ -13,7 +13,7 @@ $row = gdrcd_query(
 $can_edit = $row && ($row['autore'] === $_SESSION['login'] || $_SESSION['permessi'] >= MODERATOR);
 
 if ($can_edit) {
-    $time = strftime('%d/%m/%Y %H:%M');
+    $time = date('d/m/Y H:i');
     gdrcd_query(
         "UPDATE messaggioaraldo SET
             messaggio = '" . gdrcd_filter('in', $_POST['messaggio']) . '\n\n\n\nEdit (' . $_SESSION['login'] . '): ' . $time . "',
