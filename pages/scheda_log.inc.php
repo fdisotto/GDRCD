@@ -1,255 +1,99 @@
-<div class="pagina_scheda_log">
-    <?php /*HELP: */ ?>
+<?php
+/**
+ * Scheda PG — log moderazione (login, multi-account, messaggi, cambi nome).
+ * Solo MODERATOR+.
+ */
+
+if ((int)$_SESSION['permessi'] < MODERATOR) {
+    echo '<div class="gdrcd-alert-error">' . gdrcd_filter('out', $MESSAGE['error']['not_allowed']) . '</div>';
+    return;
+}
+
+if (!isset($_REQUEST['pg'])) {
+    echo '<div class="gdrcd-alert-error">' . gdrcd_filter('out', $MESSAGE['error']['unknown_character_sheet']) . '</div>';
+    return;
+}
+
+$pg = $_REQUEST['pg'];
+$check = gdrcd_query("SELECT nome FROM personaggio WHERE nome = '" . gdrcd_filter('in', $pg) . "'", 'result');
+if (gdrcd_query($check, 'num_rows') === 0) {
+    echo '<div class="gdrcd-alert-error">' . gdrcd_filter('out', $MESSAGE['error']['unknown_character_sheet']) . '</div>';
+    return;
+}
+gdrcd_query($check, 'free');
+
+$num_logs = (int)($PARAMETERS['settings']['view_logs'] ?? 20);
+$lbl      = $MESSAGE['interface']['sheet']['log'];
+
+/** Renderer compatto di tabella log. */
+$render_table = function (string $title, $result, array $cols, callable $row_fn): void {
+    if ((int)gdrcd_query($result, 'num_rows') === 0) return;
+    ?>
+    <section class="space-y-2">
+        <h3 class="gdrcd-h3"><?= htmlspecialchars($title) ?></h3>
+        <div class="gdrcd-table-wrap">
+            <table class="gdrcd-table">
+                <thead>
+                    <tr><?php foreach ($cols as $c): ?><th class="<?= $c['cls'] ?? '' ?>"><?= htmlspecialchars($c['label']) ?></th><?php endforeach; ?></tr>
+                </thead>
+                <tbody>
+                    <?php while ($r = gdrcd_query($result, 'fetch')): ?>
+                        <tr><?= $row_fn($r) ?></tr>
+                    <?php endwhile;
+                    gdrcd_query($result, 'free');
+                    ?>
+                </tbody>
+            </table>
+        </div>
+    </section>
+    <?php
+};
+?>
+
+<div class="space-y-6">
+    <header class="space-y-2">
+        <h2 class="gdrcd-h1">
+            <?= gdrcd_filter('out', $lbl['page_name']) ?>
+            <span class="text-gdrcd-accent">·</span>
+            <span class="text-gdrcd-text-soft text-2xl"><?= gdrcd_filter('out', $pg) ?></span>
+        </h2>
+    </header>
+
+    <nav class="flex flex-wrap gap-2 border-b border-gdrcd-border pb-3" aria-label="Sezioni scheda">
+        <?php include 'scheda/menu.inc.php'; ?>
+    </nav>
 
     <?php
+    $r_login = gdrcd_query("SELECT descrizione_evento, data_evento FROM log WHERE nome_interessato = '" . gdrcd_filter('in', $pg) . "' AND codice_evento = " . LOGGEDIN . " ORDER BY data_evento DESC LIMIT " . $num_logs, 'result');
+    $render_table('Ultimi accessi', $r_login,
+        [['label' => $lbl['date'], 'cls' => 'whitespace-nowrap w-44'], ['label' => $lbl['ip']]],
+        fn ($r) => '<td class="text-gdrcd-muted whitespace-nowrap">' . gdrcd_format_date($r['data_evento']) . ' ' . gdrcd_format_time($r['data_evento']) . '</td>'
+                 . '<td class="font-mono text-xs">' . gdrcd_filter('out', $r['descrizione_evento']) . '</td>'
+    );
 
-    if ($_SESSION['permessi'] < MODERATOR)
-    {
-        echo '<div class="error">' . gdrcd_filter('out', $MESSAGE['error']['not_allowed']) . '</div>';
-    } else
-    {
-    //Se non e' stato specificato il nome del pg
-    if (isset($_REQUEST['pg']) === false)
-    {
-        echo '<div class="error">' . gdrcd_filter('out', $MESSAGE['error']['unknonw_character_sheet']) . '</div>';
-    } else
-    {
-    /*Visualizzo la pagina*/
-    /*Verifico l'esistenza del PG*/
-    $query = "SELECT nome FROM personaggio WHERE personaggio.nome = '" . gdrcd_filter('get', $_REQUEST['pg']) . "'";
-    $result = gdrcd_query($query, 'result');
-    //Se non esiste il pg
-    if (gdrcd_query($result, 'num_rows') == 0)
-    {
-        echo '<div class="error">' . gdrcd_filter('out', $MESSAGE['error']['unknown_character_sheet']) . '</div>';
+    $r_dup = gdrcd_query("SELECT descrizione_evento, data_evento FROM log WHERE nome_interessato = '" . gdrcd_filter('in', $pg) . "' AND codice_evento = " . ACCOUNTMULTIPLO . " ORDER BY data_evento DESC LIMIT " . $num_logs, 'result');
+    $render_table('Account multipli', $r_dup,
+        [['label' => $lbl['date'], 'cls' => 'whitespace-nowrap w-44'], ['label' => $lbl['other_account']]],
+        fn ($r) => '<td class="text-gdrcd-muted whitespace-nowrap">' . gdrcd_format_date($r['data_evento']) . ' ' . gdrcd_format_time($r['data_evento']) . '</td>'
+                 . '<td>' . gdrcd_filter('out', $r['descrizione_evento']) . '</td>'
+    );
+
+    if (($PARAMETERS['mode']['spymessages'] ?? 'OFF') === 'ON') {
+        $r_msg = gdrcd_query("SELECT destinatario, spedito, testo FROM backmessaggi WHERE mittente = '" . gdrcd_filter('in', $pg) . "' ORDER BY spedito DESC LIMIT " . $num_logs, 'result');
+        $render_table('Ultimi messaggi inviati', $r_msg,
+            [['label' => $lbl['date'], 'cls' => 'whitespace-nowrap w-44'], ['label' => $lbl['message']]],
+            fn ($r) => '<td class="text-gdrcd-muted whitespace-nowrap">' . gdrcd_format_date($r['spedito']) . ' ' . gdrcd_format_time($r['spedito']) . '</td>'
+                     . '<td><a class="gdrcd-link mr-1" href="main.php?page=scheda&pg=' . urlencode($r['destinatario']) . '">' . gdrcd_filter('out', $r['destinatario']) . '</a> '
+                     . gdrcd_filter('out', $r['testo']) . '</td>'
+        );
     }
-    else
-    {
-    $num_logs = $PARAMETERS['settings']['view_logs'];
+
+    $r_name = gdrcd_query("SELECT descrizione_evento, data_evento, autore FROM log WHERE nome_interessato = '" . gdrcd_filter('in', $pg) . "' AND codice_evento = " . CHANGEDNAME . " ORDER BY data_evento DESC LIMIT " . $num_logs, 'result');
+    $render_table('Cambi nome', $r_name,
+        [['label' => $lbl['date'], 'cls' => 'whitespace-nowrap w-44'], ['label' => $lbl['author'], 'cls' => 'whitespace-nowrap'], ['label' => $lbl['name_change']]],
+        fn ($r) => '<td class="text-gdrcd-muted whitespace-nowrap">' . gdrcd_format_date($r['data_evento']) . ' ' . gdrcd_format_time($r['data_evento']) . '</td>'
+                 . '<td class="whitespace-nowrap">' . gdrcd_filter('out', $r['autore']) . '</td>'
+                 . '<td>' . gdrcd_filter('out', $r['descrizione_evento']) . '</td>'
+    );
     ?>
-
-    <div class="page_title">
-        <h2><?php echo gdrcd_filter('out', $MESSAGE['interface']['sheet']['log']['page_name']); ?></h2>
-    </div>
-
-    <div class="page_body">
-
-
-        <div class="panels_box">
-
-
-            <?php /*Seleziono gli ultimi login*/
-            $query = "SELECT  descrizione_evento, data_evento  FROM log WHERE nome_interessato = '" . gdrcd_filter('in',
-                    $_REQUEST['pg']) . "'  AND codice_evento = " . LOGGEDIN . " ORDER BY data_evento DESC LIMIT " . $num_logs . "";
-            $result = gdrcd_query($query, 'result');
-            ?>
-            <!-- Intestazione tabella elenco -->
-            <div class="elenco_record_gioco">
-                <table>
-                    <tr>
-                        <td class="casella_titolo">
-                            <div class="titoli_elenco">
-                                <?php echo gdrcd_filter('out', $MESSAGE['interface']['sheet']['log']['date']); ?>
-                            </div>
-                        </td>
-                        <td class="casella_titolo">
-                            <div class="titoli_elenco">
-                                <?php echo gdrcd_filter('out', $MESSAGE['interface']['sheet']['log']['ip']); ?>
-                            </div>
-                        </td>
-                    </tr>
-                    <?php while ($record = gdrcd_query($result, 'fetch'))
-                    { ?>
-                        <tr>
-                            <td class="casella_elemento">
-                                <div class="elementi_elenco"><?php echo gdrcd_filter('out',
-                                        gdrcd_format_date($record['data_evento']) . ' ' . gdrcd_format_time($record['data_evento'])); ?></div>
-                            </td>
-                            <td class="casella_elemento">
-                                <div class="elementi_elenco"><?php echo gdrcd_filter('out',
-                                        $record['descrizione_evento']); ?></div>
-                            </td>
-                        </tr>
-                    <?php }//while
-
-                    gdrcd_query($result, 'free');
-                    ?>
-                </table>
-            </div>
-
-
-            <?php /*Seleziono gli eventuali doppi*/
-            $query = "SELECT  descrizione_evento, data_evento  FROM log WHERE nome_interessato = '" . gdrcd_filter('in',
-                    $_REQUEST['pg']) . "'  AND codice_evento = " . ACCOUNTMULTIPLO . " ORDER BY data_evento DESC LIMIT " . $num_logs . "";
-            $result = gdrcd_query($query, 'result');
-
-            if (gdrcd_query($result, 'num_rows') > 0)
-            {
-                ?>
-                <!-- Intestazione tabella elenco -->
-                <div class="elenco_record_gioco">
-                    <table>
-                        <tr>
-                            <td class="casella_titolo">
-                                <div class="titoli_elenco">
-                                    <?php echo gdrcd_filter('out', $MESSAGE['interface']['sheet']['log']['date']); ?>
-                                </div>
-                            </td>
-                            <td class="casella_titolo">
-                                <div class="titoli_elenco">
-                                    <?php echo gdrcd_filter('out',
-                                        $MESSAGE['interface']['sheet']['log']['other_account']); ?>
-                                </div>
-                            </td>
-                        </tr>
-                        <?php while ($record = gdrcd_query($result, 'fetch'))
-                        { ?>
-                            <tr>
-                                <td class="casella_elemento">
-                                    <div class="elementi_elenco"><?php echo gdrcd_filter('out',
-                                            gdrcd_format_date($record['data_evento']) . ' ' . gdrcd_format_time($record['data_evento'])); ?></div>
-                                </td>
-                                <td class="casella_elemento">
-                                    <div class="elementi_elenco"><?php echo gdrcd_filter('out',
-                                            $record['descrizione_evento']); ?></div>
-                                </td>
-                            </tr>
-                        <?php }//while
-                        gdrcd_query($result, 'free');
-
-                        ?>
-                    </table>
-                </div>
-            <?php } ?>
-
-
-            <?php /*Seleziono gli ultimi messaggi*/
-            if ($PARAMETERS['mode']['spymessages'] == 'ON')
-            {
-                $query = "SELECT  destinatario, spedito, testo  FROM backmessaggi WHERE mittente = '" . gdrcd_filter('in',
-                        $_REQUEST['pg']) . "' ORDER BY spedito DESC LIMIT " . $num_logs . "";
-                $result = gdrcd_query($query, 'result');
-
-
-                if (gdrcd_query($result, 'num_rows') > 0)
-                {
-                    ?>
-                    <!-- Intestazione tabella elenco -->
-                    <div class="elenco_record_gioco">
-                        <table>
-                            <tr>
-                                <td class="casella_titolo">
-                                    <div class="titoli_elenco">
-                                        <?php echo gdrcd_filter('out',
-                                            $MESSAGE['interface']['sheet']['log']['date']); ?>
-                                    </div>
-                                </td>
-                                <td class="casella_titolo">
-                                    <div class="titoli_elenco">
-                                        <?php echo gdrcd_filter('out',
-                                            $MESSAGE['interface']['sheet']['log']['message']); ?>
-                                    </div>
-                                </td>
-                            </tr>
-                            <?php while ($record = gdrcd_query($result, 'fetch'))
-                            { ?>
-                                <tr>
-                                    <td class="casella_elemento">
-                                        <div class="elementi_elenco"><?php echo gdrcd_filter('out',
-                                                gdrcd_format_date($record['spedito']) . ' ' . gdrcd_format_time($record['spedito'])); ?></div>
-                                    </td>
-                                    <td class="casella_elemento">
-                                        <div
-                                            class="elementi_elenco"><?php echo '[<a href="main.php?page=scheda&pg=' . gdrcd_filter('out',
-                                                    $record['destinatario']) . '"  >' . gdrcd_filter('out',
-                                                    $record['destinatario']) . '</a>]: ' . gdrcd_filter('out',
-                                                    $record['testo']); ?></div>
-                                    </td>
-                                </tr>
-                            <?php }//while
-
-                            gdrcd_query($result, 'free');
-                            ?>
-                        </table>
-                    </div>
-                <?php }//if
-                ?>
-            <?php }//if spymessages on
-            ?>
-
-
-
-            <?php /*Seleziono gli ultimi login*/
-            $query = "SELECT  descrizione_evento, data_evento, autore  FROM log WHERE nome_interessato = '" . gdrcd_filter('in',
-                    $_REQUEST['pg']) . "'  AND codice_evento = " . CHANGEDNAME . " ORDER BY data_evento DESC LIMIT " . $num_logs . "";
-            $result = gdrcd_query($query, 'result');
-            if (gdrcd_query($result, 'num_rows') > 0)
-            {
-            ?>
-            <!-- Intestazione tabella elenco -->
-            <div class="elenco_record_gioco">
-                <table>
-                    <tr>
-                        <td class="casella_titolo">
-                            <div class="titoli_elenco">
-                                <?php echo gdrcd_filter('out', $MESSAGE['interface']['sheet']['log']['date']); ?>
-                            </div>
-                        </td>
-                        <td class="casella_titolo">
-                            <div class="titoli_elenco">
-                                <?php echo gdrcd_filter('out', $MESSAGE['interface']['sheet']['log']['author']); ?>
-                            </div>
-                        </td>
-                        <td class="casella_titolo">
-                            <div class="titoli_elenco">
-                                <?php echo gdrcd_filter('out', $MESSAGE['interface']['sheet']['log']['name_change']); ?>
-                            </div>
-                        </td>
-                    </tr>
-                    <?php while ($record = gdrcd_query($result, 'fetch'))
-                    { ?>
-                        <tr>
-                            <td class="casella_elemento">
-                                <div class="elementi_elenco"><?php echo gdrcd_filter('out',
-                                        gdrcd_format_date($record['data_evento']) . ' ' . gdrcd_format_time($record['data_evento'])); ?></div>
-                            </td>
-                            <td class="casella_elemento">
-                                <div class="elementi_elenco"><?php echo gdrcd_filter('out', $record['autore']); ?></div>
-                            </td>
-                            <td class="casella_elemento">
-                                <div class="elementi_elenco"><?php echo gdrcd_filter('out',
-                                        $record['descrizione_evento']); ?></div>
-                            </td>
-                        </tr>
-                    <?php }//while
-
-                    gdrcd_query($result, 'free');
-                    ?>
-                </table>
-                <?php }//if
-                ?>
-            </div>
-
-        </div>
-        <!-- panels_box -->
-
-
-        <!-- Link a piè di pagina -->
-        <div class="link_back">
-            <a href="main.php?page=scheda&pg=<?php echo gdrcd_filter('url',
-                $_REQUEST['pg']); ?>"><?php echo gdrcd_filter('out',
-                    $MESSAGE['interface']['sheet']['link']['back']); ?></a>
-        </div>
-
-
-        <?php
-        /********* CHIUSURA SCHEDA **********/
-        }//else
-        gdrcd_query($result, 'free');
-        }//else
-        ?>
-
-
-        <?php } //else </div>?>
-    </div>
-    <!-- Pagina -->
+</div>
