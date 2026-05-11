@@ -175,3 +175,7 @@ includes/config-overrides.php
 .directory
 .user.ini
 core/db_overrides.php
+
+# Tailwind build artifact
+themes/tailwind/output.css
+node_modules/

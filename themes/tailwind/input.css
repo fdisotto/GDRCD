@@ -1,0 +1,226 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+ * GDRCD Design System — Component Layer (LIGHT theme)
+ * Single source of truth for reusable UI primitives.
+ * Always prefer these classes over ad-hoc utility combinations
+ * to keep the look consistent across pages.
+ * ============================================================ */
+
+@layer base {
+    html { @apply text-gdrcd-text bg-gdrcd-bg; }
+    body { @apply font-sans antialiased; }
+    h1, h2, h3, h4 { @apply font-display tracking-wide; }
+}
+
+@layer components {
+
+    /* ---------- Layout ---------- */
+    .gdrcd-shell {
+        @apply min-h-screen w-full bg-gdrcd-bg text-gdrcd-text px-4 py-10
+               flex items-start md:items-center justify-center;
+    }
+    .gdrcd-container { @apply w-full max-w-3xl mx-auto; }
+    .gdrcd-container-sm { @apply w-full max-w-xl mx-auto; }
+
+    /* ---------- Card ---------- */
+    .gdrcd-card {
+        @apply bg-gdrcd-panel border border-gdrcd-border rounded-gdrcd
+               shadow-gdrcd-card overflow-hidden;
+    }
+    .gdrcd-card-elev { @apply gdrcd-card shadow-gdrcd-elev; }
+    .gdrcd-card-body  { @apply p-6 md:p-8; }
+    .gdrcd-card-header {
+        @apply px-6 md:px-8 py-4 border-b border-gdrcd-border bg-gdrcd-panel-alt;
+    }
+
+    /* ---------- Typography ---------- */
+    .gdrcd-h1 { @apply font-display text-3xl md:text-4xl font-bold text-gdrcd-text; }
+    .gdrcd-h2 { @apply font-display text-2xl font-semibold text-gdrcd-text; }
+    .gdrcd-h3 { @apply font-display text-xl font-semibold text-gdrcd-text; }
+    .gdrcd-prose { @apply text-sm leading-relaxed text-gdrcd-text-soft; }
+    .gdrcd-muted { @apply text-sm text-gdrcd-muted; }
+    .gdrcd-eyebrow {
+        @apply uppercase tracking-[0.18em] text-xs font-semibold text-gdrcd-muted;
+    }
+
+    /* ---------- Buttons ---------- */
+    .gdrcd-btn {
+        @apply inline-flex items-center justify-center gap-2
+               px-5 py-2.5 rounded-lg text-sm font-semibold
+               transition-colors duration-150
+               focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2
+               focus-visible:ring-gdrcd-accent-ring focus-visible:ring-offset-gdrcd-bg
+               disabled:opacity-50 disabled:cursor-not-allowed;
+    }
+    .gdrcd-btn-primary {
+        @apply gdrcd-btn bg-gdrcd-accent text-white hover:bg-gdrcd-accent-hover;
+    }
+    .gdrcd-btn-secondary {
+        @apply gdrcd-btn bg-gdrcd-panel text-gdrcd-text border border-gdrcd-border
+               hover:bg-gdrcd-panel-alt;
+    }
+    .gdrcd-btn-ghost {
+        @apply gdrcd-btn text-gdrcd-muted hover:text-gdrcd-text hover:bg-gdrcd-panel-alt;
+    }
+    .gdrcd-btn-danger {
+        @apply gdrcd-btn bg-gdrcd-error text-white hover:bg-red-800;
+    }
+
+    /* ---------- Forms ---------- */
+    .gdrcd-label {
+        @apply block text-sm font-medium text-gdrcd-text-soft mb-1.5;
+    }
+    .gdrcd-input,
+    .gdrcd-select,
+    .gdrcd-textarea {
+        @apply block w-full rounded-lg border border-gdrcd-border bg-white
+               px-3 py-2 text-sm text-gdrcd-text placeholder-gdrcd-subtle
+               focus:outline-none focus:border-gdrcd-accent
+               focus:ring-2 focus:ring-gdrcd-accent-ring/40
+               transition-colors;
+    }
+    .gdrcd-help { @apply text-xs text-gdrcd-muted mt-1; }
+
+    /* ---------- Alerts ---------- */
+    .gdrcd-alert {
+        @apply flex items-start gap-3 px-4 py-3 rounded-lg border text-sm leading-relaxed;
+    }
+    .gdrcd-alert-success {
+        @apply gdrcd-alert bg-gdrcd-success-soft border-green-200 text-gdrcd-success;
+    }
+    .gdrcd-alert-error {
+        @apply gdrcd-alert bg-gdrcd-error-soft border-red-200 text-gdrcd-error;
+    }
+    .gdrcd-alert-warning {
+        @apply gdrcd-alert bg-gdrcd-warning-soft border-amber-200 text-gdrcd-warning;
+    }
+    .gdrcd-alert-info {
+        @apply gdrcd-alert bg-gdrcd-info-soft border-blue-200 text-gdrcd-info;
+    }
+
+    /* ---------- Links ---------- */
+    .gdrcd-link {
+        @apply text-gdrcd-accent hover:text-gdrcd-accent-hover underline underline-offset-2
+               decoration-gdrcd-accent-ring/50 hover:decoration-gdrcd-accent-hover transition-colors;
+    }
+    .gdrcd-link-quiet {
+        @apply text-gdrcd-muted hover:text-gdrcd-accent transition-colors;
+    }
+
+    /* ---------- Badges ---------- */
+    .gdrcd-badge {
+        @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full
+               text-xs font-medium border;
+    }
+    .gdrcd-badge-neutral { @apply gdrcd-badge bg-gdrcd-panel-alt text-gdrcd-muted border-gdrcd-border; }
+    .gdrcd-badge-accent  { @apply gdrcd-badge bg-gdrcd-accent-soft text-gdrcd-accent-hover border-gdrcd-accent-ring/40; }
+    .gdrcd-badge-success { @apply gdrcd-badge bg-gdrcd-success-soft text-gdrcd-success border-green-200; }
+    .gdrcd-badge-error   { @apply gdrcd-badge bg-gdrcd-error-soft text-gdrcd-error border-red-200; }
+
+    /* ---------- Divider ---------- */
+    .gdrcd-divider { @apply border-t border-gdrcd-border my-6; }
+
+    /* ---------- Icon dot ---------- */
+    .gdrcd-icon-circle {
+        @apply inline-flex items-center justify-center
+               w-12 h-12 rounded-full bg-gdrcd-accent-soft text-gdrcd-accent
+               border border-gdrcd-accent-ring/30;
+    }
+
+    /* ---------- Sidebar widget ---------- */
+    .gdrcd-widget {
+        @apply bg-gdrcd-panel border border-gdrcd-border rounded-gdrcd
+               shadow-gdrcd-card overflow-hidden;
+    }
+    .gdrcd-widget-title {
+        @apply px-4 py-3 border-b border-gdrcd-border bg-gdrcd-panel-alt
+               font-display text-sm font-semibold tracking-wide uppercase text-gdrcd-text-soft;
+    }
+    .gdrcd-widget-body { @apply p-4 space-y-3 text-sm; }
+
+    /* ---------- Nav list (sidebar links) ---------- */
+    .gdrcd-nav-list {
+        @apply flex flex-col divide-y divide-gdrcd-border;
+    }
+    .gdrcd-nav-list a {
+        @apply flex items-center gap-2 px-4 py-3 text-sm text-gdrcd-text-soft
+               hover:bg-gdrcd-accent-soft/60 hover:text-gdrcd-accent-hover transition-colors;
+    }
+
+    /* ---------- Stat list (key/value rows) ---------- */
+    .gdrcd-stat-list {
+        @apply w-full text-sm;
+    }
+    .gdrcd-stat-list tr { @apply border-b border-gdrcd-border last:border-0; }
+    .gdrcd-stat-list td { @apply py-2; }
+    .gdrcd-stat-list td.label,
+    .gdrcd-stat-list td:first-child {
+        @apply text-gdrcd-muted pr-3;
+    }
+    .gdrcd-stat-list td:last-child {
+        @apply text-right font-medium text-gdrcd-text;
+    }
+
+    /* ---------- Page chrome (top bar / footer) ---------- */
+    .gdrcd-topbar {
+        @apply bg-gdrcd-panel border-b border-gdrcd-border;
+    }
+    .gdrcd-topbar-inner {
+        @apply max-w-7xl mx-auto px-4 md:px-6 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4;
+    }
+    .gdrcd-brand {
+        @apply font-display text-2xl md:text-3xl font-bold tracking-wide text-gdrcd-text;
+    }
+    .gdrcd-brand a { @apply text-gdrcd-text hover:text-gdrcd-accent transition-colors no-underline; }
+    .gdrcd-brand-subtitle { @apply text-xs text-gdrcd-muted mt-1; }
+
+    .gdrcd-page-footer {
+        @apply mt-12 border-t border-gdrcd-border bg-gdrcd-panel-alt;
+    }
+    .gdrcd-page-footer-inner {
+        @apply max-w-7xl mx-auto px-4 md:px-6 py-6 text-xs text-gdrcd-muted leading-relaxed text-center;
+    }
+    .gdrcd-page-footer a { @apply gdrcd-link; }
+
+    /* ---------- Stepper ---------- */
+    .gdrcd-stepper {
+        @apply flex items-center gap-2 md:gap-3 flex-wrap;
+    }
+    .gdrcd-stepper-item {
+        @apply flex items-center gap-2 px-1;
+    }
+    .gdrcd-stepper-circle {
+        @apply inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-semibold border bg-white border-gdrcd-border text-gdrcd-muted;
+    }
+    .gdrcd-stepper-label {
+        @apply text-xs font-medium text-gdrcd-muted;
+    }
+    .gdrcd-stepper-item.is-active .gdrcd-stepper-circle {
+        @apply bg-gdrcd-accent text-white border-gdrcd-accent;
+    }
+    .gdrcd-stepper-item.is-active .gdrcd-stepper-label {
+        @apply text-gdrcd-text;
+    }
+    .gdrcd-stepper-item.is-done .gdrcd-stepper-circle {
+        @apply bg-gdrcd-accent-soft text-gdrcd-accent border-gdrcd-accent-ring/50;
+    }
+    .gdrcd-stepper-item.is-done .gdrcd-stepper-label {
+        @apply text-gdrcd-text-soft;
+    }
+    .gdrcd-stepper-divider {
+        @apply flex-1 min-w-[1.5rem] h-px bg-gdrcd-border;
+    }
+
+    /* ---------- Inline login bar ---------- */
+    .gdrcd-login-inline {
+        @apply flex flex-wrap items-end gap-3;
+    }
+    .gdrcd-login-inline label { @apply gdrcd-label mb-1; }
+    .gdrcd-login-inline input[type="text"],
+    .gdrcd-login-inline input[type="password"],
+    .gdrcd-login-inline select { @apply gdrcd-input min-w-[10rem]; }
+    .gdrcd-login-inline input[type="submit"] { @apply gdrcd-btn-primary; }
+}
