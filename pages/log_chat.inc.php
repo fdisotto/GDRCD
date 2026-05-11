@@ -165,7 +165,7 @@ $render_table = function ($rows_iter, callable $sender_for_row) use ($page_label
         ?>
         <section class="space-y-3">
             <div class="flex flex-wrap items-baseline gap-2">
-                <h3 class="gdrcd-h3"><?= gdrcd_filter('out', $page_label_msg['log_by_user']) ?>:</h3>
+                <h3 class="gdrcd-h3"><?= gdrcd_filter('out', $page_label_msg['log_by_user']) ?></h3>
                 <span class="gdrcd-badge-accent"><?= htmlspecialchars($pg) ?></span>
                 <span class="gdrcd-muted text-xs ml-auto"><?= $totaleresults ?> risultati</span>
             </div>
@@ -211,7 +211,7 @@ $render_table = function ($rows_iter, callable $sender_for_row) use ($page_label
         ?>
         <section class="space-y-3">
             <div class="flex flex-wrap items-baseline gap-2">
-                <h3 class="gdrcd-h3"><?= gdrcd_filter('out', $page_label_msg['log_by_room']) ?>:</h3>
+                <h3 class="gdrcd-h3"><?= gdrcd_filter('out', $page_label_msg['log_by_room']) ?></h3>
                 <span class="gdrcd-badge-accent"><?= htmlspecialchars($room_name) ?></span>
                 <span class="gdrcd-muted text-xs">
                     <?= htmlspecialchars($data_a) ?> → <?= htmlspecialchars($data_b) ?>

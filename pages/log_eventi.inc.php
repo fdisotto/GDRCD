@@ -1,207 +1,192 @@
-<div class="pagina_gestione_razze">
-    <?php /*HELP: */
+<?php
+/**
+ * Log eventi (main.php?page=log_eventi)
+ * Filtra il log per tipo evento; risultati paginati.
+ */
 
+/* ---------- Permessi ---------- */
+if ($_SESSION['permessi'] < SUPERUSER) {
+    echo '<div class="gdrcd-alert-error">'
+       . '<svg class="w-5 h-5 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4c-.77-1.33-2.69-1.33-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3z"/></svg>'
+       . '<div>' . gdrcd_filter('out', $MESSAGE['error']['not_allowed']) . '</div>'
+       . '</div>';
+    return;
+}
 
-    /*Controllo permessi utente*/
-    if ($_SESSION['permessi'] < SUPERUSER) {
-        echo '<div class="error">' . gdrcd_filter('out', $MESSAGE['error']['not_allowed']) . '</div>';
-    } else { ?>
+$op         = $_REQUEST['op']         ?? null;
+$which_log  = $_REQUEST['which_log']  ?? null;
+$offset     = (int)($_REQUEST['offset'] ?? 0);
+$per_page   = (int)$PARAMETERS['settings']['records_per_page'];
+$pagebegin  = $offset * $per_page;
 
+$lbl = $MESSAGE['interface']['administration']['log']['events'];
 
-        <!-- Titolo della pagina -->
-        <div class="page_title">
-            <h2><?php echo gdrcd_filter('out',
-                    $MESSAGE['interface']['administration']['log']['events']['page_name']); ?></h2>
-        </div>
+/* Mask IPv4: 'a.b.c.d' → 'a.b.X.X' (per eventi login/blocco). */
+$mask_ip = function (string $s): string {
+    $list = explode('.', $s);
+    if (count($list) >= 4) {
+        $list[2] = 'X';
+        $list[3] = 'X';
+        return implode('.', $list);
+    }
+    return $s;
+};
 
+$is_login_event = function ($code): bool {
+    return in_array((int)$code, [BLOCKED, LOGGEDIN, ERRORELOGIN], true);
+};
+?>
 
-        <!-- Corpo della pagina -->
-        <div class="page_body">
+<div class="space-y-6">
 
+    <header class="space-y-2">
+        <h2 class="gdrcd-h1"><?= gdrcd_filter('out', $lbl['page_name']) ?></h2>
+        <p class="gdrcd-muted">Storico eventi di gioco filtrabile per tipologia.</p>
+    </header>
 
-            <?php /*Form di scelta del log (visualizzazione di base)*/
-            if ((isset($_POST['op']) === false) && (isset($_REQUEST['op']) === false)) { ?>
-
-                <!-- Form di inserimento/modifica -->
-                <div class="panels_box">
-                    <div class="form_gestione">
-                        <form action="main.php?page=log_eventi"
-                              method="post">
-                            <div class='form_label'>
-                                <?php echo gdrcd_filter('out',
-                                    $MESSAGE['interface']['administration']['log']['events']['log_type']); ?>
-                            </div>
-                            <div class='form_field'>
-                                <select name="which_log">
-                                    <?php $count = 1;
-                                    foreach ($MESSAGE['event'] as $event) { ?>
-                                        <option value="<?php echo $count; ?>"><?php echo $event; ?></option>
-                                        <?php $count++;
-                                    } ?>
-                                </select>
-                            </div>
-                            <!-- bottoni -->
-                            <div class='form_submit'>
-                                <input type="hidden"
-                                       value="view"
-                                       name="op"/>
-                                <input type="submit"
-                                       value="<?php echo gdrcd_filter('out',
-                                           $MESSAGE['interface']['forms']['submit']); ?>"/>
-                            </div>
-
-                        </form>
+    <?php if ($op === null): ?>
+        <section class="gdrcd-card">
+            <div class="gdrcd-card-body">
+                <form action="main.php?page=log_eventi" method="post" class="space-y-4">
+                    <div>
+                        <label class="gdrcd-label" for="le_which_log">
+                            <?= gdrcd_filter('out', $lbl['log_type']) ?>
+                        </label>
+                        <select class="gdrcd-select" id="le_which_log" name="which_log">
+                            <option value="0">Tutti</option>
+                            <?php $count = 1; foreach ($MESSAGE['event'] as $event): ?>
+                                <option value="<?= $count ?>"><?= gdrcd_filter('out', $event) ?></option>
+                            <?php $count++; endforeach; ?>
+                        </select>
                     </div>
-                </div>
-            <?php }//if
-            ?>
+                    <input type="hidden" name="op" value="view"/>
+                    <button type="submit" class="gdrcd-btn-primary">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                        <?= gdrcd_filter('out', $MESSAGE['interface']['forms']['submit']) ?>
+                    </button>
+                </form>
+            </div>
+        </section>
 
+    <?php elseif ($op === 'view' && is_numeric($which_log)):
+        $which_log = (int)$which_log;
+        $show_all  = $which_log === 0;
 
+        $where_sql  = $show_all ? '' : 'WHERE codice_evento = ' . $which_log;
+        $count_row     = gdrcd_query("SELECT COUNT(*) AS c FROM log " . $where_sql);
+        $totaleresults = (int)$count_row['c'];
 
-            <?php //*Elenco log*/
+        $result = gdrcd_query(
+            "SELECT codice_evento, autore, nome_interessato, data_evento, descrizione_evento
+             FROM log
+             " . $where_sql . "
+             ORDER BY data_evento DESC
+             LIMIT " . $pagebegin . ", " . $per_page,
+            'result'
+        );
+        $numresults = (int)gdrcd_query($result, 'num_rows');
 
-            if ((isset($_REQUEST['op']) == 'view') && (is_numeric($_REQUEST['which_log']) === true)) {
-                //Determinazione pagina (paginazione)
-                $pagebegin = (int)$_REQUEST['offset'] * $PARAMETERS['settings']['records_per_page'];
-                $pageend = $PARAMETERS['settings']['records_per_page'];
-                //Conteggio record totali
-                $record_globale = gdrcd_query("SELECT COUNT(*) FROM log WHERE codice_evento =" . gdrcd_filter('num',
-                        $_REQUEST['which_log']) . "");
-                $totaleresults = $record_globale['COUNT(*)'];
-                //Lettura record
-                $result = gdrcd_query("SELECT autore, nome_interessato, data_evento, descrizione_evento FROM log WHERE codice_evento =" . $_REQUEST['which_log'] . " ORDER BY data_evento DESC LIMIT " . $pagebegin . ", " . $pageend . "",
-                    'result');
-                $numresults = gdrcd_query($result, 'num_rows');
+        // Etichetta tipo evento (1-based su array $MESSAGE['event'])
+        $event_keys  = array_keys($MESSAGE['event']);
+        $event_label = $show_all
+            ? 'Tutti'
+            : ($MESSAGE['event'][$event_keys[$which_log - 1] ?? ''] ?? '');
+        ?>
+        <section class="space-y-3">
+            <div class="flex flex-wrap items-baseline gap-2">
+                <h3 class="gdrcd-h3"><?= gdrcd_filter('out', $lbl['log_type']) ?></h3>
+                <span class="gdrcd-badge-accent"><?= gdrcd_filter('out', $event_label) ?></span>
+                <span class="gdrcd-muted text-xs ml-auto"><?= $totaleresults ?> risultati</span>
+            </div>
 
-
-                /* Se esistono record */
-                if ($numresults > 0) { ?>
-                    <!-- Elenco dei record paginato -->
-                    <div class="elenco_record_gestione">
-                        <table>
-                            <!-- Intestazione tabella -->
+            <?php if ($numresults > 0): ?>
+                <div class="gdrcd-table-wrap">
+                    <table class="gdrcd-table">
+                        <thead>
                             <tr>
-                                <td class="casella_titolo">
-                                    <div class="titoli_elenco">
-                                        <?php echo gdrcd_filter('out',
-                                            $MESSAGE['interface']['administration']['log']['events']['author']); ?>
-                                    </div>
-                                </td>
-                                <td class="casella_titolo">
-                                    <div class="titoli_elenco">
-                                        <?php echo gdrcd_filter('out',
-                                            $MESSAGE['interface']['administration']['log']['events']['dest']); ?>
-                                    </div>
-                                </td>
-                                <td class="casella_titolo">
-                                    <div class="titoli_elenco">
-                                        <?php echo gdrcd_filter('out',
-                                            $MESSAGE['interface']['administration']['log']['events']['date']); ?>
-                                    </div>
-                                </td>
-                                <td class="casella_titolo">
-                                    <div class="titoli_elenco">
-                                        <?php echo gdrcd_filter('out',
-                                            $MESSAGE['interface']['administration']['log']['events']['descr']); ?>
-                                    </div>
-                                </td>
+                                <?php if ($show_all): ?>
+                                    <th class="whitespace-nowrap"><?= gdrcd_filter('out', $lbl['log_type']) ?></th>
+                                <?php endif; ?>
+                                <th><?= gdrcd_filter('out', $lbl['author']) ?></th>
+                                <th><?= gdrcd_filter('out', $lbl['dest']) ?></th>
+                                <th class="whitespace-nowrap"><?= gdrcd_filter('out', $lbl['date']) ?></th>
+                                <th><?= gdrcd_filter('out', $lbl['descr']) ?></th>
                             </tr>
-                            <!-- Record -->
-                            <?php while ($row = gdrcd_query($result, 'fetch')) {
-
-                                switch ($_REQUEST['which_log']) {
-                                    case BLOCKED:
-                                    case LOGGEDIN:
-                                    case ERRORELOGIN:
-                                        $list = explode('.', $row['descrizione_evento']);
-                                        $list[3] = 'X';
-                                        $list[2] = 'X';
-                                        $descr = implode('.', $list);
-                                        break;
-                                    default;
-                                        $descr = $row['descrizione_evento'];
-                                        break;
-                                }
-
-                                switch ($_REQUEST['which_log']) {
-                                    case BLOCKED:
-                                    case LOGGEDIN:
-                                    case ERRORELOGIN:
-                                        $list2 = explode('.', $row['autore']);
-                                        $list2[3] = 'X';
-                                        $list2[2] = 'X';
-                                        $autore = implode('.', $list2);
-                                        break;
-                                    default;
-                                        $autore = $row['autore'];
-                                        break;
-                                }
-
+                        </thead>
+                        <tbody>
+                            <?php while ($row = gdrcd_query($result, 'fetch')):
+                                $row_code = (int)$row['codice_evento'];
+                                $row_is_login = $is_login_event($row_code);
+                                $autore = $row_is_login ? $mask_ip($row['autore']) : $row['autore'];
+                                $descr  = $row_is_login ? $mask_ip($row['descrizione_evento']) : $row['descrizione_evento'];
+                                $row_label = $MESSAGE['event'][$row_code] ?? ('#' . $row_code);
                                 ?>
-                                <tr class="risultati_elenco_record_gestione">
-                                    <td class="casella_elemento">
-                                        <div class="elementi_elenco">
-                                            <?php echo gdrcd_filter('out', $autore); ?>
-                                        </div>
+                                <tr>
+                                    <?php if ($show_all): ?>
+                                        <td class="whitespace-nowrap">
+                                            <span class="gdrcd-badge-neutral"><?= gdrcd_filter('out', $row_label) ?></span>
+                                        </td>
+                                    <?php endif; ?>
+                                    <td class="font-mono text-xs text-gdrcd-text whitespace-nowrap">
+                                        <?= gdrcd_filter('out', $autore) ?>
                                     </td>
-                                    <td class="casella_elemento">
-                                        <div class="elementi_elenco">
-                                            <a href="main.php?page=scheda&pg=<?php echo gdrcd_filter('out',
-                                                $row['nome_interessato']); ?>">
-                                                <?php echo gdrcd_filter('out', $row['nome_interessato']); ?>
+                                    <td class="font-medium text-gdrcd-text whitespace-nowrap">
+                                        <?php if (!empty($row['nome_interessato'])): ?>
+                                            <a class="gdrcd-link" href="main.php?page=scheda&pg=<?= urlencode($row['nome_interessato']) ?>">
+                                                <?= gdrcd_filter('out', $row['nome_interessato']) ?>
                                             </a>
-                                        </div>
+                                        <?php else: ?>
+                                            <span class="text-gdrcd-subtle">—</span>
+                                        <?php endif; ?>
                                     </td>
-                                    <td class="casella_elemento">
-                                        <div class="elementi_elenco">
-                                            <?php echo gdrcd_format_date($row['data_evento']) . ' ' . gdrcd_format_time($row['data_evento']); ?>
-                                        </div>
+                                    <td class="text-gdrcd-muted whitespace-nowrap">
+                                        <?= gdrcd_format_date($row['data_evento']) ?>
+                                        <span class="text-gdrcd-subtle">·</span>
+                                        <?= gdrcd_format_time($row['data_evento']) ?>
                                     </td>
-                                    <td class="casella_elemento">
-                                        <div class="elementi_elenco">
-                                            <?php echo gdrcd_filter('out', $descr); ?>
-                                        </div>
-                                    </td>
+                                    <td><?= gdrcd_filter('out', $descr) ?></td>
                                 </tr>
-                            <?php } //while
-
-
+                            <?php endwhile;
                             gdrcd_query($result, 'free');
                             ?>
-                        </table>
-                    </div>
-                <?php }//if
-                ?>
-
-                <!-- Paginatore elenco -->
-                <div class="pager">
-                    <?php if ($totaleresults > $PARAMETERS['settings']['records_per_page']) {
-                        echo gdrcd_filter('out', $MESSAGE['interface']['pager']['pages_name']);
-                        for ($i = 0; $i <= floor($totaleresults / $PARAMETERS['settings']['records_per_page']); $i++) {
-                            if ($i != $_REQUEST['offset']) {
-                                ?>
-                                <a href="main.php?page=log_eventi&op=view&which_log=<?php echo $_REQUEST['which_log']; ?>&offset=<?php echo $i; ?>"><?php echo $i + 1; ?></a>
-                            <?php } else {
-                                echo ' ' . ($i + 1) . ' ';
-                            }
-                        } //for
-                    }//if
-                    ?>
+                        </tbody>
+                    </table>
                 </div>
 
-                <!-- link crea nuovo -->
-                <div class="link_back">
-                    <a href="main.php?page=log_eventi">
-                        <?php echo gdrcd_filter('out',
-                            $MESSAGE['interface']['administration']['log']['events']['link']['back']); ?>
-                    </a>
+                <?php if ($totaleresults > $per_page): ?>
+                    <nav class="gdrcd-pager" aria-label="Paginazione">
+                        <span class="gdrcd-pager-label !border-0 !bg-transparent">
+                            <?= gdrcd_filter('out', $MESSAGE['interface']['pager']['pages_name']) ?>
+                        </span>
+                        <?php $pages = (int)floor($totaleresults / $per_page);
+                        for ($i = 0; $i <= $pages; $i++):
+                            if ($i === $offset): ?>
+                                <span class="is-current" aria-current="page"><?= $i + 1 ?></span>
+                            <?php else:
+                                $url = 'main.php?' . http_build_query([
+                                    'page' => 'log_eventi', 'op' => 'view',
+                                    'which_log' => $which_log, 'offset' => $i,
+                                ]); ?>
+                                <a href="<?= htmlspecialchars($url) ?>"><?= $i + 1 ?></a>
+                            <?php endif;
+                        endfor; ?>
+                    </nav>
+                <?php endif; ?>
+
+            <?php else: ?>
+                <div class="gdrcd-alert-info">
+                    <svg class="w-5 h-5 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <div>Nessun evento registrato per questa tipologia.</div>
                 </div>
+            <?php endif; ?>
 
-            <?php }//else
-            ?>
+            <div>
+                <a href="main.php?page=log_eventi" class="gdrcd-btn-ghost">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                    <?= gdrcd_filter('out', $lbl['link']['back']) ?>
+                </a>
+            </div>
+        </section>
+    <?php endif; ?>
 
-
-        </div>
-
-    <?php }//else (controllo permessi utente) ?>
-</div><!--Pagina-->
+</div>
