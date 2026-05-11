@@ -351,7 +351,7 @@ $action = htmlspecialchars($_SERVER['SCRIPT_NAME'] . '?' . $_SERVER['QUERY_STRIN
                 . " $lastpasschange_field) VALUES ("
                 . "'" . gdrcd_safe_name($_POST['nome']) . "',"
                 . "'" . gdrcd_safe_name($_POST['cognome']) . "',"
-                . "'" . gdrcd_encript($pass) . "', NOW(),"
+                . "'" . gdrcd_password_hash($pass) . "', NOW(),"
                 . "'" . gdrcd_encript($email) . "',"
                 . "'" . gdrcd_filter('in', $_POST['genere']) . "',"
                 . gdrcd_filter('num', $_POST['razza']) . ","

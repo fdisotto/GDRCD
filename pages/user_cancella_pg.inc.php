@@ -3,17 +3,19 @@
  * Utente — cancella account proprio + force/restore (mod/superuser).
  */
 
-$row = gdrcd_query("SELECT email FROM personaggio WHERE nome = '" . gdrcd_filter('in', $_SESSION['login']) . "'");
+$row = gdrcd_query("SELECT email, pass FROM personaggio WHERE nome = '" . gdrcd_filter('in', $_SESSION['login']) . "'");
 $email = $row['email'] ?? '';
+$storedPass = $row['pass'] ?? '';
 $op = $_POST['op'] ?? null;
 $alerts = [];
 $logout = false;
 
 if ($op === 'delete') {
-    if ($email === gdrcd_filter_email($_POST['email'] ?? '') && gdrcd_check_pass($_POST['new_pass'] ?? '') === true) {
+    if (gdrcd_password_verify(gdrcd_filter_email($_POST['email'] ?? ''), $email)
+        && gdrcd_password_verify($_POST['new_pass'] ?? '', $storedPass)
+        && gdrcd_check_pass($_POST['new_pass'] ?? '') === true) {
         gdrcd_query("UPDATE personaggio SET permessi = -1
-                     WHERE nome = '" . gdrcd_filter('in', $_SESSION['login']) . "'
-                     AND pass = '" . gdrcd_encript($_POST['new_pass']) . "'");
+                     WHERE nome = '" . gdrcd_filter('in', $_SESSION['login']) . "'");
         gdrcd_query("INSERT INTO log (nome_interessato, autore, data_evento, codice_evento, descrizione_evento)
                      VALUES ('" . gdrcd_filter('in', $_SESSION['login']) . "', '" . gdrcd_filter('in', $_SESSION['login']) . "',
                              NOW(), " . DELETEPG . ", '" . gdrcd_filter('in', $MESSAGE['interface']['user']['delete']['undeleted']) . "')");

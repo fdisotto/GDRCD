@@ -57,7 +57,15 @@ $record = gdrcd_query("SELECT personaggio.pass, personaggio.nome, personaggio.co
  * Se si esce non correttamente dal gioco, sarà possibile entrare dopo 5 minuti dall'ultimo refresh registrato
  * @author Blancks
  */
-if( ! empty($record) and gdrcd_password_check($pass1, $record['pass']) && ($record['permessi'] > -1) && (strtotime($record['ora_entrata']) < strtotime($record['ora_uscita']) || (strtotime($record['ultimo_refresh']) + 300) < time())) {
+if( ! empty($record) and gdrcd_password_verify($pass1, $record['pass']) && ($record['permessi'] > -1) && (strtotime($record['ora_entrata']) < strtotime($record['ora_uscita']) || (strtotime($record['ultimo_refresh']) + 300) < time())) {
+    // Migrazione silenziosa: se l'hash è in formato legacy (phpass) o necessita rehash,
+    // lo rigeneriamo in bcrypt utilizzando la password fornita dall'utente (di cui ora
+    // sappiamo essere valida).
+    if (gdrcd_password_needs_rehash($record['pass'])) {
+        $newHash = gdrcd_password_hash($pass1);
+        gdrcd_query("UPDATE personaggio SET pass = '" . gdrcd_filter('in', $newHash) . "' WHERE nome = '" . gdrcd_filter('in', $record['nome']) . "' LIMIT 1");
+    }
+
     $_SESSION['login'] = gdrcd_filter_in($record['nome']);
     $_SESSION['cognome'] = $record['cognome'];
     $_SESSION['permessi'] = $record['permessi'];

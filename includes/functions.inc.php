@@ -293,9 +293,11 @@ function gdrcd_mysql_error($details = false)
  */
 
 /**
- * Funzione di hashing delle password.
+ * Funzione di hashing delle password (LEGACY).
+ * Mantiene la compatibilità con l'algoritmo phpass per gli hash già presenti in DB.
+ * Per i nuovi hash usare gdrcd_password_hash().
  * @param string $str : la password o stringa di cui calcolare l'hash
- * @return l'hash calcolato a partire da $str con l'algoritmo specificato nella configurazione
+ * @return string l'hash phpass calcolato a partire da $str
  */
 function gdrcd_encript($str)
 {
@@ -305,12 +307,72 @@ function gdrcd_encript($str)
     return $hasher->HashPassword($str);
 }
 
+/**
+ * Verifica una password/stringa rispetto ad un hash memorizzato.
+ * Supporta sia il nuovo formato bcrypt sia il vecchio formato phpass (gdrcd_encript)
+ * per garantire la retrocompatibilità degli hash già presenti in database.
+ * @param string $pass   la stringa in chiaro da verificare
+ * @param string $stored l'hash memorizzato
+ * @return bool true se la stringa corrisponde all'hash, false altrimenti
+ */
 function gdrcd_password_check($pass, $stored)
 {
+    if (!is_string($stored) || $stored === '') {
+        return false;
+    }
+
+    $info = password_get_info($stored);
+    if (!empty($info['algo'])) {
+        // Hash moderno gestito da password_hash() (bcrypt, argon2, ...)
+        return password_verify($pass, $stored);
+    }
+
+    // Fallback su phpass per gli hash legacy
     require_once(dirname(__FILE__) . '/PasswordHash.php');
     $hasher = new PasswordHash(8, true);
-
     return $hasher->CheckPassword($pass, $stored);
+}
+
+/**
+ * Calcola un hash bcrypt per la password fornita.
+ * @param string $plain password in chiaro
+ * @return string hash bcrypt pronto per essere memorizzato in DB
+ */
+function gdrcd_password_hash($plain)
+{
+    return password_hash($plain, PASSWORD_BCRYPT);
+}
+
+/**
+ * Verifica una password rispetto al suo hash memorizzato.
+ * Alias semanticamente più chiaro di gdrcd_password_check(); supporta i nuovi
+ * hash bcrypt e mantiene la retrocompatibilità con gli hash phpass legacy.
+ * @param string $plain       la password in chiaro
+ * @param string $stored_hash l'hash memorizzato
+ * @return bool true se la password è valida
+ */
+function gdrcd_password_verify($plain, $stored_hash)
+{
+    return gdrcd_password_check($plain, $stored_hash);
+}
+
+/**
+ * Indica se l'hash memorizzato deve essere rigenerato (es. perchè in formato legacy
+ * oppure perchè i parametri di costo bcrypt sono cambiati).
+ * @param string $stored_hash hash attualmente memorizzato in DB
+ * @return bool
+ */
+function gdrcd_password_needs_rehash($stored_hash)
+{
+    if (!is_string($stored_hash) || $stored_hash === '') {
+        return true;
+    }
+    $info = password_get_info($stored_hash);
+    if (empty($info['algo'])) {
+        // Hash non riconosciuto da password_hash() (tipicamente phpass): da rigenerare.
+        return true;
+    }
+    return password_needs_rehash($stored_hash, PASSWORD_BCRYPT);
 }
 
 /**

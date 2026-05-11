@@ -34,8 +34,8 @@ $rename_self = function ($new_name) {
 
 if ($op === 'new') {
     $new_name = $_POST['new_name'] ?? '';
-    if ($email === gdrcd_filter_email($_POST['email'] ?? '')
-        && $pass === gdrcd_encript($_POST['new_pass'] ?? '')
+    if (gdrcd_password_verify(gdrcd_filter_email($_POST['email'] ?? ''), $email)
+        && gdrcd_password_verify($_POST['new_pass'] ?? '', $pass)
         && $iscriz >= $today
         && !empty($new_name)) {
         $check = gdrcd_query("SELECT nome FROM personaggio WHERE nome = '" . gdrcd_filter('in', $new_name) . "'", 'result');

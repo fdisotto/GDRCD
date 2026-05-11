@@ -12,7 +12,7 @@ if (!empty($_POST['email'])) {
     while ($row = gdrcd_query($result, 'assoc')) {
         if (gdrcd_password_check($_POST['email'], $row['email'])) {
             $pass = gdrcd_genera_pass();
-            $hasReset = gdrcd_query("UPDATE personaggio SET pass = '" . gdrcd_encript($pass) . "' WHERE nome = '" . gdrcd_filter('in', $row['nome']) . "' LIMIT 1");
+            $hasReset = gdrcd_query("UPDATE personaggio SET pass = '" . gdrcd_filter('in', gdrcd_password_hash($pass)) . "' WHERE nome = '" . gdrcd_filter('in', $row['nome']) . "' LIMIT 1");
 
             if ($hasReset) {
                 $subject = gdrcd_filter('out', $MESSAGE['register']['forms']['mail']['sub'] . ' ' . $PARAMETERS['info']['site_name']);

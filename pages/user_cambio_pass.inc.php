@@ -10,7 +10,7 @@ $alerts = [];
 
 if ($op === 'new') {
     if (gdrcd_password_check(gdrcd_filter_email($_POST['email'] ?? ''), $email) && gdrcd_check_pass($_POST['new_pass'] ?? '') === true) {
-        gdrcd_query("UPDATE personaggio SET pass = '" . gdrcd_encript($_POST['new_pass']) . "', ultimo_cambiopass = NOW()
+        gdrcd_query("UPDATE personaggio SET pass = '" . gdrcd_filter('in', gdrcd_password_hash($_POST['new_pass'])) . "', ultimo_cambiopass = NOW()
                      WHERE nome = '" . gdrcd_filter('in', $_SESSION['login']) . "'");
         gdrcd_query("INSERT INTO log (nome_interessato, autore, data_evento, codice_evento, descrizione_evento)
                      VALUES ('" . gdrcd_filter('in', $_SESSION['login']) . "', '" . gdrcd_filter('in', $_SESSION['login']) . "',
@@ -23,7 +23,7 @@ if ($op === 'new') {
     $where = ($_SESSION['permessi'] == SUPERUSER)
         ? "nome = '" . gdrcd_filter_in($_POST['account']) . "'"
         : "nome = '" . gdrcd_filter_in($_POST['account']) . "' AND permessi < " . SUPERUSER;
-    gdrcd_query("UPDATE personaggio SET pass = '" . gdrcd_encript($_POST['new_pass']) . "', ultimo_cambiopass = NOW() WHERE " . $where);
+    gdrcd_query("UPDATE personaggio SET pass = '" . gdrcd_filter('in', gdrcd_password_hash($_POST['new_pass'])) . "', ultimo_cambiopass = NOW() WHERE " . $where);
     gdrcd_query("INSERT INTO log (nome_interessato, autore, data_evento, codice_evento, descrizione_evento)
                  VALUES ('" . gdrcd_filter_in($_POST['account']) . "', '" . gdrcd_filter('in', $_SESSION['login']) . "',
                          NOW(), " . CHANGEDPASS . ", '" . gdrcd_filter('in', $_SERVER['REMOTE_ADDR']) . "')");
