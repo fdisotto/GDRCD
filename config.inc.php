@@ -789,6 +789,9 @@ $PARAMETERS['administration']['configurazioni']['access_level'] = SUPERUSER;
 $PARAMETERS['administration']['legal']['text'] = 'Pagine legali';
 $PARAMETERS['administration']['legal']['url'] = 'main.php?page=gestione/legal';
 $PARAMETERS['administration']['legal']['access_level'] = SUPERUSER;
+$PARAMETERS['administration']['forget']['text'] = 'Richieste cancellazione';
+$PARAMETERS['administration']['forget']['url'] = 'main.php?page=gestione/forget_requests';
+$PARAMETERS['administration']['forget']['access_level'] = SUPERUSER;
 
 
 /* HELP: Elenco delle voci dei menu' dei servizi e di gestione. E' sconsigliato operare modifiche. Le opzioni sono disponibili solo agli account con il livello d'accesso specificato o superiore.

@@ -26,7 +26,7 @@ $categories = [
         'title' => 'Moderazione',
         'desc'  => 'Sanzioni, ban e blacklist.',
         'icon'  => '<path stroke-linecap="round" stroke-linejoin="round" d="M12 2l8 4v6c0 5-3.5 9.5-8 10-4.5-.5-8-5-8-10V6l8-4z"/>',
-        'keys'  => ['ban'],
+        'keys'  => ['ban', 'forget'],
     ],
     'Utenti' => [
         'title' => 'Utenti',
@@ -115,6 +115,7 @@ $item_icons = [
     'configurazioni'=> '<path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h10M4 18h16"/><path stroke-linecap="round" stroke-linejoin="round" d="M17 9l2 2 4-4"/>',
     'legal'         => '<path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>',
     'ban'           => '<path stroke-linecap="round" stroke-linejoin="round" d="M12 2l8 4v6c0 5-3.5 9.5-8 10-4.5-.5-8-5-8-10V6l8-4z"/><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4"/>',
+    'forget'        => '<path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22m-9 0V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3"/>',
 ];
 
 $default_item_icon = '<path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>';

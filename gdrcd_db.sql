@@ -793,6 +793,29 @@ INSERT INTO `legal_pages` (`slug`, `title`, `body`) VALUES
 -- --------------------------------------------------------
 
 --
+-- Struttura della tabella `deletion_requests` (richieste GDPR art. 17
+-- "Right to be forgotten": apertura da parte dell'utente + processing
+-- da parte dell'admin che anonimizza il personaggio).
+--
+
+CREATE TABLE IF NOT EXISTS `deletion_requests` (
+  `id`           INT NOT NULL AUTO_INCREMENT,
+  `user_login`   VARCHAR(50) NOT NULL,
+  `user_email`   VARCHAR(255) NULL,
+  `reason`       TEXT NULL,
+  `status`       ENUM('pending','processed','rejected') NOT NULL DEFAULT 'pending',
+  `requested_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `processed_at` DATETIME NULL,
+  `processed_by` VARCHAR(50) NULL,
+  `note_admin`   TEXT NULL,
+  PRIMARY KEY (`id`),
+  INDEX `idx_status` (`status`),
+  INDEX `idx_user_login` (`user_login`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
 -- Struttura della tabella `_gdrcd_db_versions`
 --
 
@@ -809,6 +832,7 @@ INSERT INTO _gdrcd_db_versions (migration_id,applied_on) VALUES
   ('2026051113', NOW()),
   ('2026051114', NOW()),
   ('2026051115', NOW()),
+  ('2026051116', NOW()),
   ('2026051117', NOW());
 
 
