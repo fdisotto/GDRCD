@@ -1,65 +1,59 @@
 <?php
-if ($_GET['op']=='first') { ?>
-    <div class="page_title">
-        <h2>Nuova serie di esiti</h2>
-    </div>
-    <div class="form_info">
-        <?php echo $MESSAGE['interface']['esitiserie']['intro'];?>
-    </div>
-    <form action="main.php?page=gestione_segnalazioni&segn=esito_index"
-          method="post"
-          class="form_gestione">
+/**
+ * Nuova serie di esiti — primo step, raccolta dati iniziali del blocco.
+ * Inviato POST a esito_index con op=insert che gestirà la creazione.
+ */
 
-        <div class='form_label'>
-            Nome PG coinvolto
-        </div>
-        <div class='form_field'>
-            <input name="pg" value=""/>
-        </div>
-
-        <div class='form_label'>
-            Titolo
-        </div>
-        <div class='form_field'>
-            <input name="titolo"
-                   value=""/>
-        </div>
-        <div class='form_label'>
-            Contenuto ON
-        </div>
-        <div class='form_field'>
-            <textarea name="contenuto"></textarea>
-        </div>
-
-        <div class="form_info" >
-            Indicazioni sulle azioni ON da compiere/compiute.
-        </div>
-
-        <div class='form_label'>
-            Note OFF
-        </div>
-        <div class='form_field'>
-            <input name="note" value="" />
-        </div>
-        <div class="form_info" >
-            Utilizzare solo per brevi chiarimenti
-        </div>
-        <!-- bottoni -->
-        <div class='form_submit'>
-            <input type="hidden"
-                   name="op"
-                   value="insert">
-            <input type="submit"
-                   value="<?php echo gdrcd_filter('out',$MESSAGE['interface']['forms']['submit']);?>" />
-        </div>
-
-    </form>
-    <!-- link pié di pagina -->
-    <div class="link_back">
-        <a href='main.php?page=gestione_segnalazioni&segn=esiti_master'>
-            Torna alla lista
-        </a>
-    </div>
-<?php }
-
+if (($_GET['op'] ?? '') !== 'first') {
+    return;
+}
 ?>
+<div class="space-y-6">
+
+    <header class="space-y-2">
+        <h2 class="gdrcd-h1">Nuova serie di esiti</h2>
+        <p class="gdrcd-prose"><?= $MESSAGE['interface']['esitiserie']['intro'] ?></p>
+    </header>
+
+    <section class="gdrcd-card">
+        <div class="gdrcd-card-body">
+            <form action="main.php?page=gestione_segnalazioni&segn=esito_index" method="post" class="space-y-5">
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="gdrcd-label" for="ne_pg">Nome PG coinvolto</label>
+                        <input class="gdrcd-input" type="text" id="ne_pg" name="pg" required/>
+                    </div>
+                    <div>
+                        <label class="gdrcd-label" for="ne_titolo">Titolo</label>
+                        <input class="gdrcd-input" type="text" id="ne_titolo" name="titolo" required/>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="gdrcd-label" for="ne_contenuto">Contenuto ON</label>
+                    <textarea class="gdrcd-textarea" id="ne_contenuto" name="contenuto" rows="6"></textarea>
+                    <p class="gdrcd-help">Indicazioni sulle azioni ON da compiere o compiute.</p>
+                </div>
+
+                <div>
+                    <label class="gdrcd-label" for="ne_note">Note OFF</label>
+                    <input class="gdrcd-input" type="text" id="ne_note" name="note"/>
+                    <p class="gdrcd-help">Solo brevi chiarimenti.</p>
+                </div>
+
+                <div class="flex flex-col-reverse sm:flex-row gap-3 sm:justify-end pt-2 border-t border-gdrcd-border">
+                    <a href="main.php?page=gestione_segnalazioni&segn=esiti_master" class="gdrcd-btn-ghost">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                        Annulla
+                    </a>
+                    <input type="hidden" name="op" value="insert"/>
+                    <button type="submit" class="gdrcd-btn-primary">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        <?= gdrcd_filter('out', $MESSAGE['interface']['forms']['submit']) ?>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </section>
+</div>

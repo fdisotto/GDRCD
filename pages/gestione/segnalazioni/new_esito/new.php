@@ -1,73 +1,83 @@
 <?php
-$blocco = gdrcd_query("SELECT pg, master, titolo FROM blocco_esiti WHERE id='".gdrcd_filter('num',$_GET['blocco'])."' LIMIT 1 ");
+/**
+ * Form nuovo esito narrativo da aggiungere a una serie esistente.
+ * Submit POST a esito_index?op=add gestito da add.php.
+ */
 
-if ($_GET['op']=='new') {
-    ?>
+if (($_GET['op'] ?? '') !== 'new') {
+    return;
+}
 
-    <div class="page_title">
-        <h2>Serie di esiti: <?=$blocco['titolo'];?></h2>
-    </div>
+$blocco = gdrcd_query(
+    "SELECT pg, master, titolo FROM blocco_esiti
+     WHERE id = '" . gdrcd_filter('num', $_GET['blocco'] ?? 0) . "' LIMIT 1"
+);
+?>
 
-    <div class="form_info">
-        <?=$MESSAGE['interface']['esiti']['newesito'];?>
-    </div>
-    <form action="main.php?page=gestione_segnalazioni&segn=esito_index"
-          method="post"
-          class="form_gestione">
+<div class="space-y-6">
 
-        <div class='form_label'>
-            Titolo
-        </div>
-        <div class='form_field'>
-            <input name="titolo"
-                   value=""/>
-        </div>
-        <div class='form_label'>
-            Contenuto ON
-        </div>
-        <div class='form_field'>
-            <textarea name="contenuto"></textarea>
-        </div>
+    <header class="space-y-2">
+        <h2 class="gdrcd-h1">
+            Nuovo esito
+        </h2>
+        <p class="gdrcd-muted">
+            Serie <strong class="text-gdrcd-text"><?= gdrcd_filter('out', $blocco['titolo'] ?? '') ?></strong>
+            <span class="text-gdrcd-subtle">·</span>
+            PG <span class="gdrcd-badge-accent ml-1"><?= gdrcd_filter('out', $blocco['pg'] ?? '') ?></span>
+        </p>
+        <p class="gdrcd-prose"><?= $MESSAGE['interface']['esiti']['newesito'] ?></p>
+    </header>
 
-        <div class="form_info" >
-            Descrivere dettagliatamente quel che il personaggio può conoscere o scoprire, secondo la coerenza del caso,
-            in maniera narrativa (come fareste in chat).
-        </div>
-        <?php if (TIRI_ESITO) { ?>
-            <div class='form_label'>
-                Tira dei dadi
-            </div>
-            <div class='form_field'>
-                Numero di dadi: <input name="dice_num" value="" /><br>
-                Numero di facce dei dadi: <input name="dice_face" value="" /><br>
-            </div>
-        <?php } ?>
-        <div class='form_label'>
-            Note OFF
-        </div>
-        <div class='form_field'>
-            <input name="note" value="" />
-        </div>
-        <div class="form_info" >
-            Utilizzare solo per brevi chiarimenti
-        </div>
-        <!-- bottoni -->
-        <div class='form_submit'>
-            <input type="hidden"
-                   name="op"
-                   value="add">
-            <input type="hidden"
-                   name="id"
-                   value="<?=$_GET['blocco'];?>">
-            <input type="submit"
-                   value="<?=gdrcd_filter('out',$MESSAGE['interface']['forms']['submit']);?>" />
-        </div>
+    <section class="gdrcd-card">
+        <div class="gdrcd-card-body">
+            <form action="main.php?page=gestione_segnalazioni&segn=esito_index" method="post" class="space-y-5">
 
-    </form>
-    <!-- link pié di pagina -->
-    <div class="link_back">
-        <a href='main.php?page=gestione_segnalazioni&segn=esiti_master'>
-            Torna alla lista
-        </a>
-    </div>
-<?php }
+                <div>
+                    <label class="gdrcd-label" for="nw_titolo">Titolo</label>
+                    <input class="gdrcd-input" type="text" id="nw_titolo" name="titolo" required/>
+                </div>
+
+                <div>
+                    <label class="gdrcd-label" for="nw_contenuto">Contenuto ON</label>
+                    <textarea class="gdrcd-textarea" id="nw_contenuto" name="contenuto" rows="8"></textarea>
+                    <p class="gdrcd-help">Descrivere in modo narrativo (come in chat) quel che il personaggio può conoscere o scoprire.</p>
+                </div>
+
+                <?php if (TIRI_ESITO): ?>
+                    <div class="border border-gdrcd-border rounded-gdrcd bg-gdrcd-panel-alt/30 p-4 space-y-2">
+                        <div class="gdrcd-eyebrow">Tira dei dadi</div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="gdrcd-label" for="nw_dice_num">Numero di dadi</label>
+                                <input class="gdrcd-input" type="number" min="0" id="nw_dice_num" name="dice_num" value="0"/>
+                            </div>
+                            <div>
+                                <label class="gdrcd-label" for="nw_dice_face">Facce per dado</label>
+                                <input class="gdrcd-input" type="number" min="0" id="nw_dice_face" name="dice_face" value="0"/>
+                            </div>
+                        </div>
+                    </div>
+                <?php endif; ?>
+
+                <div>
+                    <label class="gdrcd-label" for="nw_note">Note OFF</label>
+                    <input class="gdrcd-input" type="text" id="nw_note" name="note"/>
+                    <p class="gdrcd-help">Solo brevi chiarimenti.</p>
+                </div>
+
+                <div class="flex flex-col-reverse sm:flex-row gap-3 sm:justify-end pt-2 border-t border-gdrcd-border">
+                    <a href="main.php?page=gestione_segnalazioni&segn=esiti_master" class="gdrcd-btn-ghost">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                        Annulla
+                    </a>
+                    <input type="hidden" name="op" value="add"/>
+                    <input type="hidden" name="id" value="<?= (int)($_GET['blocco'] ?? 0) ?>"/>
+                    <button type="submit" class="gdrcd-btn-primary">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        <?= gdrcd_filter('out', $MESSAGE['interface']['forms']['submit']) ?>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </section>
+</div>

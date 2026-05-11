@@ -194,7 +194,7 @@
                text-gdrcd-text-soft bg-gdrcd-panel-alt border-b border-gdrcd-border;
     }
     .gdrcd-table tbody td {
-        @apply px-3 py-2.5 align-top border-b border-gdrcd-border text-gdrcd-text-soft;
+        @apply px-3 py-2.5 align-middle border-b border-gdrcd-border text-gdrcd-text-soft;
     }
     .gdrcd-table tbody tr:hover td { @apply bg-gdrcd-accent-soft/30; }
     .gdrcd-table tbody tr:last-child td { @apply border-b-0; }
