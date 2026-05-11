@@ -49,6 +49,7 @@ $render_op = function (array $opts) use ($submit_label) {
         </div>
         <div class="gdrcd-card-body flex-1 space-y-3">
             <form action="main.php?page=gestione/manutenzione" method="post" class="space-y-3">
+                <?= gdrcd_csrf_field() ?>
                 <?= $field_html ?>
                 <?php if ($info): ?>
                     <p class="gdrcd-help"><?= $info ?></p>

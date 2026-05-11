@@ -11,6 +11,14 @@ if(!empty($_SESSION['theme']) and array_key_exists($_SESSION['theme'], $PARAMETE
 
 //Eseguo la connessione al database
 $handleDBConnection = gdrcd_connect();
+
+/*Enforcement CSRF centralizzato sulle richieste POST verso gli endpoint che
+  passano da ref_header (es. pages/chat.inc.php). I refresh in iframe via
+  meta-refresh sono GET e non vengono toccati.*/
+if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    gdrcd_csrf_guard();
+}
+
 //Ricevo il tempo di reload
 $i_ref_time = gdrcd_filter_get($_GET['ref']);
 

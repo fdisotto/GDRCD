@@ -91,6 +91,7 @@ $render_table = function ($rows_iter, callable $sender_for_row) use ($page_label
             <div class="gdrcd-card-body grid grid-cols-1 lg:grid-cols-2 gap-6 lg:divide-x lg:divide-gdrcd-border">
 
                 <form action="main.php?page=log_chat" method="post" class="space-y-3 lg:pr-6">
+                    <?= gdrcd_csrf_field() ?>
                     <h3 class="gdrcd-h3"><?= gdrcd_filter('out', $page_label_msg['log_by_user']) ?></h3>
                     <div>
                         <label class="gdrcd-label" for="lc_pg">Personaggio</label>
@@ -113,6 +114,7 @@ $render_table = function ($rows_iter, callable $sender_for_row) use ($page_label
                 </form>
 
                 <form action="main.php?page=log_chat" method="post" class="space-y-3 lg:pl-6">
+                    <?= gdrcd_csrf_field() ?>
                     <h3 class="gdrcd-h3"><?= gdrcd_filter('out', $page_label_msg['log_by_room']) ?></h3>
                     <div>
                         <label class="gdrcd-label" for="lc_luogo">Stanza</label>

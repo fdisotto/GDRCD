@@ -66,6 +66,7 @@ $is_gm = ((int)$_SESSION['permessi'] >= GAMEMASTER);
         <section class="gdrcd-card">
             <div class="gdrcd-card-body space-y-4">
                 <form action="pages/chat.inc.php?ref=10&chat=yes" method="post" target="chat_frame" id="chat_form_messages" class="space-y-3">
+                    <?= gdrcd_csrf_field() ?>
                     <div class="grid grid-cols-1 md:grid-cols-[10rem_12rem_minmax(0,1fr)_auto] gap-3 items-end">
                         <div>
                             <label class="gdrcd-label" for="type"><?= gdrcd_filter('out', $MESSAGE['chat']['type']['info']) ?></label>
@@ -143,6 +144,7 @@ $is_gm = ((int)$_SESSION['permessi'] >= GAMEMASTER);
                 <div class="gdrcd-card-body">
                     <form action="pages/chat.inc.php?ref=30&chat=yes" method="post" target="chat_frame" id="chat_form_actions"
                           class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 items-end">
+                        <?= gdrcd_csrf_field() ?>
 
                         <?php if ($skills_on): ?>
                             <div>

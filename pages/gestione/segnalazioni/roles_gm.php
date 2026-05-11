@@ -86,6 +86,7 @@ $numresults = (int)gdrcd_query($result, 'num_rows');
                             </td>
                             <td class="whitespace-nowrap">
                                 <form action="popup.php?page=scheda_roles&pg=<?= urlencode($row['autore']) ?>" method="post">
+                                    <?= gdrcd_csrf_field() ?>
                                     <input type="hidden" name="op" value="log"/>
                                     <input type="hidden" name="id" value="<?= (int)$row['role_reg'] ?>"/>
                                     <button type="submit" class="gdrcd-btn-secondary">

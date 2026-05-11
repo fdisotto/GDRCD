@@ -153,6 +153,7 @@ $miei_ruoli = gdrcd_query("SELECT ruolo.id_ruolo, ruolo.nome_ruolo FROM clgperso
                     </header>
                     <div class="gdrcd-card-body">
                         <form action="main.php?page=servizi_adm_gilde" method="post" class="space-y-3">
+                            <?= gdrcd_csrf_field() ?>
                             <label class="block">
                                 <span class="text-sm text-gdrcd-text-soft">Ruolo</span>
                                 <select name="ruolo" class="gdrcd-select mt-1 w-full">
@@ -191,6 +192,7 @@ $miei_ruoli = gdrcd_query("SELECT ruolo.id_ruolo, ruolo.nome_ruolo FROM clgperso
                     </header>
                     <div class="gdrcd-card-body">
                         <form action="main.php?page=servizi_adm_gilde" method="post" class="space-y-3">
+                            <?= gdrcd_csrf_field() ?>
                             <label class="block">
                                 <span class="text-sm text-gdrcd-text-soft">Membro</span>
                                 <select name="ruolo" class="gdrcd-select mt-1 w-full">
@@ -229,6 +231,7 @@ $miei_ruoli = gdrcd_query("SELECT ruolo.id_ruolo, ruolo.nome_ruolo FROM clgperso
             </header>
             <div class="gdrcd-card-body">
                 <form action="main.php?page=servizi_adm_gilde" method="post" class="flex flex-col md:flex-row gap-3">
+                    <?= gdrcd_csrf_field() ?>
                     <select name="ruolo" class="gdrcd-select flex-1">
                         <option value=""></option>
                         <?php foreach ($miei_ruoli as $r): ?>

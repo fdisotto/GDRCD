@@ -135,7 +135,8 @@ $is_submit = ($op === $lbl['submit']['edit']) || ($op === $lbl['submit']['new'])
                                         <span class="gdrcd-badge-accent"><?= gdrcd_filter('out', $current_label) ?></span>
                                     </td>
                                     <td>
-                                        <form action="main.php?page=gestione_permessi" method="post" id="form_<?= gdrcd_filter('out', $row['nome']) ?>" class="flex items-center gap-2">
+                                        <form action="main.php?page=gestione_permessi" method="post" id="form_<?= gdrcd_filter('out', $row['nome']) ?>
+                                            <?= gdrcd_csrf_field() ?>" class="flex items-center gap-2">
                                             <input type="hidden" name="nome" value="<?= gdrcd_filter('out', $row['nome']) ?>"/>
                                             <?= $render_role_select('permessi', (int)$row['permessi']) ?>
                                         </form>
@@ -166,6 +167,7 @@ $is_submit = ($op === $lbl['submit']['edit']) || ($op === $lbl['submit']['new'])
             </div>
             <div class="gdrcd-card-body">
                 <form action="main.php?page=gestione_permessi" method="post" class="space-y-5">
+                    <?= gdrcd_csrf_field() ?>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label class="gdrcd-label" for="gp_nome">Personaggio</label>

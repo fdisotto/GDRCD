@@ -173,6 +173,7 @@ if ($num_log > 0 && $row['stanza'] !== $_SESSION['luogo']):
         <div>Stai ancora giocando altrove. Cancella la registrazione aperta per avviarne una nuova qui.</div>
     </div>
     <form action="<?= htmlspecialchars($panel_url) ?>" method="post" class="pt-3">
+        <?= gdrcd_csrf_field() ?>
         <input type="hidden" name="op" value="leave"/>
         <button type="submit" class="gdrcd-btn-danger w-full"
                 onclick="return confirm('Cancellando la registrazione aperta, la giocata in questione non sarà salvata e non sarà conteggiata nelle segnalazioni. Sicuro?');">
@@ -200,6 +201,7 @@ elseif ($num_log === 0):
                 Giocate con meno di <strong><?= REG_MIN_AZIONI ?></strong> azioni non saranno considerate segnalabili.
             </p>
             <form action="<?= htmlspecialchars($panel_url) ?>" method="post">
+                <?= gdrcd_csrf_field() ?>
                 <input type="hidden" name="op" value="start_segn"/>
                 <button type="submit" class="gdrcd-btn-primary w-full">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
@@ -222,6 +224,7 @@ elseif ($num_log === 0):
         </div>
         <div class="gdrcd-card-body space-y-4">
             <form action="<?= htmlspecialchars($panel_url) ?>" method="post" class="space-y-3">
+                <?= gdrcd_csrf_field() ?>
                 <div>
                     <label class="gdrcd-label">Data</label>
                     <div class="grid grid-cols-3 gap-2">
@@ -286,6 +289,7 @@ elseif ($num_log > 0 && $row['stanza'] === $_SESSION['luogo']):
         </div>
         <div class="gdrcd-card-body">
             <form action="<?= htmlspecialchars($panel_url) ?>" method="post" class="space-y-4">
+                <?= gdrcd_csrf_field() ?>
 
                 <div>
                     <div class="gdrcd-label">Partecipanti</div>

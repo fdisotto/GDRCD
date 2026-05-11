@@ -31,6 +31,7 @@ $blocco = gdrcd_query(
     <section class="gdrcd-card">
         <div class="gdrcd-card-body">
             <form action="main.php?page=gestione_segnalazioni&segn=esito_index" method="post" class="space-y-5">
+                <?= gdrcd_csrf_field() ?>
 
                 <div>
                     <label class="gdrcd-label" for="nw_titolo">Titolo</label>

@@ -9,6 +9,7 @@ if ($_GET['op']=='first') { ?>
     <form action="main.php?page=servizi_esitinew"
           method="post"
           class="form_gestione">
+        <?= gdrcd_csrf_field() ?>
 
         <div class='form_label'>
             Titolo

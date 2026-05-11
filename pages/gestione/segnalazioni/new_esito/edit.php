@@ -33,6 +33,7 @@ $tit = gdrcd_query($id_edit, 'fetch');
         <section class="gdrcd-card">
             <div class="gdrcd-card-body">
                 <form action="main.php?page=gestione_segnalazioni&segn=esito_index" method="post" class="space-y-5">
+                    <?= gdrcd_csrf_field() ?>
                     <div>
                         <label class="gdrcd-label" for="ee_titolo">Titolo</label>
                         <input class="gdrcd-input" type="text" id="ee_titolo" name="titolo"

@@ -66,6 +66,7 @@ if (gdrcd_filter('get', $_POST['action'] ?? '') === 'searchPersonaggio') {
                                 <td class="text-sm"><?= gdrcd_filter('out', $rowSearch['nome_razza']) ?></td>
                                 <td class="text-right">
                                     <form action="main.php?page=messages_center&op=create" method="post" class="inline">
+                                        <?= gdrcd_csrf_field() ?>
                                         <input type="hidden" name="destinatario" value="<?= htmlspecialchars($rowSearch['nome']) ?>">
                                         <button type="submit" class="gdrcd-btn-ghost" title="<?= gdrcd_filter('out', $MESSAGE['interface']['messages']['reply']) ?>">
                                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -110,6 +111,7 @@ $generi = ['m', 'f'];
     </header>
     <div class="gdrcd-card-body">
         <form method="POST" action="main.php?page=servizi_anagrafe" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+            <?= gdrcd_csrf_field() ?>
             <label class="block">
                 <span class="text-sm text-gdrcd-text-soft"><?= $MESSAGE['interface']['pg_list']['search']['personaggio'] ?></span>
                 <input type="text" name="nome" value="<?= gdrcd_filter('out', $_REQUEST['nome'] ?? '') ?>" class="gdrcd-input mt-1 w-full">

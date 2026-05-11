@@ -256,6 +256,7 @@ $op = $_POST['op'] ?? null;
                                 </td>
                                 <td class="whitespace-nowrap text-right">
                                     <form action="main.php?page=gestione_segnalazioni&segn=esiti_master" method="post" class="inline-block">
+                                        <?= gdrcd_csrf_field() ?>
                                         <input type="hidden" name="op" value="list"/>
                                         <input type="hidden" name="id" value="<?= (int)$rec['id'] ?>"/>
                                         <button type="submit" class="gdrcd-btn-secondary">

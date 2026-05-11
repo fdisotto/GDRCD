@@ -118,11 +118,13 @@ $action = htmlspecialchars($_SERVER['SCRIPT_NAME'] . '?' . $_SERVER['QUERY_STRIN
 
                 <div class="flex flex-col-reverse sm:flex-row gap-3 sm:justify-end pt-2">
                     <form action="index.php" method="post">
+                        <?= gdrcd_csrf_field() ?>
                         <button type="submit" class="gdrcd-btn-ghost">
                             <?= gdrcd_filter('out', $MESSAGE['register']['forms']['refuse']) ?>
                         </button>
                     </form>
                     <form action="<?= $action ?>" method="post">
+                        <?= gdrcd_csrf_field() ?>
                         <input type="hidden" name="fase" value="1"/>
                         <button type="submit" class="gdrcd-btn-primary">
                             <?= gdrcd_filter('out', $MESSAGE['register']['forms']['accept']) ?>
@@ -137,6 +139,7 @@ $action = htmlspecialchars($_SERVER['SCRIPT_NAME'] . '?' . $_SERVER['QUERY_STRIN
         <section class="gdrcd-card">
             <div class="gdrcd-card-body">
                 <form action="<?= $action ?>" method="post" class="space-y-5">
+                    <?= gdrcd_csrf_field() ?>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
@@ -257,6 +260,7 @@ $action = htmlspecialchars($_SERVER['SCRIPT_NAME'] . '?' . $_SERVER['QUERY_STRIN
                 </ul>
             </div>
             <form action="<?= $action ?>" method="post">
+                <?= gdrcd_csrf_field() ?>
                 <?= $render_hidden() ?>
                 <input type="hidden" name="fase" value="1"/>
                 <button type="submit" class="gdrcd-btn-secondary">
@@ -296,6 +300,7 @@ $action = htmlspecialchars($_SERVER['SCRIPT_NAME'] . '?' . $_SERVER['QUERY_STRIN
                 </div>
                 <div class="px-6 md:px-8 py-4 border-t border-gdrcd-border flex flex-col-reverse sm:flex-row gap-3 sm:justify-end">
                     <form action="<?= $action ?>" method="post">
+                        <?= gdrcd_csrf_field() ?>
                         <?= $render_hidden() ?>
                         <input type="hidden" name="fase" value="1"/>
                         <button type="submit" class="gdrcd-btn-ghost">
@@ -304,6 +309,7 @@ $action = htmlspecialchars($_SERVER['SCRIPT_NAME'] . '?' . $_SERVER['QUERY_STRIN
                         </button>
                     </form>
                     <form action="<?= $action ?>" method="post">
+                        <?= gdrcd_csrf_field() ?>
                         <?= $render_hidden() ?>
                         <input type="hidden" name="fase" value="3"/>
                         <button type="submit" class="gdrcd-btn-primary">
@@ -326,6 +332,7 @@ $action = htmlspecialchars($_SERVER['SCRIPT_NAME'] . '?' . $_SERVER['QUERY_STRIN
                 </ul>
             </div>
             <form action="<?= $action ?>" method="post">
+                <?= gdrcd_csrf_field() ?>
                 <?= $render_hidden() ?>
                 <input type="hidden" name="fase" value="1"/>
                 <button type="submit" class="gdrcd-btn-secondary">

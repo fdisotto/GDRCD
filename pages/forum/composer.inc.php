@@ -46,6 +46,7 @@ if ($quote > 0) {
         </div>
         <div class="gdrcd-card-body">
             <form action="main.php?page=forum" method="post" class="space-y-5">
+                <?= gdrcd_csrf_field() ?>
                 <?php if ($is_topic): ?>
                     <div>
                         <label class="gdrcd-label" for="fc_titolo"><?= gdrcd_filter('out', $MESSAGE['interface']['forums']['insert']['title']) ?></label>

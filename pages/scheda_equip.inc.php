@@ -449,6 +449,7 @@ if ($can_modify) {
                             <div class="border-t border-gdrcd-border bg-gdrcd-panel-alt/30 px-4 py-3 flex flex-wrap gap-2">
 
                                 <form action="main.php?page=scheda_oggetti" method="post" class="inline">
+                                    <?= gdrcd_csrf_field() ?>
                                     <input type="hidden" name="op" value="togli"/>
                                     <input type="hidden" name="id_oggetto" value="<?= (int)$r['id_oggetto'] ?>"/>
                                     <input type="hidden" name="pg" value="<?= htmlspecialchars($pg) ?>"/>
@@ -463,6 +464,7 @@ if ($can_modify) {
                                         // Mostra azioni per indossare/impugnare
                                         if (!isset($oggetti[(int)$r['ubicabile']])): ?>
                                             <form action="main.php?page=scheda_equip" method="post" class="inline">
+                                                <?= gdrcd_csrf_field() ?>
                                                 <input type="hidden" name="op" value="indossa"/>
                                                 <input type="hidden" name="posizione" value="<?= (int)$r['ubicabile'] ?>"/>
                                                 <input type="hidden" name="id_oggetto" value="<?= (int)$r['id_oggetto'] ?>"/>
@@ -474,6 +476,7 @@ if ($can_modify) {
                                         <?php endif;
                                         if (!isset($oggetti[MANODX])): ?>
                                             <form action="main.php?page=scheda_equip" method="post" class="inline">
+                                                <?= gdrcd_csrf_field() ?>
                                                 <input type="hidden" name="op" value="indossa"/>
                                                 <input type="hidden" name="posizione" value="<?= MANODX ?>"/>
                                                 <input type="hidden" name="id_oggetto" value="<?= (int)$r['id_oggetto'] ?>"/>
@@ -485,6 +488,7 @@ if ($can_modify) {
                                         <?php endif;
                                         if (!isset($oggetti[MANOSX])): ?>
                                             <form action="main.php?page=scheda_equip" method="post" class="inline">
+                                                <?= gdrcd_csrf_field() ?>
                                                 <input type="hidden" name="op" value="indossa"/>
                                                 <input type="hidden" name="posizione" value="<?= MANOSX ?>"/>
                                                 <input type="hidden" name="id_oggetto" value="<?= (int)$r['id_oggetto'] ?>"/>
@@ -496,6 +500,7 @@ if ($can_modify) {
                                         <?php endif;
                                     else: ?>
                                         <form action="main.php?page=scheda_equip" method="post" class="inline">
+                                            <?= gdrcd_csrf_field() ?>
                                             <input type="hidden" name="op" value="indossa"/>
                                             <input type="hidden" name="posizione" value="1"/>
                                             <input type="hidden" name="id_oggetto" value="<?= (int)$r['id_oggetto'] ?>"/>
@@ -509,6 +514,7 @@ if ($can_modify) {
 
                                 <form action="main.php?page=scheda_equip" method="post" class="inline"
                                       onsubmit="return confirm('Abbandonare un esemplare?');">
+                                    <?= gdrcd_csrf_field() ?>
                                     <input type="hidden" name="op" value="abbandona"/>
                                     <input type="hidden" name="numero" value="<?= (int)$r['numero'] ?>"/>
                                     <input type="hidden" name="id_oggetto" value="<?= (int)$r['id_oggetto'] ?>"/>
@@ -521,6 +527,7 @@ if ($can_modify) {
 
                                 <?php if (count($chars_list) > 0): ?>
                                     <form action="main.php?page=scheda_equip" method="post" class="inline-flex items-center gap-1">
+                                        <?= gdrcd_csrf_field() ?>
                                         <input type="hidden" name="op" value="cedi"/>
                                         <input type="hidden" name="pg" value="<?= htmlspecialchars($pg) ?>"/>
                                         <input type="hidden" name="id_oggetto" value="<?= (int)$r['id_oggetto'] ?>"/>

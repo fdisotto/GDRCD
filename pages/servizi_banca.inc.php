@@ -146,6 +146,7 @@ $currency = gdrcd_filter('out', $PARAMETERS['names']['currency']['plur']);
                 <div class="text-sm text-gdrcd-text-soft"><?= gdrcd_filter('out', $MESSAGE['interface']['bank']['credit_no']) ?></div>
             <?php else: ?>
                 <form action="main.php?page=servizi_banca" method="post" class="flex justify-end">
+                    <?= gdrcd_csrf_field() ?>
                     <input type="hidden" name="ammontare" value="<?= $stipendio ?>">
                     <input type="hidden" name="op" value="incassa">
                     <button type="submit" class="gdrcd-btn-primary">
@@ -169,6 +170,7 @@ $currency = gdrcd_filter('out', $PARAMETERS['names']['currency']['plur']);
             </header>
             <div class="gdrcd-card-body">
                 <form action="main.php?page=servizi_banca" method="post" class="space-y-3">
+                    <?= gdrcd_csrf_field() ?>
                     <input type="number" name="ammontare" value="0" min="0" class="gdrcd-input w-full">
                     <input type="hidden" name="op" value="deposita">
                     <button type="submit" class="gdrcd-btn-primary w-full">
@@ -188,6 +190,7 @@ $currency = gdrcd_filter('out', $PARAMETERS['names']['currency']['plur']);
             </header>
             <div class="gdrcd-card-body">
                 <form action="main.php?page=servizi_banca" method="post" class="space-y-3">
+                    <?= gdrcd_csrf_field() ?>
                     <input type="number" name="ammontare" value="0" min="0" class="gdrcd-input w-full">
                     <input type="hidden" name="op" value="preleva">
                     <button type="submit" class="gdrcd-btn-secondary w-full">
@@ -208,6 +211,7 @@ $currency = gdrcd_filter('out', $PARAMETERS['names']['currency']['plur']);
         </header>
         <div class="gdrcd-card-body">
             <form action="main.php?page=servizi_banca" method="post" class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <?= gdrcd_csrf_field() ?>
                 <label class="block">
                     <span class="text-sm text-gdrcd-text-soft"><?= gdrcd_filter('out', $MESSAGE['interface']['bank']['payee']) ?></span>
                     <select name="beneficiario" class="gdrcd-select mt-1 w-full">

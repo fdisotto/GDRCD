@@ -61,6 +61,7 @@ $lbl_s = $MESSAGE['interface']['sheet'];
         </div>
         <?php if ($_SESSION['permessi'] >= GAMEMASTER): ?>
             <form action="main.php?page=scheda_modifica&pg=<?= urlencode($_REQUEST['pg']) ?>" method="post" class="flex justify-end">
+                <?= gdrcd_csrf_field() ?>
                 <input type="hidden" name="year" value="<?= date('Y') ?>"/>
                 <input type="hidden" name="month" value="<?= date('m') ?>"/>
                 <input type="hidden" name="day" value="<?= date('d') ?>"/>

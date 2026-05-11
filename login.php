@@ -61,6 +61,9 @@ if ($rate_limit_failures >= 5) {
     exit();
 }
 
+/*Verifica CSRF: il form di login deve contenere il token presente in sessione*/
+gdrcd_csrf_guard();
+
 /*Carico dal database il profilo dell'account (personaggio)*/
 $record = gdrcd_query("SELECT personaggio.pass, personaggio.nome, personaggio.cognome, personaggio.permessi, personaggio.sesso, personaggio.ultima_mappa, personaggio.ultimo_luogo, personaggio.id_razza, personaggio.blocca_media, personaggio.ora_entrata, personaggio.ora_uscita, personaggio.ultimo_refresh, razza.sing_m, razza.sing_f, razza.icon AS url_img_razza FROM personaggio LEFT JOIN razza ON personaggio.id_razza = razza.id_razza WHERE nome = '".gdrcd_filter('in', $login1)."' LIMIT 1");
 
@@ -77,6 +80,10 @@ if( ! empty($record) and gdrcd_password_verify($pass1, $record['pass']) && ($rec
         $newHash = gdrcd_password_hash($pass1);
         gdrcd_query("UPDATE personaggio SET pass = '" . gdrcd_filter('in', $newHash) . "' WHERE nome = '" . gdrcd_filter('in', $record['nome']) . "' LIMIT 1");
     }
+
+    /*Rigeneriamo il token CSRF al login per prevenire session fixation e
+      legare il token alla sessione autenticata.*/
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 
     $_SESSION['login'] = gdrcd_filter_in($record['nome']);
     $_SESSION['cognome'] = $record['cognome'];

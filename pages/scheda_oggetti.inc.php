@@ -224,6 +224,7 @@ if ($chars !== null) {
 
                             <!-- Commento -->
                             <form action="main.php?page=scheda_oggetti" method="post" class="space-y-2">
+                                <?= gdrcd_csrf_field() ?>
                                 <textarea class="gdrcd-textarea text-xs" name="commento" rows="2" placeholder="Note personali..."><?= gdrcd_filter('out', $r['commento']) ?></textarea>
                                 <div class="flex justify-end">
                                     <input type="hidden" name="op" value="commenta"/>
@@ -239,6 +240,7 @@ if ($chars !== null) {
                                 <!-- Abbandona -->
                                 <form action="main.php?page=scheda_oggetti" method="post" class="inline"
                                       onsubmit="return confirm('Abbandonare un esemplare di questo oggetto?');">
+                                    <?= gdrcd_csrf_field() ?>
                                     <input type="hidden" name="op" value="abbandona"/>
                                     <input type="hidden" name="numero" value="<?= (int)$r['numero'] ?>"/>
                                     <input type="hidden" name="id_oggetto" value="<?= (int)$r['id_oggetto'] ?>"/>
@@ -250,6 +252,7 @@ if ($chars !== null) {
 
                                 <?php if ((int)$r['ubicabile'] > 0): ?>
                                     <form action="main.php?page=scheda_equip" method="post" class="inline">
+                                        <?= gdrcd_csrf_field() ?>
                                         <input type="hidden" name="op" value="in_zaino"/>
                                         <input type="hidden" name="id_oggetto" value="<?= (int)$r['id_oggetto'] ?>"/>
                                         <input type="hidden" name="pg" value="<?= htmlspecialchars($pg) ?>"/>
@@ -262,6 +265,7 @@ if ($chars !== null) {
 
                                 <?php if (count($chars_list) > 0): ?>
                                     <form action="main.php?page=scheda_oggetti" method="post" class="inline-flex items-center gap-1">
+                                        <?= gdrcd_csrf_field() ?>
                                         <input type="hidden" name="op" value="cedi"/>
                                         <input type="hidden" name="pg" value="<?= htmlspecialchars($pg) ?>"/>
                                         <input type="hidden" name="id_oggetto" value="<?= (int)$r['id_oggetto'] ?>"/>

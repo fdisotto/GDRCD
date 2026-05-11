@@ -11,6 +11,7 @@
     </div>
     <div class="gdrcd-card-body">
         <form action="main.php?page=gestione/mappe" method="post" class="space-y-5">
+            <?= gdrcd_csrf_field() ?>
 
             <div>
                 <label class="gdrcd-label" for="mp_nome"><?= gdrcd_filter('out', $lbl_m['name']) ?></label>

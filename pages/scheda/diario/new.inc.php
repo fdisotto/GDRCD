@@ -12,6 +12,7 @@ $lbl = $MESSAGE['interface']['sheet']['diary'];
     </div>
     <div class="gdrcd-card-body">
         <form action="main.php?page=scheda_diario&pg=<?= urlencode($_REQUEST['pg']) ?>" method="post" class="space-y-5">
+            <?= gdrcd_csrf_field() ?>
             <div class="grid grid-cols-1 md:grid-cols-[1fr_12rem] gap-4">
                 <div>
                     <label class="gdrcd-label" for="dia_tit"><?= gdrcd_filter('out', $lbl['title']) ?></label>

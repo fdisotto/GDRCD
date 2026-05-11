@@ -28,6 +28,7 @@ $users = gdrcd_query("SELECT COUNT(nome) AS online FROM personaggio WHERE ora_en
         </div>
 
         <form action="login.php" id="do_login" method="post" class="gdrcd-login-inline">
+            <?= gdrcd_csrf_field() ?>
             <div>
                 <label class="gdrcd-label" for="username"><?= $MESSAGE['homepage']['forms']['username'] ?></label>
                 <input class="gdrcd-input" type="text" id="username" name="login1"/>

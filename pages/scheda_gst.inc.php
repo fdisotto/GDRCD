@@ -71,6 +71,7 @@ $cars_cap = (int)($PARAMETERS['settings']['cars_cap'] ?? 5);
     <?php endforeach; ?>
 
     <form action="main.php?page=scheda_gst" method="post" class="space-y-5">
+        <?= gdrcd_csrf_field() ?>
         <section class="gdrcd-card">
             <div class="gdrcd-card-header">
                 <h3 class="gdrcd-h3">Anagrafica</h3>

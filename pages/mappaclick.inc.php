@@ -190,6 +190,7 @@ else:
                 <?php if ($mobile === 1): ?>
                     <form action="main.php?page=mappaclick&map_id=<?= (int)$_SESSION['mappa'] ?>"
                           method="post" class="space-y-3">
+                        <?= gdrcd_csrf_field() ?>
                         <div class="gdrcd-eyebrow">Mappa mobile</div>
                         <?php if ($vicinato !== INVIAGGIO): ?>
                             <div class="flex items-end gap-3 flex-wrap">
@@ -232,6 +233,7 @@ else:
                     <?php if ($mobile === 1): ?><div class="gdrcd-divider !my-2"></div><?php endif; ?>
                     <form action="main.php?page=mappaclick&map_id=<?= (int)$_SESSION['mappa'] ?>"
                           method="post" class="space-y-3">
+                        <?= gdrcd_csrf_field() ?>
                         <div class="gdrcd-eyebrow">Meteo</div>
                         <div class="flex items-end gap-3 flex-wrap">
                             <div>

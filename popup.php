@@ -1,6 +1,11 @@
 <?php
 require 'header.inc.php';
 gdrcd_controllo_sessione();
+
+/*Enforcement CSRF centralizzato sulle richieste POST dirette a popup.php*/
+if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    gdrcd_csrf_guard();
+}
 ?>
 
 <div class="p-4 md:p-6 min-h-screen bg-gdrcd-bg">

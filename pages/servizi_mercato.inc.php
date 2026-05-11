@@ -185,6 +185,7 @@ $visit = isset($_REQUEST['op']) && $_REQUEST['op'] === 'visit';
                         </div>
                         <div class="border-t border-gdrcd-border bg-gdrcd-panel-alt/30 px-4 py-3 flex flex-wrap gap-2 justify-between">
                             <form action="main.php?page=servizi_mercato" method="post" class="inline-flex items-center gap-2">
+                                <?= gdrcd_csrf_field() ?>
                                 <input type="hidden" name="id_oggetto" value="<?= (int)$row['id_oggetto'] ?>">
                                 <input type="hidden" name="costo" value="<?= (int)$row['costo'] ?>">
                                 <input type="hidden" name="cariche" value="<?= (int)$row['cariche'] ?>">
@@ -196,6 +197,7 @@ $visit = isset($_REQUEST['op']) && $_REQUEST['op'] === 'visit';
                                 </button>
                             </form>
                             <form action="main.php?page=servizi_mercato" method="post" class="inline-flex items-center gap-2">
+                                <?= gdrcd_csrf_field() ?>
                                 <input type="hidden" name="id_oggetto" value="<?= (int)$row['id_oggetto'] ?>">
                                 <input type="hidden" name="op" value="sell">
                                 <button type="submit" class="gdrcd-btn-ghost text-xs">

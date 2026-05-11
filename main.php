@@ -8,6 +8,18 @@ require('header.inc.php'); /*Header comune*/
 
 gdrcd_controllo_sessione(); /*Se si è tentato di accedere senza un'autenticazione blocca l'esecuzione*/
 
+/**
+ * Enforcement CSRF centralizzato.
+ * Tutte le richieste POST passano per main.php (il dispatcher delle pagine loggate).
+ * Validiamo il token PRIMA del dispatch: fail-closed, qualsiasi form senza _csrf valido
+ * viene bloccato con 403. Le richieste GET (refresh chat in iframe, download endpoint,
+ * navigazione normale) non vengono toccate.
+ * @see includes/csrf.inc.php
+ */
+if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    gdrcd_csrf_guard();
+}
+
 $strInnerPage = "";
 
 /** * Bug fix del mapwise: la gestione dello spostamento della mappa va gestita da main e non da mappaclick

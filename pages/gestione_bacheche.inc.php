@@ -104,6 +104,7 @@ $render_back = function () use ($lbl) {
             </div>
             <div class="gdrcd-card-body">
                 <form action="main.php?page=gestione_bacheche" method="post" class="space-y-5">
+                    <?= gdrcd_csrf_field() ?>
                     <div>
                         <label class="gdrcd-label" for="bk_nome"><?= gdrcd_filter('out', $lbl['name']) ?></label>
                         <input class="gdrcd-input" type="text" id="bk_nome" name="nome"
@@ -277,6 +278,7 @@ $render_back = function () use ($lbl) {
                                 </td>
                                 <td class="text-right whitespace-nowrap">
                                     <form action="main.php?page=gestione_bacheche" method="post" class="inline-block">
+                                        <?= gdrcd_csrf_field() ?>
                                         <input type="hidden" name="id_record" value="<?= (int)$row['id_araldo'] ?>"/>
                                         <input type="hidden" name="op" value="edit"/>
                                         <button type="submit" class="inline-flex items-center justify-center w-8 h-8 rounded-md text-gdrcd-muted hover:bg-gdrcd-accent-soft hover:text-gdrcd-accent transition-colors"
@@ -286,6 +288,7 @@ $render_back = function () use ($lbl) {
                                     </form>
                                     <form action="main.php?page=gestione_bacheche" method="post" class="inline-block"
                                           onsubmit="return confirm('Eliminare questa bacheca e tutti i suoi messaggi?');">
+                                        <?= gdrcd_csrf_field() ?>
                                         <input type="hidden" name="id_record" value="<?= (int)$row['id_araldo'] ?>"/>
                                         <input type="hidden" name="op" value="erase"/>
                                         <button type="submit" class="inline-flex items-center justify-center w-8 h-8 rounded-md text-gdrcd-muted hover:bg-gdrcd-error-soft hover:text-gdrcd-error transition-colors"

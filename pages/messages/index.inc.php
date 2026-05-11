@@ -71,7 +71,8 @@ $page_label = $PARAMETERS['names']['private_message']['plur'];
     <?php else: ?>
 
         <form id="multiple_delete" method="post"
-              action="main.php?page=messages_center<?= $base_query ?>"
+              action="main.php?page=messages_center<?= $base_query ?>
+            <?= gdrcd_csrf_field() ?>"
               onsubmit="return gdrcd_msg_checked_delete();">
             <input type="hidden" name="op" value="erase_checked"/>
             <input type="hidden" name="type" value="<?= $delType ?>"/>
@@ -200,12 +201,14 @@ $page_label = $PARAMETERS['names']['private_message']['plur'];
             $counterpart = $isSentMessage ? $row['destinatario'] : $row['mittente'];
             ?>
             <form id="reply_form_<?= (int)$row['id'] ?>" action="main.php?page=messages_center<?= $base_query ?>" method="post" class="hidden">
+                <?= gdrcd_csrf_field() ?>
                 <input type="hidden" name="reply_dest" value="<?= htmlspecialchars($counterpart) ?>"/>
                 <input type="hidden" name="reply_subject" value="Re: <?= htmlspecialchars($row['oggetto']) ?>"/>
                 <input type="hidden" name="reply_tipo" value="<?= (int)$row['tipo'] ?>"/>
                 <input type="hidden" name="op" value="reply"/>
             </form>
             <form id="erase_form_<?= (int)$row['id'] ?>" action="main.php?page=messages_center<?= $base_query ?>" method="post" class="hidden">
+                <?= gdrcd_csrf_field() ?>
                 <input type="hidden" name="id_messaggio" value="<?= (int)$row['id'] ?>"/>
                 <input type="hidden" name="type" value="<?= $delType ?>"/>
                 <input type="hidden" name="op" value="erase"/>
@@ -216,6 +219,7 @@ $page_label = $PARAMETERS['names']['private_message']['plur'];
 
         <div class="flex flex-wrap justify-end">
             <form action="main.php?page=messages_center<?= $base_query ?>" method="post">
+                <?= gdrcd_csrf_field() ?>
                 <input type="hidden" name="op" value="eraseall"/>
                 <input type="hidden" name="type" value="<?= $delType ?>"/>
                 <button type="submit" class="gdrcd-btn-ghost text-xs">

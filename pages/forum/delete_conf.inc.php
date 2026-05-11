@@ -21,6 +21,7 @@ $lbl = $MESSAGE['interface']['forums'];
         <div class="px-6 md:px-8 py-4 border-t border-gdrcd-border flex flex-col-reverse sm:flex-row gap-3 sm:justify-end">
             <a href="main.php?page=forum" class="gdrcd-btn-ghost">Annulla</a>
             <form action="main.php?page=forum" method="post">
+                <?= gdrcd_csrf_field() ?>
                 <input type="hidden" name="op" value="delete"/>
                 <input type="hidden" name="id_record" value="<?= $id_record ?>"/>
                 <button type="submit" class="gdrcd-btn-danger">

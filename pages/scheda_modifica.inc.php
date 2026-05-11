@@ -132,6 +132,7 @@ $is_gm   = ((int)$_SESSION['permessi'] >= GAMEMASTER);
             </div>
             <div class="gdrcd-card-body">
                 <form action="main.php?page=scheda_modifica" method="post" class="space-y-5">
+                    <?= gdrcd_csrf_field() ?>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label class="gdrcd-label" for="sm_cog"><?= gdrcd_filter('out', $lbl_mf['last_name']) ?></label>
@@ -211,6 +212,7 @@ $is_gm   = ((int)$_SESSION['permessi'] >= GAMEMASTER);
             </div>
             <div class="gdrcd-card-body">
                 <form action="main.php?page=scheda_modifica" method="post" class="space-y-4">
+                    <?= gdrcd_csrf_field() ?>
                     <div>
                         <label class="gdrcd-label" for="sm_status"><?= gdrcd_filter('out', $lbl_mf['status']) ?></label>
                         <textarea class="gdrcd-textarea" id="sm_status" name="modifica_status" rows="4"><?= gdrcd_filter('out', $record['stato']) ?></textarea>
@@ -245,6 +247,7 @@ $is_gm   = ((int)$_SESSION['permessi'] >= GAMEMASTER);
             </div>
             <div class="gdrcd-card-body">
                 <form action="main.php?page=scheda_modifica" method="post" class="space-y-4">
+                    <?= gdrcd_csrf_field() ?>
                     <div>
                         <label class="gdrcd-label"><?= gdrcd_filter('out', $lbl_mf['exile']) ?> (data fine)</label>
                         <div class="grid grid-cols-3 gap-2 max-w-md">

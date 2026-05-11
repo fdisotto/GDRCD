@@ -710,6 +710,7 @@ $MESSAGE['error']['can_t_load_frame'] = 'Impossibile caricare la pagina.';
 $MESSAGE['error']['can_t_find_any_map'] = 'Nessuna mappa esistente.';
 $MESSAGE['error']['can_t_find_main_map'] = 'Non è stata impostata una mappa principale. Prima di procedere, impostane una nella sezione di Gestione.';
 $MESSAGE['error']['session_expired'] = 'La tua sessione è scaduta o non hai effettuato il login.';
+$MESSAGE['error']['csrf_invalid'] = 'Sessione scaduta o richiesta non valida. Ricarica la pagina e riprova.';
 $MESSAGE['error']['location_doesnt_exist'] = 'Questo luogo non esiste.';
 $MESSAGE['error']['unknown_character_sheet'] = 'Non è stato specificato il none del PG oppure il PG non esiste.';
 $MESSAGE['error']['unknown_operation'] = 'Operazione richiesta sconosciuta.';

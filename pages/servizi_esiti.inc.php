@@ -144,6 +144,7 @@ $op = $_POST['op'] ?? null;
                                 </td>
                                 <td class="text-right">
                                     <form action="main.php?page=servizi_esiti" method="post" class="inline">
+                                        <?= gdrcd_csrf_field() ?>
                                         <input type="hidden" name="op" value="listpg">
                                         <input type="hidden" name="id" value="<?= (int)$rec['id'] ?>">
                                         <button type="submit" class="gdrcd-btn-ghost text-xs">Apri serie</button>

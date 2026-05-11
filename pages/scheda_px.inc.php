@@ -116,6 +116,7 @@ $lbl = $MESSAGE['interface']['sheet']['px'];
             </div>
             <div class="gdrcd-card-body">
                 <form action="main.php?page=scheda_px&pg=<?= urlencode($pg) ?>" method="post" class="space-y-4">
+                    <?= gdrcd_csrf_field() ?>
                     <div>
                         <label class="gdrcd-label" for="px_causale"><?= gdrcd_filter('out', $lbl['why']) ?></label>
                         <input class="gdrcd-input" type="text" id="px_causale" name="causale" required/>

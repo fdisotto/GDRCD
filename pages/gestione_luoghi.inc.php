@@ -122,6 +122,7 @@ $render_alert_success = function (string $msg) {
         ?>
 
         <form action="main.php?page=gestione_luoghi" method="post" class="space-y-5">
+            <?= gdrcd_csrf_field() ?>
             <section class="gdrcd-card">
                 <div class="gdrcd-card-header">
                     <h3 class="gdrcd-h3"><?= $is_edit ? 'Modifica luogo' : 'Nuovo luogo' ?></h3>
@@ -403,6 +404,7 @@ $render_alert_success = function (string $msg) {
                                 </td>
                                 <td class="text-right whitespace-nowrap">
                                     <form action="main.php?page=gestione_luoghi" method="post" class="inline-block">
+                                        <?= gdrcd_csrf_field() ?>
                                         <input type="hidden" name="id_record" value="<?= (int)$row['id'] ?>"/>
                                         <input type="hidden" name="op" value="edit"/>
                                         <button type="submit" class="inline-flex items-center justify-center w-8 h-8 rounded-md text-gdrcd-muted hover:bg-gdrcd-accent-soft hover:text-gdrcd-accent transition-colors"
@@ -412,6 +414,7 @@ $render_alert_success = function (string $msg) {
                                     </form>
                                     <form action="main.php?page=gestione_luoghi" method="post" class="inline-block"
                                           onsubmit="return confirm('Eliminare questo luogo?');">
+                                        <?= gdrcd_csrf_field() ?>
                                         <input type="hidden" name="id_record" value="<?= (int)$row['id'] ?>"/>
                                         <input type="hidden" name="op" value="erase"/>
                                         <button type="submit" class="inline-flex items-center justify-center w-8 h-8 rounded-md text-gdrcd-muted hover:bg-gdrcd-error-soft hover:text-gdrcd-error transition-colors"

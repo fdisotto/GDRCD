@@ -80,6 +80,7 @@ $numresults = (int)gdrcd_query($result, 'num_rows');
                         </td>
                         <td class="text-right whitespace-nowrap">
                             <form action="main.php?page=gestione/mappe&op=edit" method="post" class="inline-block">
+                                <?= gdrcd_csrf_field() ?>
                                 <input type="hidden" name="id_click" value="<?= (int)$row['id_click'] ?>"/>
                                 <button type="submit" class="inline-flex items-center justify-center w-8 h-8 rounded-md text-gdrcd-muted hover:bg-gdrcd-accent-soft hover:text-gdrcd-accent transition-colors"
                                         title="<?= gdrcd_filter('out', $MESSAGE['interface']['administration']['ops']['edit']) ?>">
@@ -88,6 +89,7 @@ $numresults = (int)gdrcd_query($result, 'num_rows');
                             </form>
                             <form action="main.php?page=gestione/mappe" method="post" class="inline-block"
                                   onsubmit="return confirm('Eliminare questa mappa?');">
+                                <?= gdrcd_csrf_field() ?>
                                 <input type="hidden" name="id_click" value="<?= (int)$row['id_click'] ?>"/>
                                 <input type="hidden" name="op" value="erase"/>
                                 <button type="submit" class="inline-flex items-center justify-center w-8 h-8 rounded-md text-gdrcd-muted hover:bg-gdrcd-error-soft hover:text-gdrcd-error transition-colors"

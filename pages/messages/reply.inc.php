@@ -20,6 +20,7 @@ $prefill_body    = isset($_POST['testo']) ? ("\n\n\n[" . gdrcd_filter('out', tri
     <section class="gdrcd-card">
         <div class="gdrcd-card-body">
             <form action="main.php?page=messages_center" method="post" class="space-y-5">
+                <?= gdrcd_csrf_field() ?>
 
                 <div>
                     <label class="gdrcd-label" for="rep_dest"><?= gdrcd_filter('out', $lbl['recipient']) ?></label>

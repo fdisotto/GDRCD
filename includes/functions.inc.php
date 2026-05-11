@@ -1033,14 +1033,52 @@ function gdrcd_brute_debug($args)
  */
 function gdrcd_login_attempts_count($ip, $minutes = 5)
 {
+    if (!gdrcd_login_attempts_table_ready()) {
+        return 0;
+    }
     $ip = gdrcd_filter('in', (string)$ip);
     $minutes = (int)$minutes;
     if ($minutes <= 0) {
         $minutes = 5;
     }
 
-    $row = gdrcd_query("SELECT COUNT(*) AS n FROM login_attempts WHERE ip = '" . $ip . "' AND success = 0 AND attempted_at >= (NOW() - INTERVAL " . $minutes . " MINUTE)");
-    return (int)$row['n'];
+    try {
+        $row = gdrcd_query("SELECT COUNT(*) AS n FROM login_attempts WHERE ip = '" . $ip . "' AND success = 0 AND attempted_at >= (NOW() - INTERVAL " . $minutes . " MINUTE)");
+        return (int)($row['n'] ?? 0);
+    } catch (\Throwable $e) {
+        error_log('[GDRCD] login_attempts_count failed: ' . $e->getMessage());
+        return 0;
+    }
+}
+
+/**
+ * Crea la tabella login_attempts se non esiste. Operazione idempotente, eseguita
+ * una sola volta per request, e ignora qualsiasi errore (es. permessi DDL mancanti).
+ *
+ * @return bool true se la tabella è pronta all'uso
+ */
+function gdrcd_login_attempts_table_ready()
+{
+    static $ready = null;
+    if ($ready !== null) {
+        return $ready;
+    }
+    try {
+        gdrcd_query("CREATE TABLE IF NOT EXISTS login_attempts (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            ip VARCHAR(45) NOT NULL,
+            username VARCHAR(50) NULL,
+            attempted_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            success TINYINT(1) NOT NULL DEFAULT 0,
+            INDEX idx_ip_attempted_at (ip, attempted_at),
+            INDEX idx_username_attempted_at (username, attempted_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        $ready = true;
+    } catch (\Throwable $e) {
+        error_log('[GDRCD] cannot ensure login_attempts table: ' . $e->getMessage());
+        $ready = false;
+    }
+    return $ready;
 }
 
 /**
@@ -1053,14 +1091,21 @@ function gdrcd_login_attempts_count($ip, $minutes = 5)
  */
 function gdrcd_login_attempt_log($ip, $username, $success)
 {
+    if (!gdrcd_login_attempts_table_ready()) {
+        return;
+    }
     $ip = gdrcd_filter('in', (string)$ip);
     $success_flag = $success ? 1 : 0;
 
-    if ($username === null || $username === '') {
-        gdrcd_query("INSERT INTO login_attempts (ip, username, attempted_at, success) VALUES ('" . $ip . "', NULL, NOW(), " . $success_flag . ")");
-    } else {
-        $username = gdrcd_filter('in', (string)$username);
-        gdrcd_query("INSERT INTO login_attempts (ip, username, attempted_at, success) VALUES ('" . $ip . "', '" . $username . "', NOW(), " . $success_flag . ")");
+    try {
+        if ($username === null || $username === '') {
+            gdrcd_query("INSERT INTO login_attempts (ip, username, attempted_at, success) VALUES ('" . $ip . "', NULL, NOW(), " . $success_flag . ")");
+        } else {
+            $username = gdrcd_filter('in', (string)$username);
+            gdrcd_query("INSERT INTO login_attempts (ip, username, attempted_at, success) VALUES ('" . $ip . "', '" . $username . "', NOW(), " . $success_flag . ")");
+        }
+    } catch (\Throwable $e) {
+        error_log('[GDRCD] login_attempt_log failed: ' . $e->getMessage());
     }
 }
 
@@ -1073,6 +1118,13 @@ function gdrcd_login_attempt_log($ip, $username, $success)
  */
 function gdrcd_login_attempts_cleanup($ip)
 {
+    if (!gdrcd_login_attempts_table_ready()) {
+        return;
+    }
     $ip = gdrcd_filter('in', (string)$ip);
-    gdrcd_query("DELETE FROM login_attempts WHERE ip = '" . $ip . "' AND attempted_at < (NOW() - INTERVAL 1 HOUR)");
+    try {
+        gdrcd_query("DELETE FROM login_attempts WHERE ip = '" . $ip . "' AND attempted_at < (NOW() - INTERVAL 1 HOUR)");
+    } catch (\Throwable $e) {
+        error_log('[GDRCD] login_attempts_cleanup failed: ' . $e->getMessage());
+    }
 }

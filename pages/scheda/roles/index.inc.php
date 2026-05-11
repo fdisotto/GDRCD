@@ -51,6 +51,7 @@ $stat_month = (int)gdrcd_query(gdrcd_query(
             <p class="text-xs text-gdrcd-text-soft">Inserisci role del mese in corso non segnalata.</p>
         </div>
         <form action="main.php?page=scheda_roles&pg=<?= $pg_url ?>" method="post" class="shrink-0">
+            <?= gdrcd_csrf_field() ?>
             <input type="hidden" name="op" value="register">
             <input type="hidden" name="mese" value="<?= $mese_now ?>">
             <input type="hidden" name="anno" value="<?= $anno_now ?>">
@@ -64,6 +65,7 @@ $stat_month = (int)gdrcd_query(gdrcd_query(
 
     <div class="gdrcd-card p-4">
         <form action="main.php?page=scheda_roles&pg=<?= $pg_url ?>" method="post" class="flex flex-col md:flex-row gap-2 items-end">
+            <?= gdrcd_csrf_field() ?>
             <label class="block flex-1 min-w-0">
                 <span class="text-xs uppercase tracking-wide text-gdrcd-text-soft font-display">Cerca per</span>
                 <div class="flex gap-2 mt-1">
@@ -255,6 +257,7 @@ $stat_month = (int)gdrcd_query(gdrcd_query(
                                 <div class="inline-flex flex-wrap gap-0.5 justify-end">
                                     <?php if ($can_edit): ?>
                                     <form action="main.php?page=scheda_roles&pg=<?= $pg_url ?>" method="post" class="inline">
+                                        <?= gdrcd_csrf_field() ?>
                                         <input type="hidden" name="op" value="edit">
                                         <input type="hidden" name="id" value="<?= (int)$row['id'] ?>">
                                         <button type="submit" class="gdrcd-btn-ghost p-1.5" title="Modifica tag/quest (entro 30gg)">
@@ -265,6 +268,7 @@ $stat_month = (int)gdrcd_query(gdrcd_query(
 
                                     <?php if ($can_actions && $_SESSION['permessi'] >= LOG_PERM): ?>
                                     <form action="main.php?page=scheda_roles&pg=<?= $pg_url ?>" method="post" class="inline">
+                                        <?= gdrcd_csrf_field() ?>
                                         <input type="hidden" name="op" value="log">
                                         <input type="hidden" name="id" value="<?= (int)$row['id'] ?>">
                                         <button type="submit" class="gdrcd-btn-ghost p-1.5" title="Log chat">
@@ -275,6 +279,7 @@ $stat_month = (int)gdrcd_query(gdrcd_query(
 
                                     <?php if ($can_actions && SEND_GM): ?>
                                     <form action="main.php?page=scheda_roles&pg=<?= $pg_url ?>" method="post" class="inline">
+                                        <?= gdrcd_csrf_field() ?>
                                         <input type="hidden" name="op" value="segnala">
                                         <input type="hidden" name="id" value="<?= (int)$row['id'] ?>">
                                         <button type="submit" class="gdrcd-btn-ghost p-1.5" title="Segnala ai Master">

@@ -40,6 +40,7 @@ $is_topic = ((int)$row['id_messaggio_padre'] === -1);
         </div>
         <div class="gdrcd-card-body">
             <form action="main.php?page=forum&op=modifica&what=<?= (int)$row['id_messaggio'] ?>" method="post" class="space-y-5">
+                <?= gdrcd_csrf_field() ?>
                 <?php if ($is_topic): ?>
                     <div>
                         <label class="gdrcd-label" for="fm_titolo"><?= gdrcd_filter('out', $MESSAGE['interface']['forums']['insert']['title']) ?></label>

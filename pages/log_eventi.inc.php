@@ -48,6 +48,7 @@ $is_login_event = function ($code): bool {
         <section class="gdrcd-card">
             <div class="gdrcd-card-body">
                 <form action="main.php?page=log_eventi" method="post" class="space-y-4">
+                    <?= gdrcd_csrf_field() ?>
                     <div>
                         <label class="gdrcd-label" for="le_which_log">
                             <?= gdrcd_filter('out', $lbl['log_type']) ?>

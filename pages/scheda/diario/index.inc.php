@@ -23,6 +23,7 @@ $lbl = $MESSAGE['interface']['sheet']['diary'];
     <span class="gdrcd-muted text-xs"><?= $num ?> pagine</span>
     <?php if ($is_self): ?>
         <form action="main.php?page=scheda_diario&pg=<?= urlencode($pg) ?>" method="post">
+            <?= gdrcd_csrf_field() ?>
             <input type="hidden" name="op" value="new"/>
             <button type="submit" class="gdrcd-btn-primary">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
@@ -58,6 +59,7 @@ $lbl = $MESSAGE['interface']['sheet']['diary'];
                         </td>
                         <td>
                             <form action="main.php?page=scheda_diario&pg=<?= urlencode($pg) ?>" method="post" class="inline">
+                                <?= gdrcd_csrf_field() ?>
                                 <input type="hidden" name="op" value="view"/>
                                 <button type="submit" name="id" value="<?= (int)$r['id'] ?>" class="gdrcd-link font-medium text-left">
                                     <?= gdrcd_filter('out', $r['titolo']) ?>
@@ -74,6 +76,7 @@ $lbl = $MESSAGE['interface']['sheet']['diary'];
                             </td>
                             <td class="text-right whitespace-nowrap">
                                 <form action="main.php?page=scheda_diario&pg=<?= urlencode($pg) ?>" method="post" class="inline">
+                                    <?= gdrcd_csrf_field() ?>
                                     <input type="hidden" name="op" value="edit"/>
                                     <button type="submit" name="id" value="<?= (int)$r['id'] ?>"
                                             class="inline-flex items-center justify-center w-8 h-8 rounded-md text-gdrcd-muted hover:bg-gdrcd-accent-soft hover:text-gdrcd-accent transition-colors"
@@ -83,6 +86,7 @@ $lbl = $MESSAGE['interface']['sheet']['diary'];
                                 </form>
                                 <form action="main.php?page=scheda_diario&pg=<?= urlencode($pg) ?>" method="post" class="inline"
                                       onsubmit="return confirm('Vuoi eliminare la pagina?');">
+                                    <?= gdrcd_csrf_field() ?>
                                     <input type="hidden" name="op" value="delete"/>
                                     <button type="submit" name="id" value="<?= (int)$r['id'] ?>"
                                             class="inline-flex items-center justify-center w-8 h-8 rounded-md text-gdrcd-muted hover:bg-gdrcd-error-soft hover:text-gdrcd-error transition-colors"

@@ -33,6 +33,7 @@ if (!empty($_POST['email'])) {
 
 ?>
 <form action="index.php" method="post" class="space-y-3">
+    <?= gdrcd_csrf_field() ?>
     <div>
         <label class="gdrcd-label" for="passrecovery"><?= $MESSAGE['homepage']['forms']['email'] ?></label>
         <input class="gdrcd-input" type="email" id="passrecovery" name="email" required/>

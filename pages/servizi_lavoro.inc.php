@@ -103,6 +103,7 @@ $theme = $PARAMETERS['themes']['current_theme'];
                                 <?php if ($ultimolavoro <= $today): ?>
                                     <?php if ($lavoro == $row['id_ruolo']): ?>
                                         <form method="post" action="main.php?page=servizi_lavoro" class="inline">
+                                            <?= gdrcd_csrf_field() ?>
                                             <input type="hidden" name="op" value="resign">
                                             <input type="hidden" name="nome_lavoro" value="<?= gdrcd_filter('out', $row['nome_ruolo']) ?>">
                                             <input type="hidden" name="id_record" value="<?= (int)$row['id_ruolo'] ?>">
@@ -112,6 +113,7 @@ $theme = $PARAMETERS['themes']['current_theme'];
                                         </form>
                                     <?php elseif ($jobsn < $PARAMETERS['settings']['guilds_limit']): ?>
                                         <form method="post" action="main.php?page=servizi_lavoro" class="inline">
+                                            <?= gdrcd_csrf_field() ?>
                                             <input type="hidden" name="op" value="pick">
                                             <input type="hidden" name="nome_lavoro" value="<?= gdrcd_filter('out', $row['nome_ruolo']) ?>">
                                             <input type="hidden" name="id_record" value="<?= (int)$row['id_ruolo'] ?>">

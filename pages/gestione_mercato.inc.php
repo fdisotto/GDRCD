@@ -154,6 +154,7 @@ $is_edit = ($loaded_item !== null);
         </div>
         <div class="gdrcd-card-body">
             <form action="main.php?page=gestione_mercato" method="post" class="flex flex-wrap items-end gap-3">
+                <?= gdrcd_csrf_field() ?>
                 <div class="flex-1 min-w-[16rem]">
                     <label class="gdrcd-label" for="gm_load">Oggetto</label>
                     <select class="gdrcd-select" id="gm_load" name="load_item">
@@ -190,6 +191,7 @@ $is_edit = ($loaded_item !== null);
         </div>
         <div class="gdrcd-card-body">
             <form action="main.php?page=gestione_mercato" method="post" class="space-y-5">
+                <?= gdrcd_csrf_field() ?>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
@@ -317,6 +319,7 @@ $is_edit = ($loaded_item !== null);
             </div>
             <div class="gdrcd-card-body">
                 <form action="main.php?page=gestione_mercato" method="post" class="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-3 items-end">
+                    <?= gdrcd_csrf_field() ?>
                     <div>
                         <label class="gdrcd-label" for="om_num"><?= gdrcd_filter('out', $lbl['number_item']) ?></label>
                         <input class="gdrcd-input" type="number" id="om_num" name="num_oggetti" value="1" min="1" required/>

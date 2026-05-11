@@ -77,6 +77,7 @@ $type_label = $MESSAGE['interface']['messages']['type']['options'][$record['tipo
 
     <div class="flex flex-wrap gap-2">
         <form action="main.php?page=messages_center&op=read&id_messaggio=<?= (int)$record['id'] ?>" method="post" class="inline">
+            <?= gdrcd_csrf_field() ?>
             <input type="hidden" name="reply_dest" value="<?= htmlspecialchars($record['mittente']) ?>"/>
             <input type="hidden" name="reply_subject" value="Re: <?= htmlspecialchars($record['oggetto']) ?>"/>
             <input type="hidden" name="reply_tipo" value="<?= (int)$record['tipo'] ?>"/>
@@ -87,6 +88,7 @@ $type_label = $MESSAGE['interface']['messages']['type']['options'][$record['tipo
             </button>
         </form>
         <form action="main.php?page=messages_center&op=read&id_messaggio=<?= (int)$record['id'] ?>" method="post" class="inline">
+            <?= gdrcd_csrf_field() ?>
             <input type="hidden" name="reply_dest" value="<?= htmlspecialchars($record['mittente']) ?>"/>
             <input type="hidden" name="reply_subject" value="Re: <?= htmlspecialchars($record['oggetto']) ?>"/>
             <input type="hidden" name="reply_tipo" value="<?= (int)$record['tipo'] ?>"/>

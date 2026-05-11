@@ -15,6 +15,7 @@ if (gdrcd_filter('num',$blocco['id'])>0) {
     <form action="main.php?page=servizi_esitinew"
           method="post"
           class="form_gestione">
+        <?= gdrcd_csrf_field() ?>
 
         <div class='form_label'>
             Titolo

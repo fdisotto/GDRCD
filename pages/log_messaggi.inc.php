@@ -33,6 +33,7 @@ $lbl = $MESSAGE['interface']['administration']['log']['messages'];
         <section class="gdrcd-card">
             <div class="gdrcd-card-body">
                 <form action="main.php?page=log_messaggi" method="post" class="space-y-4">
+                    <?= gdrcd_csrf_field() ?>
                     <div>
                         <label class="gdrcd-label" for="lm_pg">
                             <?= gdrcd_filter('out', $lbl['log_type']) ?>

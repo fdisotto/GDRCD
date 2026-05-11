@@ -55,6 +55,7 @@ $op  = $_POST['op'] ?? null;
         <section class="gdrcd-card">
             <div class="gdrcd-card-body">
                 <form action="main.php?page=gestione_cambio_email" method="post" class="space-y-5">
+                    <?= gdrcd_csrf_field() ?>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label class="gdrcd-label" for="ce_account">

@@ -80,6 +80,7 @@ if ($op === 'delete') {
         </header>
         <div class="gdrcd-card-body">
             <form action="main.php?page=user_cancella_pg" method="post" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <?= gdrcd_csrf_field() ?>
                 <label class="block">
                     <span class="text-sm text-gdrcd-text-soft"><?= gdrcd_filter('out', $MESSAGE['interface']['user']['delete']['email']) ?></span>
                     <input type="email" name="email" class="gdrcd-input mt-1 w-full" required>
@@ -113,6 +114,7 @@ if ($op === 'delete') {
                 </header>
                 <div class="gdrcd-card-body">
                     <form action="main.php?page=user_cancella_pg" method="post" class="space-y-3">
+                        <?= gdrcd_csrf_field() ?>
                         <select name="account" class="gdrcd-select w-full" required>
                             <option value="" disabled selected><?= gdrcd_filter('out', $MESSAGE['interface']['user']['delete']['who']) ?></option>
                             <?php while ($r = gdrcd_query($active, 'fetch')): ?>
@@ -133,6 +135,7 @@ if ($op === 'delete') {
                 </header>
                 <div class="gdrcd-card-body">
                     <form action="main.php?page=user_cancella_pg" method="post" class="space-y-3">
+                        <?= gdrcd_csrf_field() ?>
                         <select name="account" class="gdrcd-select w-full" required>
                             <option value="" disabled selected><?= gdrcd_filter('out', $MESSAGE['interface']['user']['get_back']['who']) ?></option>
                             <?php while ($r = gdrcd_query($inactive, 'fetch')): ?>

@@ -169,6 +169,7 @@ while ($ry = gdrcd_query($year_res, 'fetch')):
                             <td class="text-right">
                                 <?php if ($can_log): ?>
                                 <form action="main.php?page=scheda_roles&pg=<?= $pg_url ?>" method="post" class="inline">
+                                    <?= gdrcd_csrf_field() ?>
                                     <input type="hidden" name="op" value="log">
                                     <input type="hidden" name="id" value="<?= (int)$row['id'] ?>">
                                     <button type="submit" class="gdrcd-btn-ghost p-1.5" title="Log chat">

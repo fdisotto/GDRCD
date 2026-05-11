@@ -144,6 +144,7 @@ $is_mod = ((int)$_SESSION['permessi'] >= MODERATOR);
                                 ?>
                                 <div class="shrink-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
                                     <form action="main.php?<?= htmlspecialchars($_SERVER['QUERY_STRING'] ?? 'page=forum&op=visit&what=' . $araldo_id) ?>" method="post" class="inline">
+                                        <?= gdrcd_csrf_field() ?>
                                         <input type="hidden" name="id_record" value="<?= (int)$row['id_messaggio'] ?>"/>
                                         <input type="hidden" name="status_imp" value="<?= $next_imp ?>"/>
                                         <input type="hidden" name="ops" value="important"/>
@@ -153,6 +154,7 @@ $is_mod = ((int)$_SESSION['permessi'] >= MODERATOR);
                                         </button>
                                     </form>
                                     <form action="main.php?<?= htmlspecialchars($_SERVER['QUERY_STRING'] ?? 'page=forum&op=visit&what=' . $araldo_id) ?>" method="post" class="inline">
+                                        <?= gdrcd_csrf_field() ?>
                                         <input type="hidden" name="id_record" value="<?= (int)$row['id_messaggio'] ?>"/>
                                         <input type="hidden" name="status_cls" value="<?= $next_cls ?>"/>
                                         <input type="hidden" name="ops" value="close"/>

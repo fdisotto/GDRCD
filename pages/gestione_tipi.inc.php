@@ -73,6 +73,7 @@ $lbl  = gdrcd_filter('out', $MESSAGE['interface']['administration']['types']['pa
             </header>
             <div class="gdrcd-card-body">
                 <form action="<?= htmlspecialchars($ref_back_url) ?>" method="post" class="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3 items-end">
+                    <?= gdrcd_csrf_field() ?>
                     <label class="block">
                         <span class="text-xs uppercase tracking-wide text-gdrcd-text-soft font-display">
                             <?= gdrcd_filter('out', $MESSAGE['interface']['administration']['types']['name']) ?>
@@ -152,6 +153,7 @@ $lbl  = gdrcd_filter('out', $MESSAGE['interface']['administration']['types']['pa
                                     <td class="text-right">
                                         <div class="inline-flex gap-1 justify-end">
                                             <form action="<?= htmlspecialchars($ref_back_url) ?>" method="post" class="inline">
+                                                <?= gdrcd_csrf_field() ?>
                                                 <input type="hidden" name="id_record" value="<?= (int)$row['cod_tipo'] ?>">
                                                 <input type="hidden" name="op" value="edit">
                                                 <button type="submit" class="gdrcd-btn-ghost p-1.5" title="<?= gdrcd_filter('out', $MESSAGE['interface']['administration']['ops']['edit']) ?>">
@@ -159,6 +161,7 @@ $lbl  = gdrcd_filter('out', $MESSAGE['interface']['administration']['types']['pa
                                                 </button>
                                             </form>
                                             <form action="<?= htmlspecialchars($ref_back_url) ?>" method="post" class="inline" onsubmit="return confirm('Eliminare definitivamente?');">
+                                                <?= gdrcd_csrf_field() ?>
                                                 <input type="hidden" name="id_record" value="<?= (int)$row['cod_tipo'] ?>">
                                                 <input type="hidden" name="op" value="erase">
                                                 <button type="submit" class="gdrcd-btn-ghost p-1.5 text-gdrcd-error" title="<?= gdrcd_filter('out', $MESSAGE['interface']['administration']['ops']['erase']) ?>">

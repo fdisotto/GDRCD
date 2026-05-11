@@ -147,6 +147,7 @@ $render_alert_success = function (string $msg) {
                 </div>
                 <div class="gdrcd-card-body">
                     <form action="main.php?page=gestione_gilde" method="post" class="space-y-5">
+                        <?= gdrcd_csrf_field() ?>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label class="gdrcd-label" for="gg_nome"><?= gdrcd_filter('out', $lbl['name']) ?></label>
@@ -235,6 +236,7 @@ $render_alert_success = function (string $msg) {
                 <div class="gdrcd-card-body space-y-6">
 
                     <form action="main.php?page=gestione_gilde" method="post" class="border-b border-gdrcd-border pb-5 space-y-4">
+                        <?= gdrcd_csrf_field() ?>
                         <div class="gdrcd-eyebrow"><?= gdrcd_filter('out', $lbl['role']['name_new']) ?></div>
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
                             <div>
@@ -278,6 +280,7 @@ $render_alert_success = function (string $msg) {
                             <?php while ($r = gdrcd_query($roles, 'fetch')): ?>
                                 <form action="main.php?page=gestione_gilde" method="post"
                                       class="border border-gdrcd-border rounded-gdrcd p-4 bg-gdrcd-panel-alt/30 space-y-3">
+                                    <?= gdrcd_csrf_field() ?>
                                     <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
                                         <div>
                                             <label class="gdrcd-label">Nome</label>
@@ -403,6 +406,7 @@ $render_alert_success = function (string $msg) {
                                     </a>
                                     <form action="main.php?page=gestione_gilde" method="post" class="inline-block"
                                           onsubmit="return confirm('Eliminare questa gilda e tutti i suoi ruoli?');">
+                                        <?= gdrcd_csrf_field() ?>
                                         <input type="hidden" name="id_record" value="<?= (int)$row['id_gilda'] ?>"/>
                                         <input type="hidden" name="op" value="erase"/>
                                         <button type="submit" class="inline-flex items-center justify-center w-8 h-8 rounded-md text-gdrcd-muted hover:bg-gdrcd-error-soft hover:text-gdrcd-error transition-colors"
