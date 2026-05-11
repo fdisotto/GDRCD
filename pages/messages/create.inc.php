@@ -68,7 +68,7 @@ $prefill_body    = isset($_POST['testo']) ? ("\n\n\n[" . gdrcd_filter('out', tri
 
                 <div>
                     <label class="gdrcd-label" for="msg_testo"><?= gdrcd_filter('out', $lbl['body']) ?></label>
-                    <textarea class="gdrcd-textarea" id="msg_testo" name="testo" rows="10" required><?= $prefill_body ?></textarea>
+                    <textarea class="gdrcd-textarea" id="msg_testo" name="testo" rows="10" required data-bbcode><?= $prefill_body ?></textarea>
                     <p class="gdrcd-help"><?= gdrcd_filter('out', $MESSAGE['interface']['help']['bbcode']) ?></p>
                 </div>
 

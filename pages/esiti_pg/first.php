@@ -22,7 +22,7 @@ if ($_GET['op']=='first') { ?>
             Contenuto ON
         </div>
         <div class='form_field'>
-            <textarea name="contenuto"></textarea>
+            <textarea class="gdrcd-textarea" name="contenuto" rows="8" data-bbcode></textarea>
         </div>
 
         <div class="form_info" >

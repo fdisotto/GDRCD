@@ -195,7 +195,7 @@ $render_alert_success = function (string $msg) {
 
                         <div>
                             <label class="gdrcd-label" for="gg_statuto">Statuto</label>
-                            <textarea class="gdrcd-textarea" id="gg_statuto" name="statuto" rows="8"><?= gdrcd_filter('out', $loaded['statuto']) ?></textarea>
+                            <textarea class="gdrcd-textarea" id="gg_statuto" name="statuto" rows="8" data-bbcode><?= gdrcd_filter('out', $loaded['statuto']) ?></textarea>
                         </div>
 
                         <label class="inline-flex items-center gap-2 text-sm text-gdrcd-text-soft cursor-pointer">

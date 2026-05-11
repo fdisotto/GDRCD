@@ -119,7 +119,7 @@ $render_back = function () use ($lbl) {
 
                     <div>
                         <label class="gdrcd-label" for="rg_testo"><?= gdrcd_filter('out', $lbl['infos']) ?></label>
-                        <textarea class="gdrcd-textarea" id="rg_testo" name="testo" rows="14"><?= gdrcd_filter('out', $loaded['testo']) ?></textarea>
+                        <textarea class="gdrcd-textarea" id="rg_testo" name="testo" rows="14" data-bbcode><?= gdrcd_filter('out', $loaded['testo']) ?></textarea>
                         <p class="gdrcd-help"><?= gdrcd_filter('out', $MESSAGE['interface']['help']['bbcode']) ?></p>
                     </div>
 

@@ -479,4 +479,93 @@
                dark:border-gdrcd-dark-border dark:bg-gdrcd-dark-panel-alt
                dark:text-gdrcd-dark-text dark:hover:border-gdrcd-dark-accent;
     }
+
+    /* ---------- Cookie consent banner / modal ---------- */
+    .gdrcd-cookie-banner {
+        @apply fixed bottom-0 left-0 right-0 z-[60]
+               bg-gdrcd-panel border-t border-gdrcd-border
+               shadow-gdrcd-elev
+               dark:bg-gdrcd-dark-panel dark:border-gdrcd-dark-border;
+    }
+    .gdrcd-cookie-banner-inner {
+        @apply container mx-auto p-4 flex flex-col md:flex-row items-center gap-3;
+    }
+    .gdrcd-cookie-modal {
+        @apply fixed inset-0 z-[70] flex items-center justify-center bg-black/40 p-4;
+    }
+    .gdrcd-cookie-modal-card {
+        @apply gdrcd-card max-w-2xl w-full max-h-[80vh] overflow-y-auto;
+    }
+
+    /* ---------- BBCode editor ---------- */
+    .gdrcd-bbcode-editor {
+        @apply border border-gdrcd-border rounded-lg overflow-hidden
+               bg-gdrcd-panel dark:bg-gdrcd-dark-panel
+               dark:border-gdrcd-dark-border;
+    }
+    .gdrcd-bbcode-toolbar {
+        @apply flex flex-wrap gap-1 px-2 py-2 border-b border-gdrcd-border
+               bg-gdrcd-panel-alt
+               dark:bg-gdrcd-dark-panel-alt dark:border-gdrcd-dark-border;
+    }
+    .gdrcd-bbcode-toolbar .gdrcd-bbcode-btn {
+        @apply inline-flex items-center justify-center px-2.5 py-1 rounded-md
+               text-xs font-semibold border border-gdrcd-border bg-gdrcd-panel
+               text-gdrcd-text-soft hover:text-gdrcd-accent
+               hover:border-gdrcd-accent hover:bg-gdrcd-accent-soft
+               transition-colors
+               dark:bg-gdrcd-dark-panel dark:border-gdrcd-dark-border
+               dark:text-gdrcd-dark-text-soft dark:hover:text-gdrcd-dark-accent
+               dark:hover:border-gdrcd-dark-accent dark:hover:bg-gdrcd-dark-accent-soft;
+    }
+    .gdrcd-bbcode-toolbar .gdrcd-bbcode-toggle {
+        @apply ml-auto;
+    }
+    .gdrcd-bbcode-panes {
+        @apply grid grid-cols-1 gap-0;
+    }
+    .gdrcd-bbcode-editor.is-preview-on .gdrcd-bbcode-panes {
+        @apply lg:grid-cols-2 lg:divide-x lg:divide-gdrcd-border
+               dark:lg:divide-gdrcd-dark-border;
+    }
+    .gdrcd-bbcode-input { @apply min-w-0; }
+    .gdrcd-bbcode-input textarea {
+        @apply rounded-none border-0 focus:ring-0 focus:border-0
+               bg-gdrcd-panel dark:bg-gdrcd-dark-panel;
+    }
+    .gdrcd-bbcode-preview {
+        @apply hidden p-3 text-sm leading-relaxed text-gdrcd-text-soft
+               bg-gdrcd-panel-alt min-h-[8rem] max-h-[32rem] overflow-auto
+               break-words
+               dark:bg-gdrcd-dark-panel-alt dark:text-gdrcd-dark-text-soft;
+    }
+    .gdrcd-bbcode-editor.is-preview-on .gdrcd-bbcode-preview { @apply block; }
+    .gdrcd-bbcode-preview .bb-img {
+        @apply max-w-full h-auto rounded;
+    }
+    .gdrcd-bbcode-preview .bb-quote {
+        @apply my-2 border-l-4 border-gdrcd-accent-ring/60 pl-3
+               dark:border-gdrcd-dark-accent-ring/60;
+    }
+    .gdrcd-bbcode-preview .bb-quote-name {
+        @apply text-xs text-gdrcd-muted dark:text-gdrcd-dark-muted;
+    }
+    .gdrcd-bbcode-preview .bb-quote-body {
+        @apply m-0 italic;
+    }
+    .gdrcd-bbcode-preview .bb-list {
+        @apply list-disc pl-5 my-2;
+    }
+    .bbcode-spoiler {
+        @apply px-1 rounded bg-gdrcd-panel-alt text-transparent select-none cursor-pointer
+               transition-all duration-150
+               dark:bg-gdrcd-dark-panel-alt;
+        filter: blur(4px);
+    }
+    .bbcode-spoiler:hover,
+    .bbcode-spoiler:focus,
+    .bbcode-spoiler.is-revealed {
+        @apply text-gdrcd-text dark:text-gdrcd-dark-text select-text;
+        filter: none;
+    }
 }

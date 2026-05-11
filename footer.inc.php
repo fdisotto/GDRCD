@@ -3,6 +3,7 @@
 <script type="text/javascript" src="/includes/modal.js"></script>
 <script type="text/javascript" src="/includes/toast.js"></script>
 <script type="text/javascript" src="/includes/theme-toggle.js" defer></script>
+<script type="text/javascript" src="/includes/cookie-consent.js" defer></script>
 <?php
 /**
  * Notifiche desktop (PM + segnalazioni GM).
@@ -17,6 +18,7 @@ if (!empty($_SESSION['login'])) { ?>
     <script type="text/javascript" src="/includes/favorites.js" defer></script>
     <script type="text/javascript" src="/includes/search.js" defer></script>
     <script type="text/javascript" src="/includes/chat.js" defer></script>
+    <script type="text/javascript" src="/includes/bbcode.js" defer></script>
 <?php } ?>
 <?php
 /** * Abilitazione tooltip

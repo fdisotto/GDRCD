@@ -33,7 +33,7 @@ if (($_GET['op'] ?? '') !== 'first') {
 
                 <div>
                     <label class="gdrcd-label" for="ne_contenuto">Contenuto ON</label>
-                    <textarea class="gdrcd-textarea" id="ne_contenuto" name="contenuto" rows="6"></textarea>
+                    <textarea class="gdrcd-textarea" id="ne_contenuto" name="contenuto" rows="6" data-bbcode></textarea>
                     <p class="gdrcd-help">Indicazioni sulle azioni ON da compiere o compiute.</p>
                 </div>
 

@@ -201,17 +201,17 @@ foreach ($alerts as [$kind, $msg]) {
 
                     <div>
                         <label class="gdrcd-label" for="sm_descr"><?= gdrcd_filter('out', $lbl_m['description']) ?></label>
-                        <textarea class="gdrcd-textarea" id="sm_descr" name="modifica_background" rows="6"><?= gdrcd_filter('out', $record['descrizione']) ?></textarea>
+                        <textarea class="gdrcd-textarea" id="sm_descr" name="modifica_background" rows="6" data-bbcode><?= gdrcd_filter('out', $record['descrizione']) ?></textarea>
                         <p class="gdrcd-help"><?= gdrcd_filter('out', $MESSAGE['interface']['help']['bbcode']) ?></p>
                     </div>
                     <div>
                         <label class="gdrcd-label" for="sm_sto"><?= gdrcd_filter('out', $lbl_mf['background']) ?></label>
-                        <textarea class="gdrcd-textarea" id="sm_sto" name="modifica_storia" rows="8"><?= gdrcd_filter('out', $record['storia']) ?></textarea>
+                        <textarea class="gdrcd-textarea" id="sm_sto" name="modifica_storia" rows="8" data-bbcode><?= gdrcd_filter('out', $record['storia']) ?></textarea>
                         <p class="gdrcd-help"><?= gdrcd_filter('out', $MESSAGE['interface']['help']['bbcode']) ?></p>
                     </div>
                     <div>
                         <label class="gdrcd-label" for="sm_aff"><?= gdrcd_filter('out', $lbl_mf['relationships']) ?></label>
-                        <textarea class="gdrcd-textarea" id="sm_aff" name="modifica_affetti" rows="5"><?= gdrcd_filter('out', $record['affetti']) ?></textarea>
+                        <textarea class="gdrcd-textarea" id="sm_aff" name="modifica_affetti" rows="5" data-bbcode><?= gdrcd_filter('out', $record['affetti']) ?></textarea>
                         <p class="gdrcd-help"><?= gdrcd_filter('out', $MESSAGE['interface']['help']['bbcode']) ?></p>
                     </div>
 
@@ -254,7 +254,7 @@ foreach ($alerts as [$kind, $msg]) {
                     <?= gdrcd_csrf_field() ?>
                     <div>
                         <label class="gdrcd-label" for="sm_status"><?= gdrcd_filter('out', $lbl_mf['status']) ?></label>
-                        <textarea class="gdrcd-textarea" id="sm_status" name="modifica_status" rows="4"><?= gdrcd_filter('out', $record['stato']) ?></textarea>
+                        <textarea class="gdrcd-textarea" id="sm_status" name="modifica_status" rows="4" data-bbcode><?= gdrcd_filter('out', $record['stato']) ?></textarea>
                     </div>
                     <div>
                         <label class="gdrcd-label" for="sm_hp"><?= gdrcd_filter('out', $lbl_mf['healt']) ?></label>

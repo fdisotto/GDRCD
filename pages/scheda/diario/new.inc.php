@@ -35,7 +35,7 @@ $lbl = $MESSAGE['interface']['sheet']['diary'];
 
             <div>
                 <label class="gdrcd-label" for="dia_testo"><?= gdrcd_filter('out', $lbl['text']) ?></label>
-                <textarea class="gdrcd-textarea" id="dia_testo" name="testo" rows="12"></textarea>
+                <textarea class="gdrcd-textarea" id="dia_testo" name="testo" rows="12" data-bbcode></textarea>
             </div>
 
             <div class="flex flex-col-reverse sm:flex-row gap-3 sm:justify-end pt-2 border-t border-gdrcd-border">

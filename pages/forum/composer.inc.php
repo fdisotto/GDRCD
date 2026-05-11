@@ -56,7 +56,7 @@ if ($quote > 0) {
 
                 <div>
                     <label class="gdrcd-label" for="fc_messaggio"><?= gdrcd_filter('out', $MESSAGE['interface']['forums']['insert']['message']) ?></label>
-                    <textarea class="gdrcd-textarea" id="fc_messaggio" name="messaggio" rows="12" required><?= gdrcd_filter('out', $quote_text) ?></textarea>
+                    <textarea class="gdrcd-textarea" id="fc_messaggio" name="messaggio" rows="12" required data-bbcode><?= gdrcd_filter('out', $quote_text) ?></textarea>
                     <p class="gdrcd-help"><?= gdrcd_filter('out', $MESSAGE['interface']['help']['bbcode']) ?></p>
                 </div>
 

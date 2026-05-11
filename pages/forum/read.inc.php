@@ -164,7 +164,7 @@ $render_post = function ($row, bool $is_head) use ($render_body, $chiuso, $is_mo
                 <form action="main.php?page=forum" method="post" class="space-y-4">
                     <?= gdrcd_csrf_field() ?>
                     <div>
-                        <textarea class="gdrcd-textarea" name="messaggio" rows="6" required></textarea>
+                        <textarea class="gdrcd-textarea" name="messaggio" rows="6" required data-bbcode></textarea>
                         <p class="gdrcd-help"><?= gdrcd_filter('out', $MESSAGE['interface']['help']['bbcode']) ?></p>
                     </div>
                     <div class="flex justify-end pt-2 border-t border-gdrcd-border">

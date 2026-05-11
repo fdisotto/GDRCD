@@ -40,7 +40,7 @@ $blocco = gdrcd_query(
 
                 <div>
                     <label class="gdrcd-label" for="nw_contenuto">Contenuto ON</label>
-                    <textarea class="gdrcd-textarea" id="nw_contenuto" name="contenuto" rows="8"></textarea>
+                    <textarea class="gdrcd-textarea" id="nw_contenuto" name="contenuto" rows="8" data-bbcode></textarea>
                     <p class="gdrcd-help">Descrivere in modo narrativo (come in chat) quel che il personaggio può conoscere o scoprire.</p>
                 </div>
 

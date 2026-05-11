@@ -51,7 +51,7 @@ $is_topic = ((int)$row['id_messaggio_padre'] === -1);
 
                 <div>
                     <label class="gdrcd-label" for="fm_messaggio"><?= gdrcd_filter('out', $MESSAGE['interface']['forums']['insert']['message']) ?></label>
-                    <textarea class="gdrcd-textarea" id="fm_messaggio" name="messaggio" rows="10" required><?= gdrcd_filter('out', $row['messaggio']) ?></textarea>
+                    <textarea class="gdrcd-textarea" id="fm_messaggio" name="messaggio" rows="10" required data-bbcode><?= gdrcd_filter('out', $row['messaggio']) ?></textarea>
                     <p class="gdrcd-help"><?= gdrcd_filter('out', $MESSAGE['interface']['help']['bbcode']) ?></p>
                 </div>
 
