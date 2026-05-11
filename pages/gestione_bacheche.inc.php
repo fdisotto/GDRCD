@@ -1,275 +1,327 @@
-<div class="gestione_bacheche">
-    <?php /*HELP: */
-    /*Controllo permessi utente*/
-    if($_SESSION['permessi'] < MODERATOR) {
-        echo '<div class="error">'.gdrcd_filter('out', $MESSAGE['error']['not_allowed']).'</div>';
-    } else { ?>
-        <!-- Titolo della pagina -->
-        <div class="page_title">
-            <h2><?php echo gdrcd_filter('out', $MESSAGE['interface']['administration']['forums']['page_name']); ?></h2>
+<?php
+/**
+ * Gestione bacheche/araldi (main.php?page=gestione_bacheche)
+ * CRUD su tabella araldo: nome, tipo, proprietari (razza o gilda).
+ */
+
+if ($_SESSION['permessi'] < MODERATOR) {
+    echo '<div class="gdrcd-alert-error">'
+       . '<svg class="w-5 h-5 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4c-.77-1.33-2.69-1.33-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3z"/></svg>'
+       . '<div>' . gdrcd_filter('out', $MESSAGE['error']['not_allowed']) . '</div>'
+       . '</div>';
+    return;
+}
+
+$lbl = $MESSAGE['interface']['administration']['forums'];
+$op  = $_POST['op'] ?? $_GET['op'] ?? null;
+
+$forum_types = [INGIOCO, PERTUTTI, SOLORAZZA, SOLOGILDA, SOLOMASTERS, SOLOMODERATORS];
+
+$render_back = function () use ($lbl) {
+    return '<a href="main.php?page=gestione_bacheche" class="gdrcd-btn-ghost">'
+         . '<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>'
+         . gdrcd_filter('out', $lbl['link']['back'])
+         . '</a>';
+};
+?>
+
+<div class="space-y-6">
+
+    <header class="space-y-2">
+        <h2 class="gdrcd-h1"><?= gdrcd_filter('out', $lbl['page_name']) ?></h2>
+        <p class="gdrcd-muted">Gestione delle bacheche araldo: nome, tipologia, proprietari (razza o gilda).</p>
+    </header>
+
+    <?php
+    /* Normalizza owner in base a tipo: solo SOLORAZZA/SOLOGILDA hanno proprietari. */
+    $sanitize_owner = function (int $tipo, $owner_raw) {
+        if ($tipo === SOLORAZZA || $tipo === SOLOGILDA) {
+            return gdrcd_filter('num', $owner_raw);
+        }
+        return -1;
+    };
+
+    if ($op === 'insert'):
+        $tipo_post  = (int)gdrcd_filter('num', $_POST['tipo']);
+        $owner_post = $sanitize_owner($tipo_post, $_POST['owner'] ?? -1);
+        gdrcd_query(
+            "INSERT INTO araldo (nome, tipo, proprietari) VALUES ("
+            . "'" . gdrcd_filter('in', $_POST['nome']) . "',"
+            . $tipo_post . ","
+            . $owner_post . ")"
+        );
+        ?>
+        <div class="gdrcd-alert-success">
+            <svg class="w-5 h-5 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+            <div>
+                <?= gdrcd_filter('out', $MESSAGE['warning']['inserted']) ?>
+                <span class="text-gdrcd-muted">·</span>
+                <strong class="text-gdrcd-text"><?= gdrcd_filter('out', $_POST['nome']) ?></strong>
+            </div>
         </div>
-        <!-- Corpo della pagina -->
-        <div class="page_body">
-            <?php /*Inserimento di un nuovo record*/
-            if(gdrcd_filter('get', $_POST['op']) == $MESSAGE['interface']['administration']['forums']['submit']['insert']) { ?>
-                <?php /*Eseguo l'inserimento*/
-                gdrcd_query("INSERT INTO araldo (nome, tipo, proprietari) VALUES ('".gdrcd_filter('in', $_POST['nome'])."', ".gdrcd_filter('num', $_POST['tipo']).", ".gdrcd_filter('num', $_POST['owner']).")"); ?>
-                <div class="warning">
-                    <?php echo gdrcd_filter('out', $MESSAGE['warning']['inserted']); ?>
-                </div>
-                <!-- Link di ritorno alla visualizzazione di base -->
-                <div class="link_back">
-                    <a href="main.php?page=gestione_bacheche">
-                        <?php echo gdrcd_filter('out', $MESSAGE['interface']['administration']['forums']['link']['back']); ?>
-                    </a>
-                </div>
-            <?php
-            }
-            /*Cancellatura in un record*/
-            if($_POST['op'] == 'erase') { /*Eseguo la cancellatura*/
-                gdrcd_query("DELETE FROM messaggioaraldo WHERE id_araldo=".gdrcd_filter('num', $_POST['id_record'])."");
-                gdrcd_query("DELETE FROM araldo WHERE id_araldo=".gdrcd_filter('num', $_POST['id_record'])." LIMIT 1");
-                ?>
-                <div class="warning">
-                    <?php echo gdrcd_filter('out', $MESSAGE['warning']['deleted']); ?>
-                </div>
-                <!-- Link di ritorno alla visualizzazione di base -->
-                <div class="link_back">
-                    <a href="main.php?page=gestione_bacheche">
-                        <?php echo gdrcd_filter('out', $MESSAGE['interface']['administration']['forums']['link']['back']); ?>
-                    </a>
-                </div>
-            <?php }
-            /*Modifica di un record*/
-            if($_POST['op'] == $MESSAGE['interface']['administration']['forums']['submit']['edit']) {
-                /*Eseguo l'aggiornamento*/
-                gdrcd_query("UPDATE araldo SET nome ='".gdrcd_filter('in', $_POST['nome'])."', tipo = ".gdrcd_filter('num', $_POST['tipo']).", proprietari = ".gdrcd_filter('num', $_POST['owner'])." WHERE id_araldo = ".gdrcd_filter('num', $_POST['id_record'])." LIMIT 1");
-                ?>
-                <div class="warning">
-                    <?php echo gdrcd_filter('out', $MESSAGE['warning']['modified']); ?>
-                </div>
-                <!-- Link di ritorno alla visualizzazione di base -->
-                <div class="link_back">
-                    <a href="main.php?page=gestione_bacheche">
-                        <?php echo gdrcd_filter('out', $MESSAGE['interface']['administration']['forums']['link']['back']); ?>
-                    </a>
-                </div>
-            <?php
-            }
-            /*Form di inserimento/modifica*/
-            if((gdrcd_filter('get', $_POST['op']) == 'edit') || (gdrcd_filter('get', $_REQUEST['op']) == 'new')) {
-                /*Preseleziono l'operazione di inserimento*/
-                $operation = 'insert';
-                /*Se è stata richiesta una modifica*/
-                if(gdrcd_filter('get', $_POST['op']) == 'edit') {
-                    /*Carico il record da modificare*/
-                    $loaded_record = gdrcd_query("SELECT * FROM araldo WHERE id_araldo=".gdrcd_filter('num', $_POST['id_record'])." LIMIT 1 ");
-                    /*Cambio l'operazione in modifica*/
-                    $operation = 'edit';
-                }
-                ?>
-                <!-- Form di inserimento/modifica -->
-                <div class="panels_box">
-                    <form action="main.php?page=gestione_bacheche" method="post" class="form_gestione">
-                        <div class='form_label'>
-                            <?php echo gdrcd_filter('out', $MESSAGE['interface']['administration']['forums']['name']); ?>
-                        </div>
-                        <div class='form_field'>
-                            <input name="nome" value="<?php echo $loaded_record['nome']; ?>" />
-                        </div>
-                        <div class='form_label'>
-                            <?php echo gdrcd_filter('out', $MESSAGE['interface']['administration']['forums']['type']['name']); ?>
-                        </div>
-                        <div class='form_field'>
-                            <!-- Elenco dei tipi -->
-                            <select name="tipo">
-                                <option value="<?php echo INGIOCO; ?>"
-                                    <?php if($loaded_record['tipo'] == INGIOCO) {echo "selected";} ?>>
-                                    <?php echo gdrcd_filter('out', $MESSAGE['interface']['forums']['type'][INGIOCO]); ?>
-                                </option>
-                                <option value="<?php echo PERTUTTI; ?>"
-                                    <?php if($loaded_record['tipo'] == PERTUTTI) {echo "selected";} ?>>
-                                    <?php echo gdrcd_filter('out', $MESSAGE['interface']['forums']['type'][PERTUTTI]); ?>
-                                </option>
-                                <option value="<?php echo SOLORAZZA; ?>"
-                                    <?php if($loaded_record['tipo'] == SOLORAZZA) {echo "selected";} ?>>
-                                    <?php echo gdrcd_filter('out', $MESSAGE['interface']['forums']['type'][SOLORAZZA]); ?>
-                                </option>
-                                <option value="<?php echo SOLOGILDA; ?>"
-                                    <?php if($loaded_record['tipo'] == SOLOGILDA) {echo "selected";} ?>>
-                                    <?php echo gdrcd_filter('out', $MESSAGE['interface']['forums']['type'][SOLOGILDA]); ?>
-                                </option>
-                                <option value="<?php echo SOLOMASTERS; ?>"
-                                    <?php if($loaded_record['tipo'] == SOLOMASTERS) {echo "selected";} ?>>
-                                    <?php echo gdrcd_filter('out', $MESSAGE['interface']['forums']['type'][SOLOMASTERS]); ?>
-                                </option>
-                                <option value="<?php echo SOLOMODERATORS; ?>"
-                                    <?php if($loaded_record['tipo'] == SOLOMODERATORS) {echo "selected";} ?>>
-                                    <?php echo gdrcd_filter('out', $MESSAGE['interface']['forums']['type'][SOLOMODERATORS]); ?>
-                                </option>
-                            </select>
-                        </div>
-                        <div class='form_info'>
-                            <?php echo gdrcd_filter('out', $MESSAGE['interface']['forums']['type']['info']); ?>
-                        </div>
-                        <div class='form_label'>
-                            <?php echo gdrcd_filter('out', $MESSAGE['interface']['administration']['forums']['owner']); ?>
-                        </div>
-                        <div class='form_field'>
-                            <?php /* Carico l'elenco delle mappe inserite */
-                            $razze = gdrcd_query("SELECT id_razza, nome_razza FROM razza", 'result');
-                            $gilde = gdrcd_query("SELECT id_gilda, nome FROM gilda", 'result'); ?>
-                            <!-- Elenco delle mappe -->
-                            <select name="owner">
-                                <!-- Opzione "Nessuna" -->
-                                <option value="-1"><!-- Opzione "Nessuno" -->
-                                    <?php echo gdrcd_filter('out', $MESSAGE['interface']['administration']['forums']['no_owner']); ?>
-                                </option>
-                                <?php
-                                while($option = gdrcd_query($razze, 'fetch')) { ?>
-                                    <option value="<?php echo gdrcd_filter('out', $option['id_razza']); ?>"
-                                        <?php if(($loaded_record['proprietari'] == $option['id_razza']) && ($loaded_record['tipo'] == SOLORAZZA)) {echo 'SELECTED';} ?>>
-                                        <?php echo gdrcd_filter('out', $option['nome_razza']); ?>
-                                    </option>
-                                <?php
-                                }
-                                gdrcd_query($razze, 'free');
+        <div><?= $render_back() ?></div>
 
-                                while($option = gdrcd_query($gilde, 'fetch')) { ?>
-                                    <option value="<?php echo gdrcd_filter('out', $option['id_gilda']); ?>"
-                                        <?php if(($loaded_record['proprietari'] == $option['id_gilda']) && ($loaded_record['tipo'] == SOLOGILDA)) {
-                                            echo 'SELECTED';
-                                        } ?>>
-                                        <?php echo gdrcd_filter('out', $option['nome']); ?>
-                                    </option>
-                                <?php
-                                }
-                                gdrcd_query($gilde, 'free');
+    <?php elseif ($op === 'erase'):
+        gdrcd_query("DELETE FROM messaggioaraldo WHERE id_araldo = " . gdrcd_filter('num', $_POST['id_record']));
+        gdrcd_query("DELETE FROM araldo WHERE id_araldo = " . gdrcd_filter('num', $_POST['id_record']) . " LIMIT 1");
+        ?>
+        <div class="gdrcd-alert-success">
+            <svg class="w-5 h-5 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+            <div><?= gdrcd_filter('out', $MESSAGE['warning']['deleted']) ?></div>
+        </div>
+        <div><?= $render_back() ?></div>
+
+    <?php elseif ($op === 'doedit'):
+        $tipo_post  = (int)gdrcd_filter('num', $_POST['tipo']);
+        $owner_post = $sanitize_owner($tipo_post, $_POST['owner'] ?? -1);
+        gdrcd_query(
+            "UPDATE araldo SET
+                nome = '" . gdrcd_filter('in', $_POST['nome']) . "',
+                tipo = " . $tipo_post . ",
+                proprietari = " . $owner_post . "
+             WHERE id_araldo = " . gdrcd_filter('num', $_POST['id_record']) . " LIMIT 1"
+        );
+        ?>
+        <div class="gdrcd-alert-success">
+            <svg class="w-5 h-5 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+            <div>
+                <?= gdrcd_filter('out', $MESSAGE['warning']['modified']) ?>
+                <span class="text-gdrcd-muted">·</span>
+                <strong class="text-gdrcd-text"><?= gdrcd_filter('out', $_POST['nome']) ?></strong>
+            </div>
+        </div>
+        <div><?= $render_back() ?></div>
+
+    <?php elseif ($op === 'edit' || $op === 'new'):
+        $is_edit = ($op === 'edit');
+        $loaded = $is_edit
+            ? gdrcd_query("SELECT * FROM araldo WHERE id_araldo = " . gdrcd_filter('num', $_POST['id_record']) . " LIMIT 1")
+            : ['id_araldo' => 0, 'nome' => '', 'tipo' => INGIOCO, 'proprietari' => -1];
+        ?>
+        <section class="gdrcd-card">
+            <div class="gdrcd-card-header">
+                <h3 class="gdrcd-h3"><?= $is_edit ? 'Modifica bacheca' : 'Nuova bacheca' ?></h3>
+            </div>
+            <div class="gdrcd-card-body">
+                <form action="main.php?page=gestione_bacheche" method="post" class="space-y-5">
+                    <div>
+                        <label class="gdrcd-label" for="bk_nome"><?= gdrcd_filter('out', $lbl['name']) ?></label>
+                        <input class="gdrcd-input" type="text" id="bk_nome" name="nome"
+                               value="<?= gdrcd_filter('out', $loaded['nome']) ?>" required/>
+                    </div>
+
+                    <div>
+                        <label class="gdrcd-label" for="bk_tipo"><?= gdrcd_filter('out', $lbl['type']['name']) ?></label>
+                        <select class="gdrcd-select" id="bk_tipo" name="tipo">
+                            <?php foreach ($forum_types as $t):
+                                $sel = ((int)$loaded['tipo'] === $t) ? 'selected' : '';
                                 ?>
-                            </select>
-                        </div>
-                        <!-- bottoni -->
-                        <div class='form_submit'>
-                            <?php /* Se l'operazione è una modifica stampo i tasti modifica e annulla */
-                            if($operation == "edit") { ?>
-                                <input type="hidden" name="id_record" value="<?php echo $loaded_record['id_araldo']; ?>">
-                                <input type="submit" value="<?php echo gdrcd_filter('out', $MESSAGE['interface']['administration']['forums']['submit']['edit']); ?>" name="op" />
-                                <input type="submit" value="<?php echo gdrcd_filter('out', $MESSAGE['interface']['administration']['forums']['submit']['undo']); ?>" name="cancel" />
-                            <?php
-                            } else { /* Altrimenti il tasto inserisci */ ?>
-                                <input type="submit" value="<?php echo gdrcd_filter('out', $MESSAGE['interface']['administration']['forums']['submit']['insert']); ?>" name="op" />
-                            <?php
-                            } ?>
-                        </div>
-                    </form>
-                </div>
-                <!-- Link di ritorno alla visualizzazione di base -->
-                <div class="link_back">
-                    <a href="main.php?page=gestione_bacheche"><?php echo gdrcd_filter('out', $MESSAGE['interface']['administration']['forums']['link']['back']); ?></a>
-                </div>
-            <?php
-            }
-            /*Elenco record (Visualizzaione di base della pagina)*/
-            if((isset($_POST['op']) === false) && (isset($_REQUEST['op']) === false)) {
-                //Determinazione pagina (paginazione)
-                $pagebegin = (int) $_REQUEST['offset'] * $PARAMETERS['settings']['records_per_page'];
-                $pageend = $PARAMETERS['settings']['records_per_page'];
-                //Conteggio record totali
-                $record_globale = gdrcd_query("SELECT COUNT(*) FROM araldo");
-                $totaleresults = $record_globale['COUNT(*)'];
+                                <option value="<?= $t ?>" <?= $sel ?>>
+                                    <?= gdrcd_filter('out', $MESSAGE['interface']['forums']['type'][$t]) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <p class="gdrcd-help"><?= gdrcd_filter('out', $MESSAGE['interface']['forums']['type']['info']) ?></p>
+                    </div>
 
-                //Lettura record
-                $result = gdrcd_query("SELECT id_araldo, nome, tipo FROM araldo ORDER BY nome LIMIT ".$pagebegin.", ".$pageend."", 'result');
-                $numresults = gdrcd_query($result, 'num_rows');
+                    <div id="bk_owner_wrap" data-show-on="<?= SOLORAZZA ?>,<?= SOLOGILDA ?>" class="hidden">
+                        <label class="gdrcd-label" for="bk_owner"><?= gdrcd_filter('out', $lbl['owner']) ?></label>
 
-                /* Se esistono record */
-                if($numresults > 0) { ?>
-                    <!-- Elenco dei record paginato -->
-                    <div class="elenco_record_gestione">
-                        <table>
-                            <!-- Intestazione tabella -->
+                        <!-- Owner Razza -->
+                        <select class="gdrcd-select"
+                                id="bk_owner_razza"
+                                name="owner_razza"
+                                data-tipo="<?= SOLORAZZA ?>"
+                                disabled>
+                            <?php $razze = gdrcd_query("SELECT id_razza, nome_razza FROM razza ORDER BY nome_razza", 'result');
+                            while ($r = gdrcd_query($razze, 'fetch')):
+                                $sel = ((int)$loaded['proprietari'] === (int)$r['id_razza'] && (int)$loaded['tipo'] === SOLORAZZA) ? 'selected' : '';
+                                ?>
+                                <option value="<?= (int)$r['id_razza'] ?>" <?= $sel ?>>
+                                    <?= gdrcd_filter('out', $r['nome_razza']) ?>
+                                </option>
+                            <?php endwhile;
+                            gdrcd_query($razze, 'free');
+                            ?>
+                        </select>
+
+                        <!-- Owner Gilda -->
+                        <select class="gdrcd-select hidden"
+                                id="bk_owner_gilda"
+                                name="owner_gilda"
+                                data-tipo="<?= SOLOGILDA ?>"
+                                disabled>
+                            <?php $gilde = gdrcd_query("SELECT id_gilda, nome FROM gilda ORDER BY nome", 'result');
+                            while ($g = gdrcd_query($gilde, 'fetch')):
+                                $sel = ((int)$loaded['proprietari'] === (int)$g['id_gilda'] && (int)$loaded['tipo'] === SOLOGILDA) ? 'selected' : '';
+                                ?>
+                                <option value="<?= (int)$g['id_gilda'] ?>" <?= $sel ?>>
+                                    <?= gdrcd_filter('out', $g['nome']) ?>
+                                </option>
+                            <?php endwhile;
+                            gdrcd_query($gilde, 'free');
+                            ?>
+                        </select>
+
+                        <!-- owner finale che parte al submit, popolato via JS dal select attivo -->
+                        <input type="hidden" name="owner" id="bk_owner" value="<?= (int)$loaded['proprietari'] ?>"/>
+                    </div>
+
+                    <script>
+                        (function () {
+                            const tipo  = document.getElementById('bk_tipo');
+                            const wrap  = document.getElementById('bk_owner_wrap');
+                            const razza = document.getElementById('bk_owner_razza');
+                            const gilda = document.getElementById('bk_owner_gilda');
+                            const owner = document.getElementById('bk_owner');
+
+                            const SOLORAZZA = <?= SOLORAZZA ?>;
+                            const SOLOGILDA = <?= SOLOGILDA ?>;
+
+                            function sync() {
+                                const t = parseInt(tipo.value, 10);
+                                const showRazza = (t === SOLORAZZA);
+                                const showGilda = (t === SOLOGILDA);
+                                const showOwner = showRazza || showGilda;
+
+                                wrap.classList.toggle('hidden', !showOwner);
+                                razza.classList.toggle('hidden', !showRazza);
+                                gilda.classList.toggle('hidden', !showGilda);
+                                razza.disabled = !showRazza;
+                                gilda.disabled = !showGilda;
+
+                                if (showRazza)      owner.value = razza.value;
+                                else if (showGilda) owner.value = gilda.value;
+                                else                owner.value = -1;
+                            }
+
+                            tipo.addEventListener('change', sync);
+                            razza.addEventListener('change', () => owner.value = razza.value);
+                            gilda.addEventListener('change', () => owner.value = gilda.value);
+                            sync();
+                        })();
+                    </script>
+
+                    <div class="flex flex-col-reverse sm:flex-row gap-3 sm:justify-end pt-2 border-t border-gdrcd-border">
+                        <a href="main.php?page=gestione_bacheche" class="gdrcd-btn-ghost">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                            <?= gdrcd_filter('out', $lbl['submit']['undo'] ?? 'Annulla') ?>
+                        </a>
+                        <?php if ($is_edit): ?>
+                            <input type="hidden" name="id_record" value="<?= (int)$loaded['id_araldo'] ?>"/>
+                            <input type="hidden" name="op" value="doedit"/>
+                            <button type="submit" class="gdrcd-btn-primary">
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                <?= gdrcd_filter('out', $lbl['submit']['edit']) ?>
+                            </button>
+                        <?php else: ?>
+                            <input type="hidden" name="op" value="insert"/>
+                            <button type="submit" class="gdrcd-btn-primary">
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                                <?= gdrcd_filter('out', $lbl['submit']['insert']) ?>
+                            </button>
+                        <?php endif; ?>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+    <?php else:
+        $offset    = (int)($_REQUEST['offset'] ?? 0);
+        $per_page  = (int)$PARAMETERS['settings']['records_per_page'];
+        $pagebegin = $offset * $per_page;
+
+        $count_row     = gdrcd_query("SELECT COUNT(*) AS c FROM araldo");
+        $totaleresults = (int)$count_row['c'];
+
+        $result = gdrcd_query(
+            "SELECT id_araldo, nome, tipo FROM araldo ORDER BY nome LIMIT " . $pagebegin . ", " . $per_page,
+            'result'
+        );
+        $numresults = (int)gdrcd_query($result, 'num_rows');
+        ?>
+
+        <div class="flex flex-wrap items-baseline justify-between gap-2">
+            <span class="gdrcd-muted text-xs"><?= $totaleresults ?> bacheche</span>
+            <a href="main.php?page=gestione_bacheche&op=new" class="gdrcd-btn-primary">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                <?= gdrcd_filter('out', $lbl['link']['new']) ?>
+            </a>
+        </div>
+
+        <?php if ($numresults === 0): ?>
+            <div class="gdrcd-alert-info">
+                <svg class="w-5 h-5 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <div>Nessuna bacheca presente.</div>
+            </div>
+        <?php else: ?>
+            <div class="gdrcd-table-wrap">
+                <table class="gdrcd-table">
+                    <thead>
+                        <tr>
+                            <th><?= gdrcd_filter('out', $lbl['name']) ?></th>
+                            <th class="whitespace-nowrap"><?= gdrcd_filter('out', $lbl['type']['name']) ?></th>
+                            <th class="text-right w-[120px]"><span class="sr-only">Azioni</span></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php while ($row = gdrcd_query($result, 'fetch')):
+                            $type_label = $MESSAGE['interface']['forums']['type'][(int)$row['tipo']] ?? '?';
+                            ?>
                             <tr>
-                                <td class="casella_titolo">
-                                    <div class="titoli_elenco"><?php echo gdrcd_filter('out', $MESSAGE['interface']['administration']['forums']['name']); ?></div>
+                                <td class="font-medium text-gdrcd-text">
+                                    <?= gdrcd_filter('out', $row['nome']) ?>
                                 </td>
-                                <td class="casella_titolo">
-                                    <div class="titoli_elenco"><?php echo gdrcd_filter('out', $MESSAGE['interface']['administration']['forums']['type']['name']); ?></div>
+                                <td>
+                                    <span class="gdrcd-badge-neutral"><?= gdrcd_filter('out', $type_label) ?></span>
                                 </td>
-                                <td class="casella_titolo">
-                                    <div class="titoli_elenco"><?php echo gdrcd_filter('out', $MESSAGE['interface']['administration']['ops_col']); ?></div>
+                                <td class="text-right whitespace-nowrap">
+                                    <form action="main.php?page=gestione_bacheche" method="post" class="inline-block">
+                                        <input type="hidden" name="id_record" value="<?= (int)$row['id_araldo'] ?>"/>
+                                        <input type="hidden" name="op" value="edit"/>
+                                        <button type="submit" class="inline-flex items-center justify-center w-8 h-8 rounded-md text-gdrcd-muted hover:bg-gdrcd-accent-soft hover:text-gdrcd-accent transition-colors"
+                                                title="<?= gdrcd_filter('out', $MESSAGE['interface']['administration']['ops']['edit']) ?>">
+                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                                        </button>
+                                    </form>
+                                    <form action="main.php?page=gestione_bacheche" method="post" class="inline-block"
+                                          onsubmit="return confirm('Eliminare questa bacheca e tutti i suoi messaggi?');">
+                                        <input type="hidden" name="id_record" value="<?= (int)$row['id_araldo'] ?>"/>
+                                        <input type="hidden" name="op" value="erase"/>
+                                        <button type="submit" class="inline-flex items-center justify-center w-8 h-8 rounded-md text-gdrcd-muted hover:bg-gdrcd-error-soft hover:text-gdrcd-error transition-colors"
+                                                title="<?= gdrcd_filter('out', $MESSAGE['interface']['administration']['ops']['erase']) ?>">
+                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3"/></svg>
+                                        </button>
+                                    </form>
                                 </td>
                             </tr>
-                            <!-- Record -->
-                            <?php while($row = gdrcd_query($result, 'fetch')) { ?>
-                                <tr>
-                                    <td class="casella_elemento">
-                                        <div class="elementi_elenco">
-                                            <?php echo gdrcd_filter('out', $row['nome']); ?>
-                                        </div>
-                                    </td>
-                                    <td class="casella_elemento">
-                                        <div class="elementi_elenco">
-                                            <?php echo gdrcd_filter('out', $MESSAGE['interface']['forums']['type'][$row['tipo']]); ?>
-                                        </div>
-                                    </td>
-                                    <!-- Icone dei controlli -->
-                                    <td class="casella_controlli">
-                                        <!-- Modifica -->
-                                        <div class="controlli_elenco">
-                                            <div class="controllo_elenco">
-                                                <form action="main.php?page=gestione_bacheche" method="post">
-                                                    <input type="hidden" name="id_record" value="<?php echo $row['id_araldo'] ?>" />
-                                                    <input type="hidden" name="op" value="edit" />
-                                                    <input type="image" src="imgs/icons/edit.png" alt="<?php echo gdrcd_filter('out', $MESSAGE['interface']['administration']['ops']['edit']); ?>" title="<?php echo gdrcd_filter('out', $MESSAGE['interface']['administration']['ops']['edit']); ?>" />
-                                                </form>
-                                            </div>
-                                            <!-- Elimina -->
-                                            <div class="controllo_elenco">
-                                                <form action="main.php?page=gestione_bacheche" method="post">
-                                                    <input type="hidden" name="id_record" value="<?php echo $row['id_araldo'] ?>" />
-                                                    <input type="hidden" name="op" value="erase" />
-                                                    <input type="image" src="imgs/icons/erase.png" alt="<?php echo gdrcd_filter('out', $MESSAGE['interface']['administration']['ops']['erase']); ?>" title="<?php echo gdrcd_filter('out', $MESSAGE['interface']['administration']['ops']['erase']); ?>" />
-                                                </form>
-                                            </div>
-                                        </div>
-                                    </td>
-                                </tr>
-                            <?php
-                            } //while
-                            gdrcd_query($result, 'free');
-                            ?>
-                        </table>
-                    </div>
-                <?php
-                }//if
-                ?>
-                <!-- Paginatore elenco -->
-                <div class="pager">
-                    <?php if($totaleresults > $PARAMETERS['settings']['records_per_page']) {
-                        echo gdrcd_filter('out', $MESSAGE['interface']['pager']['pages_name']);
-                        for($i = 0; $i <= floor($totaleresults / $PARAMETERS['settings']['records_per_page']); $i++) {
-                            if($i != gdrcd_filter('num', $_REQUEST['offset'])) { ?>
-                                <a href="main.php?page=gestione_bacheche&offset=<?php echo $i; ?>">
-                                    <?php echo $i + 1; ?>
-                                </a>
-                            <?php
-                            } else {
-                                echo ' '.($i + 1).' ';
-                            }
-                        } //for
-                    }//if
-                    ?>
-                </div>
-                <!-- link crea nuovo -->
-                <div class="link_back">
-                    <a href="main.php?page=gestione_bacheche&op=new">
-                        <?php echo gdrcd_filter('out', $MESSAGE['interface']['administration']['forums']['link']['new']); ?>
-                    </a>
-                </div>
-            <?php
-            }//else
-            ?>
-        </div><!-- panels_box -->
-    <?php
-    }//else (controllo permessi utente) ?>
-</div><!-- pagina -->
+                        <?php endwhile;
+                        gdrcd_query($result, 'free');
+                        ?>
+                    </tbody>
+                </table>
+            </div>
+
+            <?php if ($totaleresults > $per_page): ?>
+                <nav class="gdrcd-pager" aria-label="Paginazione">
+                    <span class="gdrcd-pager-label !border-0 !bg-transparent">
+                        <?= gdrcd_filter('out', $MESSAGE['interface']['pager']['pages_name']) ?>
+                    </span>
+                    <?php $pages = (int)floor($totaleresults / $per_page);
+                    for ($i = 0; $i <= $pages; $i++):
+                        if ($i === $offset): ?>
+                            <span class="is-current" aria-current="page"><?= $i + 1 ?></span>
+                        <?php else:
+                            $url = 'main.php?' . http_build_query([
+                                'page' => 'gestione_bacheche', 'offset' => $i,
+                            ]); ?>
+                            <a href="<?= htmlspecialchars($url) ?>"><?= $i + 1 ?></a>
+                        <?php endif;
+                    endfor; ?>
+                </nav>
+            <?php endif; ?>
+        <?php endif; ?>
+
+    <?php endif; ?>
+
+</div>
