@@ -470,32 +470,19 @@ if((gdrcd_filter_get($_REQUEST['chat']) == 'yes') && (empty($_SESSION['login']) 
 } ?> >
 <?php
 if(gdrcd_filter('get', $_REQUEST['chat']) == 'yes') {
+    // L'iniezione legacy via innerHTML += causava duplicati con il polling JS
+    // (includes/chat.js dedupa via data-msg-id, ma innerHTML+= bypassa il check).
+    // Ora: il rendering nuovi messaggi è interamente delegato a chat.js.
+    // Qui forziamo solo una poll immediata e resettiamo il form.
     echo '<script type="text/javascript"> function echoChat(){';
-    /** * Gestione dell'ordinamento
-     * @author Blancks
-     */
-    if($PARAMETERS['mode']['chat_from_bottom'] == 'OFF') {
-        echo 'parent.document.getElementById(\'pagina_chat\').innerHTML+= '.json_encode((string) $add_chat).';';
-        echo 'scrolling = parent.document.getElementById(\'pagina_chat\').scrollHeight;';
-    } elseif($PARAMETERS['mode']['chat_from_bottom'] == 'ON') {
-        echo 'parent.document.getElementById(\'pagina_chat\').innerHTML= '.json_encode((string) $add_chat).'+parent.document.getElementById(\'pagina_chat\').innerHTML;';
-        echo 'scrolling = 0;';
-    }
-    /** * Gestione intelligente della scrollbar
-     * Forza lo scroll solo quando ci sono nuovi messaggi
-     * @author Blancks
-     */
-    if( ! empty($add_chat)) {
-        echo 'parent.document.getElementById(\'pagina_chat\').scrollTop = scrolling;';
-    }
+    echo 'try { if (parent.window.GDRCDChat && typeof parent.window.GDRCDChat.pollNow === "function") parent.window.GDRCDChat.pollNow(); } catch (e) {}';
 
     if((gdrcd_filter('get', $_POST['op']) == 'take_action') || (gdrcd_filter('get', $_POST['op']) == 'new_chat_message')) {
         if($PARAMETERS['mode']['skillsystem'] == 'ON') {
-            echo 'parent.document.getElementById(\'chat_form_actions\').reset();';
+            echo 'try { parent.document.getElementById(\'chat_form_actions\').reset(); } catch (e) {}';
         }
-        echo 'parent.document.getElementById(\'chat_form_messages\').reset();
-                parent.document.getElementById(\'chat_form_messages\').elements["tag"].value=\''.$_SESSION["tag"].'\';';
-    }//if
+        echo 'try { var f = parent.document.getElementById(\'chat_form_messages\'); if (f) { f.reset(); if (f.elements["tag"]) f.elements["tag"].value = '.json_encode((string)($_SESSION['tag'] ?? '')).'; } } catch (e) {}';
+    }
     echo '}</script>';
 }
 
