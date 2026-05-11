@@ -270,8 +270,9 @@ Pagine attualmente con CSS custom da `themes/<theme>/...` saranno rimpiazzate gr
 4. ✅ `pages/homepage/user_razze.inc.php` + `pages/user_razze.inc.php` (grid card razze + bonus badge)
 5. ✅ `pages/mappaclick.inc.php` (mappa cliccabile + vicinato + pannello master mobile/meteo)
 6. ✅ App shell loggato: `header.inc.php` (no più CSS legacy), `layouts/left-right_frames.php` (topbar + sidebar 3-col), `gdrcd_controllo_sessione` (schermata sessione scaduta)
-7. ⏳ Side widget modules: `info_location`, `frame_messages`, `frame_forum`, `link_menu`, `frame_presenti` — wrappati in `gdrcd-widget` ma markup interno ancora legacy
-8. ⏳ `login.php` / `protezione.php`
+7. ✅ `pages/gestione.inc.php` (pannello admin a blocchi per categoria con card grid)
+8. ⏳ Side widget modules: `info_location`, `frame_messages`, `frame_forum`, `link_menu`, `frame_presenti` — wrappati in `gdrcd-widget` ma markup interno ancora legacy
+9. ⏳ `login.php` / `protezione.php`
 4. ⏳ Layout principale (`layouts/`)
 5. ⏳ Scheda personaggio
 6. ⏳ Chat
