@@ -201,6 +201,65 @@ function gdrcd_stmt($sql, $binds = array())
 
 
 /**
+ * Helper idiomatici per la nuova API Db::*.
+ *
+ * Forniscono short-call procedurali ai metodi statici di Db, utili per
+ * il codice nuovo senza rompere il vecchio (gdrcd_query() resta com'e').
+ * Vedi includes/Db.class.php per documentazione completa.
+ */
+
+/**
+ * Esegue una SELECT e ritorna la prima riga associativa, o null.
+ * @param string $sql
+ * @return array|null
+ */
+function gdrcd_db_fetch($sql)
+{
+    return Db::fetch($sql);
+}
+
+/**
+ * Esegue una SELECT e ritorna tutte le righe associative.
+ * @param string $sql
+ * @return array
+ */
+function gdrcd_db_all($sql)
+{
+    return Db::fetchAll($sql);
+}
+
+/**
+ * Esegue una SELECT e ritorna il primo valore della prima riga.
+ * @param string $sql
+ * @return mixed|null
+ */
+function gdrcd_db_value($sql)
+{
+    return Db::value($sql);
+}
+
+/**
+ * Esegue INSERT/UPDATE/DELETE; ritorna bool successo.
+ * @param string $sql
+ * @return bool
+ */
+function gdrcd_db_exec($sql)
+{
+    return Db::execute($sql);
+}
+
+/**
+ * Escape sicuro di una stringa per query SQL.
+ * @param string $v
+ * @return string
+ */
+function gdrcd_db_escape($v)
+{
+    return Db::escape((string)$v);
+}
+
+
+/**
  * Funzione di recupero delle colonne e della loro dichiarazione della tabella specificata.
  * Si usa per la verifica dell'aggiornamento db da vecchie versioni di gdrcd5
  * @param string $table : il nome della tabella da controllare
