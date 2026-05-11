@@ -83,7 +83,21 @@ $moon = (defined('MOON') && MOON) ? gdrcd_lunar_phase() : null;
         <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a2 2 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
         <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
     </svg>
-    <span class="truncate"><?= gdrcd_filter('out', $nome_luogo) ?></span>
+    <span class="truncate flex-1"><?= gdrcd_filter('out', $nome_luogo) ?></span>
+    <?php if ((int)($_SESSION['luogo'] ?? 0) > 0 && $record_exists > 0): ?>
+        <button type="button"
+                class="gdrcd-favorite-toggle ml-auto inline-flex items-center justify-center w-6 h-6 rounded-md text-gdrcd-muted hover:text-yellow-500 hover:bg-gdrcd-panel-alt transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-gdrcd-accent-ring"
+                data-favorite-id="<?= (int)$_SESSION['luogo'] ?>"
+                data-favorite-name="<?= htmlspecialchars($nome_luogo, ENT_QUOTES, 'UTF-8') ?>"
+                data-favorite-map="<?= (int)($_SESSION['mappa'] ?? 0) ?>"
+                aria-label="Aggiungi ai preferiti"
+                aria-pressed="false"
+                title="Aggiungi ai preferiti">
+            <svg class="gdrcd-favorite-icon w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.715 5.276a1 1 0 00.951.69h5.547c.969 0 1.371 1.24.588 1.81l-4.488 3.26a1 1 0 00-.364 1.118l1.716 5.276c.3.921-.755 1.688-1.539 1.118l-4.488-3.26a1 1 0 00-1.176 0l-4.488 3.26c-.783.57-1.838-.197-1.538-1.118l1.715-5.276a1 1 0 00-.364-1.118l-4.488-3.26c-.783-.57-.38-1.81.588-1.81h5.547a1 1 0 00.95-.69l1.716-5.276z"/>
+            </svg>
+        </button>
+    <?php endif; ?>
 </div>
 
 <?php if (!($record_exists > 0 || ($_SESSION['luogo'] ?? 0) == -1)): ?>

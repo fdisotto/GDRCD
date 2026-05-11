@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+#
+# gdrcd-cron-backup - thin wrapper around gdrcd-backup for cron.
+#
+# Runs a normal backup then prunes archives older than RETENTION_DAYS
+# (default 14). Designed to be invoked daily, e.g.:
+#
+#   0 4 * * * cd /var/www/html && bin/gdrcd-cron-backup >> logs/backup.log 2>&1
+#
+# Environment overrides:
+#   GDRCD_BACKUP_DIR        target directory (default: <repo>/backups)
+#   GDRCD_BACKUP_RETENTION  retention in days (default: 14)
+#
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
+OUT_DIR="${GDRCD_BACKUP_DIR:-${ROOT_DIR}/backups}"
+RETENTION="${GDRCD_BACKUP_RETENTION:-14}"
+
+ts() { date +'%Y-%m-%d %H:%M:%S'; }
+log() { printf '[%s] gdrcd-cron-backup: %s\n' "$(ts)" "$*"; }
+
+log "starting (out=${OUT_DIR}, retention=${RETENTION}d)"
+mkdir -p "${OUT_DIR}"
+
+if ! "${SCRIPT_DIR}/gdrcd-backup" --out="${OUT_DIR}" --quiet; then
+    log "ERROR: backup failed (exit $?)"
+    exit 1
+fi
+
+# Prune old archives. We only touch files matching the gdrcd-*.tar.gz
+# pattern so a stray file in the directory survives.
+PRUNED=0
+while IFS= read -r -d '' f; do
+    rm -f -- "${f}"
+    log "pruned $(basename "${f}")"
+    PRUNED=$((PRUNED + 1))
+done < <(find "${OUT_DIR}" -maxdepth 1 -type f \
+            -name 'gdrcd-*.tar.gz' \
+            -mtime "+${RETENTION}" \
+            -print0)
+
+log "done (pruned ${PRUNED} old archive(s))"

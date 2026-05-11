@@ -21,7 +21,7 @@ $handleDBConnection = gdrcd_connect();
 
 
     # Recupero la giocata dall'id, dopo aver verificato che appartenga al pg
-    $check = gdrcd_query("SELECT mittente, stanza, data_inizio, data_fine FROM segnalazione_role WHERE id = " . gdrcd_filter('num', $_GET['id']) . " 
+    $check = gdrcd_query("SELECT mittente, stanza, data_inizio, data_fine FROM segnalazione_role WHERE id = " . gdrcd_filter('num', $_GET['id']) . "
         AND mittente = '" .gdrcd_filter('in', $_SESSION['login'] ). "'AND conclusa = 1 ", 'result');
     $num_check = gdrcd_query($check, 'num_rows');
     $check_f= gdrcd_query($check, 'fetch');
@@ -34,32 +34,44 @@ $handleDBConnection = gdrcd_connect();
     /*Query per caricamento dati dalla chat corrente, carica le azioni degli ultimi 240 min - 4 ore !! NON SALVA LE CHAT PRIVATE !!*/
 
 
-        $query = gdrcd_query("	SELECT chat.id, chat.imgs, chat.mittente, chat.destinatario, chat.tipo, chat.ora, 
+        $query = gdrcd_query("	SELECT chat.id, chat.imgs, chat.mittente, chat.destinatario, chat.tipo, chat.ora,
                                 chat.testo, personaggio.url_img_chat
                                 FROM chat
                                 INNER JOIN mappa ON mappa.id = chat.stanza
-                                LEFT JOIN personaggio ON personaggio.nome = chat.mittente 
-                                WHERE stanza = " . $check_f['stanza'] . " AND ora >= '" . gdrcd_filter('in', $check_f['data_inizio']) . "' 
-                                AND ora <= '" . gdrcd_filter('in', $check_f['data_fine']) . "' 
+                                LEFT JOIN personaggio ON personaggio.nome = chat.mittente
+                                WHERE stanza = " . $check_f['stanza'] . " AND ora >= '" . gdrcd_filter('in', $check_f['data_inizio']) . "'
+                                AND ora <= '" . gdrcd_filter('in', $check_f['data_fine']) . "'
                                 ORDER BY ora ". $typeOrder, 'result');
 
+    /* Registro per inlining immagini: ogni risorsa locale viene letta una sola volta
+       e referenziata nel markup tramite classe CSS. */
+    $__img_registry  = new GdrcdChatlogImageRegistry();
+    $__current_theme = isset($PARAMETERS['themes']['current_theme']) ? $PARAMETERS['themes']['current_theme'] : '';
+    $__avatar_w      = isset($PARAMETERS['settings']['chat_avatar']['width'])  ? (int)$PARAMETERS['settings']['chat_avatar']['width']  : 40;
+    $__avatar_h      = isset($PARAMETERS['settings']['chat_avatar']['height']) ? (int)$PARAMETERS['settings']['chat_avatar']['height'] : 40;
+    $__IMG_CSS_PLACEHOLDER = '/*__GDRCD_IMG_CSS__*/';
+
     /*Inizio a preparare il testo da inserire poi nel file da salvare.*/
-    $add_chat = '
-            <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-            "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-            <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="it" lang="it">
-            <head>
-            <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-            <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-            <link rel="shortcut icon" href="imgs/favicon.ico" type="image/gif" />
-            <link rel="stylesheet" href="' . $PARAMETERS['info']['site_url'] . '/css/homepage.css" type="text/css" />
-            <link rel="stylesheet" href="' . $PARAMETERS['info']['site_url'] . '/themes/' . $PARAMETERS['themes']['current_theme'] . '/main.css" type="text/css" />
-            <link rel="stylesheet" href="' . $PARAMETERS['info']['site_url'] . '/themes/' . $PARAMETERS['themes']['current_theme'] . '/chat.css" type="text/css" />
-            <link rel="stylesheet" href="' . $PARAMETERS['info']['site_url'] . '/layouts/' . $PARAMETERS['themes']['kind_of_layout'] . '_frames.php?css=true" type="text/css" />
-            </head>
-    
-            <body class="main_body" style="overflow:auto; text-align:justify;">
-            ';
+    $add_chat = '<!DOCTYPE html>
+<html xml:lang="it" lang="it">
+<head>
+<meta charset="utf-8" />
+<title>Log giocata &mdash; ' . htmlspecialchars($PARAMETERS['info']['site_name']) . '</title>
+<style>
+' . gdrcd_chatlog_inline_css() . '
+' . $__IMG_CSS_PLACEHOLDER . '
+</style>
+</head>
+<body>
+<div class="wrap">
+' . gdrcd_chatlog_header_html(
+            $PARAMETERS['info']['site_name'],
+            isset($_SESSION['login']) ? $_SESSION['login'] : '',
+            !empty($check_f['data_inizio']) ? date('d/m/Y H:i', strtotime($check_f['data_inizio'])) : null,
+            !empty($check_f['data_fine'])   ? date('d/m/Y H:i', strtotime($check_f['data_fine']))   : null
+        ) . '
+<div class="chatlog-body">
+';
 
 
     $i = 0;
@@ -83,6 +95,8 @@ $handleDBConnection = gdrcd_connect();
             $add_icon .= '<span class="chat_icons">';
 
             $icone_chat = explode(";", gdrcd_filter('out', $row['imgs']));
+            $icona_razza  = isset($icone_chat[1]) ? $icone_chat[1] : '';
+            $icona_sesso  = isset($icone_chat[0]) ? $icone_chat[0] : '';
 
             /*Aggiunta per rendere utilizzabile la chat anche in mancanza dell'installazione della patch Icone Chat
             * Save Chat HTML 1.3
@@ -90,12 +104,15 @@ $handleDBConnection = gdrcd_connect();
             */
             if (isset($PARAMETERS['settings']['chat']['guilds'])) {
 
-                if ($PARAMETERS['settings']['chat']['race'] == 'ON') {
-                    $add_icon .= '<img class="presenti_ico"
-                     src="' . $PARAMETERS['info']['site_url'] . '/themes/' . $PARAMETERS['themes']['current_theme'] . '/imgs/icons/races/' . $icone_chat[1] . '">';
+                if ($PARAMETERS['settings']['chat']['race'] == 'ON' && $icona_razza !== '') {
+                    $add_icon .= $__img_registry->iconTag(
+                        'themes/' . $__current_theme . '/imgs/races/' . $icona_razza
+                    );
                 }
-                if ($PARAMETERS['settings']['chat']['gender'] == 'ON') {
-                    $add_icon .= '<img class="presenti_ico" src="' . $PARAMETERS['info']['site_url'] . '/imgs/icons/testamini' . $icone_chat[0] . '.png">';
+                if ($PARAMETERS['settings']['chat']['gender'] == 'ON' && $icona_sesso !== '') {
+                    $add_icon .= $__img_registry->iconTag(
+                        'imgs/icons/testamini' . $icona_sesso . '.png'
+                    );
                 }
                 if ($PARAMETERS['settings']['chat']['guilds'] == 'ON') {
 
@@ -106,16 +123,16 @@ $handleDBConnection = gdrcd_connect();
                     if (gdrcd_query($result_ruoli, 'num_rows') > 0) {
                         while ($ruoli = gdrcd_query($result_ruoli, 'fetch')) {
                             $gilde++;
-                            $add_icon .= '<img class="presenti_ico" src="' . $PARAMETERS['info']['site_url'] . '/themes/' .
-                                $PARAMETERS['themes']['current_theme'] . '/imgs/guilds/' . $ruoli['immagine'] . '" alt="' .
-                                gdrcd_filter('out',
-                                    $record3['nome_ruolo']) . '" title="' . gdrcd_filter('out',
-                                    $ruoli['nome_ruolo']) . '" />';
+                            $add_icon .= $__img_registry->iconTag(
+                                'themes/' . $__current_theme . '/imgs/guilds/' . $ruoli['immagine'],
+                                'presenti_ico',
+                                gdrcd_filter('out', $ruoli['nome_ruolo'])
+                            );
                         }
                     }
 
-                    for ($i = $PARAMETERS['settings']['guilds_limit']; $i > $gilde; $i--) {
-                        $add_icon .= '<img class="presenti_ico" src="' . $PARAMETERS['info']['site_url'] . '/imgs/icons/guilds/null.png" alt="" title="" />';
+                    for ($k = $PARAMETERS['settings']['guilds_limit']; $k > $gilde; $k--) {
+                        $add_icon .= $__img_registry->iconTag('imgs/icons/guilds/null.png');
                     }
                 }
             } else {
@@ -123,8 +140,16 @@ $handleDBConnection = gdrcd_connect();
                 * Save Chat HTML 1.3
                 *@author eLDiabolo
                 */
-                $add_icon .= '<img class="presenti_ico" src="' . $PARAMETERS['info']['site_url'] . '/themes/' . $PARAMETERS['themes']['current_theme'] . '/imgs/icons/races/' . $icone_chat[1] . '">';
-                $add_icon .= '<img class="presenti_ico" src="' . $PARAMETERS['info']['site_url'] . '/imgs/icons/testamini' . $icone_chat[0] . '.png">';
+                if ($icona_razza !== '') {
+                    $add_icon .= $__img_registry->iconTag(
+                        'themes/' . $__current_theme . '/imgs/races/' . $icona_razza
+                    );
+                }
+                if ($icona_sesso !== '') {
+                    $add_icon .= $__img_registry->iconTag(
+                        'imgs/icons/testamini' . $icona_sesso . '.png'
+                    );
+                }
             }
 
             /*Corretta la svista riportata nel pacchetto "Icone Chat v 1.1"
@@ -151,7 +176,7 @@ $handleDBConnection = gdrcd_connect();
                  * @author Blancks
                  */
                 if ($PARAMETERS['mode']['chat_avatar'] == 'ON' && !empty($row['url_img_chat'])) {
-                    $add_chat .= '<img src="' . htmlspecialchars($row['url_img_chat'], ENT_QUOTES) . '" class="chat_avatar" style="width:' . (int)$PARAMETERS['settings']['chat_avatar']['width'] . 'px; height:' . (int)$PARAMETERS['settings']['chat_avatar']['height'] . 'px;" />';
+                    $add_chat .= $__img_registry->avatarTag($row['url_img_chat'], $__avatar_w, $__avatar_h);
                 }
 
 
@@ -161,9 +186,8 @@ $handleDBConnection = gdrcd_connect();
                     $add_chat .= $add_icon;
                 }
 
-                $mittente_js   = htmlspecialchars(addslashes($row['mittente']), ENT_QUOTES);
                 $mittente_html = gdrcd_filter('out', $row['mittente']);
-                $add_chat .= '<span class="chat_name"><a href="#" onclick="Javascript: document.getElementById(\'tag\').value=\'' . $mittente_js . '\'; document.getElementById(\'type\')[2].selected = \'1\'; document.getElementById(\'message\').focus();">' . $mittente_html . '</a>';
+                $add_chat .= '<span class="chat_name"><a href="#">' . $mittente_html . '</a>';
 
                 if (empty ($row['destinatario']) === false) {
                     $add_chat .= '<span class="chat_tag"> [' . gdrcd_filter('out', $row['destinatario']) . ']</span>';
@@ -171,13 +195,6 @@ $handleDBConnection = gdrcd_connect();
 
                 $add_chat .= ': </span> ';
                 $add_chat .= '<span class="chat_msg">' . gdrcd_chatcolor(gdrcd_filter('out', $row['testo'])) . '</span>';
-
-                /**    * Fix problema visualizzazione spazi vuoti con i sussurri
-                 * @author eLDiabolo
-                 */
-                if ($PARAMETERS['mode']['chat_avatar'] == 'ON') {
-                    $add_chat .= '<br style="clear:both;" />';
-                }
 
                 $add_chat .= '</div>';
 
@@ -194,7 +211,7 @@ $handleDBConnection = gdrcd_connect();
                  * @author Blancks
                  */
                 if ($PARAMETERS['mode']['chat_avatar'] == 'ON' && !empty($row['url_img_chat'])) {
-                    $add_chat .= '<img src="' . htmlspecialchars($row['url_img_chat'], ENT_QUOTES) . '" class="chat_avatar" style="width:' . (int)$PARAMETERS['settings']['chat_avatar']['width'] . 'px; height:' . (int)$PARAMETERS['settings']['chat_avatar']['height'] . 'px;" />';
+                    $add_chat .= $__img_registry->avatarTag($row['url_img_chat'], $__avatar_w, $__avatar_h);
                 }
 
 
@@ -204,22 +221,14 @@ $handleDBConnection = gdrcd_connect();
                     $add_chat .= $add_icon;
                 }
 
-                $mittente_js   = htmlspecialchars(addslashes($row['mittente']), ENT_QUOTES);
                 $mittente_html = gdrcd_filter('out', $row['mittente']);
-                $add_chat .= '<span class="chat_name"><a href="#" onclick="Javascript: document.getElementById(\'tag\').value=\'' . $mittente_js . '\';  document.getElementById(\'type\')[2].selected = \'1\'; document.getElementById(\'message\').focus();">' . $mittente_html . '</a>';
+                $add_chat .= '<span class="chat_name"><a href="#">' . $mittente_html . '</a>';
 
                 if (empty ($row['destinatario']) === false) {
                     $add_chat .= '<span class="chat_tag"> [' . gdrcd_filter('out', $row['destinatario']) . ']</span>';
                 }
                 $add_chat .= '</span> ';
                 $add_chat .= '<span class="chat_msg">' . gdrcd_chatcolor(gdrcd_filter('out', $row['testo'])) . '</span>';
-
-                /**    * Fix problema visualizzazione spazi vuoti con i sussurri
-                 * @author eLDiabolo
-                 */
-                if ($PARAMETERS['mode']['chat_avatar'] == 'ON') {
-                    $add_chat .= '<br style="clear:both;" />';
-                }
 
                 $add_chat .= '</div>';
 
@@ -317,6 +326,8 @@ $handleDBConnection = gdrcd_connect();
                  */
                 $add_chat .= '<div class="chat_row_' . $row['tipo'] . '">';
 
+                /* Le immagini inviate in chat sono URL utente-forniti (spesso esterni):
+                   non vengono inlinate per non aumentare a dismisura il file generato. */
                 $add_chat .= '<img class="chat_img" src="' . gdrcd_filter('out', $row['testo']) . '" />';
 
                 /**    * Fix problema visualizzazione spazi vuoti con i sussurri
@@ -377,22 +388,24 @@ $handleDBConnection = gdrcd_connect();
         $add_chat .= '#stop#';
     }
     $add_chat .= '
-            </body>
-            </html>
-            ';
-    /* Scrivo tutto in un file di testo */
-    $start = gdrcd_format_datetime_cat($start_time);
-    $end = gdrcd_format_datetime_cat($end_time);
-    /* Scrivo tutto in un file di testo */
-    $file = $start . "-" . $end . "-" . $_SESSION['login'];
-    $rand = rand(1, 10000);
-    $file = md5($file . $rand);
-    $file = $file . ".html";
+</div>
+<div class="chatlog-footer">' . htmlspecialchars($PARAMETERS['info']['site_name']) . ' &middot; log autonomo (offline-ready)</div>
+</div>
+</body>
+</html>
+';
+
+    /* Sostituisce il segnaposto con le regole CSS background-image generate per
+       le immagini incorporate (ogni risorsa appare UNA volta nel file). */
+    $add_chat = str_replace($__IMG_CSS_PLACEHOLDER, $__img_registry->renderStyle(), $add_chat);
+
+    /* Nome file leggibile: chat-<personaggio>-<YYYYMMDD-HHMMSS>.html */
+    $file = gdrcd_chatlog_filename(isset($_SESSION['login']) ? $_SESSION['login'] : '');
 
 
         $fp = fopen($file, "wb");
         $message = str_replace("#stop#", "\r\n", $add_chat);
-        fwrite($fp, $message, 65536);
+        fwrite($fp, $message, strlen($message));
         fclose($fp);
 
         /* Do le informazioni di download */
@@ -424,4 +437,3 @@ $handleDBConnection = gdrcd_connect();
     }
 
 ?>
-

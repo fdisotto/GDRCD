@@ -182,3 +182,12 @@ node_modules/
 
 # Application logs (gdrcd_log_*)
 logs/
+
+# Backup archives prodotti da bin/gdrcd-backup
+backups/
+
+# Le regole generiche `bin/` e `bin` qui sopra (sezioni Eclipse / Python)
+# escludono per errore anche gli script di manutenzione GDRCD. Riammettiamo
+# esplicitamente la directory bin/ e i suoi file.
+!bin/
+!bin/*

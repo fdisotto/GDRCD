@@ -1,0 +1,231 @@
+#!/usr/bin/env bash
+#
+# gdrcd-backup - dump GDRCD database + uploaded assets to a single tarball.
+#
+# Usage:
+#   bin/gdrcd-backup [--out=DIR] [--name=PREFIX] [--quiet]
+#
+# Behaviour:
+#   * Resolves DB credentials via bin/gdrcd-backup-config.php (reads
+#     config.inc.php + includes/config-overrides.php).
+#   * If `docker` is available AND a container named `gdrcd-db` is running,
+#     mysqldump is executed inside that container; otherwise a local
+#     mysqldump binary is used.
+#   * Always emits a tar.gz containing db.sql, the relevant image folders
+#     (when present) and a manifest.json describing the dump.
+#
+set -euo pipefail
+
+# ----- defaults ------------------------------------------------------------
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
+OUT_DIR="${ROOT_DIR}/backups"
+NAME_PREFIX="gdrcd"
+QUIET=0
+
+# ----- arg parsing ---------------------------------------------------------
+
+for arg in "$@"; do
+    case "$arg" in
+        --out=*)   OUT_DIR="${arg#*=}" ;;
+        --name=*)  NAME_PREFIX="${arg#*=}" ;;
+        --quiet)   QUIET=1 ;;
+        -h|--help)
+            sed -n '2,12p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+            exit 0
+            ;;
+        *)
+            echo "gdrcd-backup: unknown argument '${arg}'" >&2
+            exit 64
+            ;;
+    esac
+done
+
+log() {
+    if [ "${QUIET}" -eq 0 ]; then
+        printf '[gdrcd-backup] %s\n' "$*"
+    fi
+}
+
+err() {
+    printf '[gdrcd-backup] ERROR: %s\n' "$*" >&2
+}
+
+# ----- prerequisites -------------------------------------------------------
+
+command -v php >/dev/null 2>&1 || { err "php is required"; exit 1; }
+command -v tar >/dev/null 2>&1 || { err "tar is required"; exit 1; }
+
+CONFIG_HELPER="${SCRIPT_DIR}/gdrcd-backup-config.php"
+[ -r "${CONFIG_HELPER}" ] || { err "missing ${CONFIG_HELPER}"; exit 1; }
+
+# Load DB_* / GDRCD_VERSION / CURRENT_THEME into the current shell.
+# shellcheck disable=SC1090
+eval "$(php "${CONFIG_HELPER}")"
+
+: "${DB_HOST:?missing DB_HOST}"
+: "${DB_USER:?missing DB_USER}"
+: "${DB_NAME:?missing DB_NAME}"
+DB_PASS="${DB_PASS:-}"
+GDRCD_VERSION="${GDRCD_VERSION:-unknown}"
+CURRENT_THEME="${CURRENT_THEME:-advanced}"
+
+# Detect docker + gdrcd-db container.
+USE_DOCKER=0
+if command -v docker >/dev/null 2>&1; then
+    if docker ps --format '{{.Names}}' 2>/dev/null | grep -qx 'gdrcd-db'; then
+        USE_DOCKER=1
+    fi
+fi
+
+if [ "${USE_DOCKER}" -eq 1 ]; then
+    log "DB source: docker container gdrcd-db"
+else
+    command -v mysqldump >/dev/null 2>&1 \
+        || { err "mysqldump not found and no gdrcd-db container running"; exit 1; }
+    log "DB source: local mysqldump (${DB_HOST})"
+fi
+
+# ----- workspace -----------------------------------------------------------
+
+mkdir -p "${OUT_DIR}"
+TS="$(date +%Y%m%d-%H%M%S)"
+STAGE="$(mktemp -d -t gdrcd-backup-XXXXXX)"
+trap 'rm -rf "${STAGE}"' EXIT
+
+ARCHIVE="${OUT_DIR}/${NAME_PREFIX}-${TS}.tar.gz"
+log "staging in ${STAGE}"
+
+# ----- DB dump -------------------------------------------------------------
+
+DUMP_FILE="${STAGE}/db.sql"
+
+# mysqldump flags we always want: structure + data + routines + triggers,
+# single-transaction for InnoDB consistency without locking the live site.
+DUMP_OPTS=(
+    --single-transaction
+    --quick
+    --routines
+    --triggers
+    --events
+    --add-drop-table
+    --default-character-set=utf8mb4
+)
+
+log "dumping database '${DB_NAME}'..."
+if [ "${USE_DOCKER}" -eq 1 ]; then
+    docker exec -i \
+        -e MYSQL_PWD="${DB_PASS}" \
+        gdrcd-db \
+        mysqldump -u"${DB_USER}" "${DUMP_OPTS[@]}" "${DB_NAME}" \
+        > "${DUMP_FILE}"
+else
+    MYSQL_PWD="${DB_PASS}" mysqldump \
+        -h "${DB_HOST}" \
+        -u "${DB_USER}" \
+        "${DUMP_OPTS[@]}" \
+        "${DB_NAME}" > "${DUMP_FILE}"
+fi
+
+DUMP_BYTES=$(wc -c < "${DUMP_FILE}")
+log "  -> $(printf '%s' "${DUMP_BYTES}") bytes"
+
+# ----- copy assets ---------------------------------------------------------
+
+# Paths to back up, relative to ROOT_DIR.  Missing dirs are silently skipped.
+ASSET_PATHS=(
+    "imgs/items"
+    "imgs/avatars"
+    "themes/${CURRENT_THEME}/imgs/items"
+    "themes/${CURRENT_THEME}/imgs/locations"
+    "themes/${CURRENT_THEME}/imgs/races"
+    "themes/${CURRENT_THEME}/imgs/guilds"
+)
+
+INCLUDED_PATHS=()
+for rel in "${ASSET_PATHS[@]}"; do
+    src="${ROOT_DIR}/${rel}"
+    if [ -d "${src}" ]; then
+        dst="${STAGE}/${rel}"
+        mkdir -p "$(dirname "${dst}")"
+        # cp -a preserves perms/symlinks; safer than rsync for portability.
+        cp -a "${src}" "${dst}"
+        INCLUDED_PATHS+=("${rel}")
+        log "  + ${rel}"
+    else
+        log "  - ${rel} (missing, skipped)"
+    fi
+done
+
+# ----- manifest.json -------------------------------------------------------
+
+GIT_HASH=""
+if command -v git >/dev/null 2>&1 && [ -d "${ROOT_DIR}/.git" ]; then
+    GIT_HASH="$(git -C "${ROOT_DIR}" rev-parse --short HEAD 2>/dev/null || true)"
+fi
+
+manifest_file="${STAGE}/manifest.json"
+
+# Build the JSON in PHP for proper escaping; cheaper than rolling our own.
+php -- "${manifest_file}" "${TS}" "${GDRCD_VERSION}" "${GIT_HASH}" "${CURRENT_THEME}" "${DB_NAME}" "${DUMP_BYTES}" "${STAGE}" "${INCLUDED_PATHS[@]:-}" <<'PHP'
+<?php
+$out      = $argv[1];
+$ts       = $argv[2];
+$version  = $argv[3];
+$git      = $argv[4];
+$theme    = $argv[5];
+$dbName   = $argv[6];
+$dumpSize = (int)$argv[7];
+$stage    = $argv[8];
+$paths    = array_slice($argv, 9);
+$paths    = array_values(array_filter($paths, static fn($p) => $p !== ''));
+
+$files = [
+    'db.sql' => $dumpSize,
+];
+foreach ($paths as $rel) {
+    $abs = $stage . '/' . $rel;
+    if (!is_dir($abs)) {
+        continue;
+    }
+    $total = 0;
+    $count = 0;
+    $it = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($abs, FilesystemIterator::SKIP_DOTS)
+    );
+    foreach ($it as $f) {
+        if ($f->isFile()) {
+            $total += $f->getSize();
+            $count++;
+        }
+    }
+    $files[$rel] = ['files' => $count, 'bytes' => $total];
+}
+
+$data = [
+    'tool'           => 'gdrcd-backup',
+    'format_version' => 1,
+    'created_at'     => $ts,
+    'created_at_iso' => gmdate('c'),
+    'gdrcd_version'  => $version,
+    'git'            => $git !== '' ? $git : null,
+    'theme'          => $theme,
+    'database'       => $dbName,
+    'contents'       => $files,
+];
+
+file_put_contents($out, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n");
+PHP
+
+# ----- archive -------------------------------------------------------------
+
+log "creating ${ARCHIVE}"
+tar -C "${STAGE}" -czf "${ARCHIVE}" .
+
+ARCHIVE_BYTES=$(wc -c < "${ARCHIVE}")
+log "done: ${ARCHIVE} (${ARCHIVE_BYTES} bytes)"
+
+# Final line on stdout = archive path, scripting-friendly.
+echo "${ARCHIVE}"

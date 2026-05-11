@@ -312,6 +312,101 @@ Per aggiungere una migrazione:
 
 ---
 
+## Backup & Restore
+
+GDRCD include in `bin/` un piccolo set di strumenti shell/PHP per
+salvare e ripristinare un'istanza completa (database + immagini caricate).
+Tutto resta scritto in bash + PHP, senza dipendenze Python/Node, e
+rileva automaticamente se sta girando dentro o fuori dai container
+Docker (cerca un container in esecuzione di nome `gdrcd-db`).
+
+### Cosa viene salvato
+
+Un archivio `backups/gdrcd-<YYYYMMDD-HHMMSS>.tar.gz` contenente:
+
+- `db.sql` — dump completo del database (mysqldump,
+  `--single-transaction --routines --triggers --events --add-drop-table`)
+- `imgs/items/` e `imgs/avatars/` (se presenti)
+- `themes/<current_theme>/imgs/{items,locations,races,guilds}/`
+- `manifest.json` — versione GDRCD, hash git, tema, lista file e dimensioni
+
+Le credenziali del DB e il tema corrente vengono letti caricando
+`config.inc.php` headlessly via `bin/gdrcd-backup-config.php`,
+rispettando anche le sovrascritture in `includes/config-overrides.php`
+(quindi le variabili d'ambiente Docker `GDRCD_DB_*`).
+
+### Backup on-demand
+
+```bash
+# Backup standard nella directory ./backups/
+bin/gdrcd-backup
+
+# Output personalizzato
+bin/gdrcd-backup --out=/var/backups/gdrcd --name=prod
+
+# Modalità silenziosa (utile per script): emette solo il path dell'archivio
+bin/gdrcd-backup --quiet
+```
+
+Esempio di output:
+
+```
+[gdrcd-backup] DB source: docker container gdrcd-db
+[gdrcd-backup] staging in /tmp/gdrcd-backup-0N1tZy
+[gdrcd-backup] dumping database 'gdrcd'...
+[gdrcd-backup]   -> 41556 bytes
+[gdrcd-backup]   + imgs/avatars
+[gdrcd-backup]   + themes/advanced/imgs/items
+[gdrcd-backup]   + themes/advanced/imgs/locations
+[gdrcd-backup]   + themes/advanced/imgs/races
+[gdrcd-backup]   + themes/advanced/imgs/guilds
+[gdrcd-backup] creating /home/.../backups/gdrcd-20260511-174328.tar.gz
+[gdrcd-backup] done: /home/.../backups/gdrcd-20260511-174328.tar.gz (70792 bytes)
+/home/.../backups/gdrcd-20260511-174328.tar.gz
+```
+
+### Restore
+
+```bash
+# Modalità interattiva: stampa il manifest e chiede conferma esplicita
+bin/gdrcd-restore backups/gdrcd-20260511-174328.tar.gz
+
+# Senza prompt (CI, recovery automatica)
+bin/gdrcd-restore backups/gdrcd-20260511-174328.tar.gz --yes
+
+# Solo database, lasciando intatti gli asset
+bin/gdrcd-restore backups/gdrcd-20260511-174328.tar.gz --yes --db-only
+
+# Solo file di immagini, senza toccare il DB
+bin/gdrcd-restore backups/gdrcd-20260511-174328.tar.gz --yes --files-only
+```
+
+Il restore stampa una riga per ciascuna immagine sovrascritta (`~ overwrite ...`)
+o creata ex-novo (`+ new ...`). Il DB viene ripristinato sfruttando
+le clausole `--add-drop-table` già presenti nel dump.
+
+### Backup pianificato
+
+Per una rotazione automatica esiste `bin/gdrcd-cron-backup`, che esegue un
+backup e poi rimuove gli archivi più vecchi di 14 giorni (configurabile
+via `GDRCD_BACKUP_RETENTION`). Esempio di crontab:
+
+```cron
+0 4 * * * cd /var/www/html && bin/gdrcd-cron-backup >> logs/backup.log 2>&1
+```
+
+### Limitazioni note
+
+- Solo un database alla volta (quello configurato in `config.inc.php`).
+- Nessun point-in-time recovery: il dump è un'istantanea logica.
+- Le directory `giocate/` (storico chat) e `logs/` non sono incluse:
+  vivono su volumi Docker dedicati e crescono indefinitamente.
+- Il restore sovrascrive immagini con lo stesso path; eventuali file
+  presenti solo sull'istanza live e non nel backup vengono **preservati**
+  (nessuna pulizia distruttiva).
+
+---
+
 ## Contribuire
 
 Le linee guida complete sono in [`CONTRIBUTING.md`](CONTRIBUTING.md).

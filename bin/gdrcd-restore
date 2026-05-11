@@ -1,0 +1,214 @@
+#!/usr/bin/env bash
+#
+# gdrcd-restore - restore a GDRCD archive produced by gdrcd-backup.
+#
+# Usage:
+#   bin/gdrcd-restore <archive.tar.gz> [--yes] [--db-only] [--files-only]
+#
+# Behaviour:
+#   * Extracts the archive into a temp dir.
+#   * Reads manifest.json and prints a comparison with the live install.
+#   * Restores the DB by piping db.sql into mysql (the dump already
+#     contains --add-drop-table, so existing tables are dropped and
+#     recreated).
+#   * Copies the image folders on top of the live tree, logging which
+#     destinations existed before (overwrites) and which were created fresh.
+#
+set -euo pipefail
+
+# ----- defaults ------------------------------------------------------------
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
+ARCHIVE=""
+ASSUME_YES=0
+DB_ONLY=0
+FILES_ONLY=0
+
+# ----- arg parsing ---------------------------------------------------------
+
+for arg in "$@"; do
+    case "$arg" in
+        --yes)        ASSUME_YES=1 ;;
+        --db-only)    DB_ONLY=1 ;;
+        --files-only) FILES_ONLY=1 ;;
+        -h|--help)
+            sed -n '2,14p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+            exit 0
+            ;;
+        --*)
+            echo "gdrcd-restore: unknown flag '${arg}'" >&2
+            exit 64
+            ;;
+        *)
+            if [ -z "${ARCHIVE}" ]; then
+                ARCHIVE="${arg}"
+            else
+                echo "gdrcd-restore: extra positional argument '${arg}'" >&2
+                exit 64
+            fi
+            ;;
+    esac
+done
+
+if [ -z "${ARCHIVE}" ]; then
+    echo "gdrcd-restore: archive path is required" >&2
+    echo "  see: $(basename "$0") --help" >&2
+    exit 64
+fi
+
+if [ "${DB_ONLY}" -eq 1 ] && [ "${FILES_ONLY}" -eq 1 ]; then
+    echo "gdrcd-restore: --db-only and --files-only are mutually exclusive" >&2
+    exit 64
+fi
+
+[ -r "${ARCHIVE}" ] || { echo "gdrcd-restore: cannot read ${ARCHIVE}" >&2; exit 1; }
+
+log() { printf '[gdrcd-restore] %s\n' "$*"; }
+err() { printf '[gdrcd-restore] ERROR: %s\n' "$*" >&2; }
+
+# ----- prerequisites -------------------------------------------------------
+
+command -v php >/dev/null 2>&1 || { err "php is required"; exit 1; }
+command -v tar >/dev/null 2>&1 || { err "tar is required"; exit 1; }
+
+CONFIG_HELPER="${SCRIPT_DIR}/gdrcd-backup-config.php"
+[ -r "${CONFIG_HELPER}" ] || { err "missing ${CONFIG_HELPER}"; exit 1; }
+
+# shellcheck disable=SC1090
+eval "$(php "${CONFIG_HELPER}")"
+
+: "${DB_HOST:?missing DB_HOST}"
+: "${DB_USER:?missing DB_USER}"
+: "${DB_NAME:?missing DB_NAME}"
+DB_PASS="${DB_PASS:-}"
+GDRCD_VERSION="${GDRCD_VERSION:-unknown}"
+
+USE_DOCKER=0
+if command -v docker >/dev/null 2>&1; then
+    if docker ps --format '{{.Names}}' 2>/dev/null | grep -qx 'gdrcd-db'; then
+        USE_DOCKER=1
+    fi
+fi
+
+# ----- extract -------------------------------------------------------------
+
+STAGE="$(mktemp -d -t gdrcd-restore-XXXXXX)"
+trap 'rm -rf "${STAGE}"' EXIT
+
+log "extracting ${ARCHIVE} -> ${STAGE}"
+tar -C "${STAGE}" -xzf "${ARCHIVE}"
+
+MANIFEST="${STAGE}/manifest.json"
+if [ ! -r "${MANIFEST}" ]; then
+    err "archive does not contain manifest.json (is it a gdrcd-backup file?)"
+    exit 2
+fi
+
+# ----- manifest comparison -------------------------------------------------
+
+log "manifest:"
+php -r '
+    $m = json_decode(file_get_contents($argv[1]), true);
+    if (!is_array($m)) { fwrite(STDERR, "invalid manifest\n"); exit(1); }
+    printf("  created_at    : %s\n", $m["created_at"]     ?? "?");
+    printf("  gdrcd_version : %s (backup) vs %s (live)\n",
+        $m["gdrcd_version"] ?? "?", $argv[2]);
+    printf("  theme         : %s\n", $m["theme"]          ?? "?");
+    printf("  database      : %s (backup) vs %s (live)\n",
+        $m["database"]      ?? "?", $argv[3]);
+    if (!empty($m["git"]))   printf("  git           : %s\n", $m["git"]);
+    if (!empty($m["contents"])) {
+        echo "  contents:\n";
+        foreach ($m["contents"] as $k => $v) {
+            if (is_array($v)) {
+                printf("    - %-40s %5d files, %d bytes\n", $k,
+                    $v["files"] ?? 0, $v["bytes"] ?? 0);
+            } else {
+                printf("    - %-40s %d bytes\n", $k, (int)$v);
+            }
+        }
+    }
+' "${MANIFEST}" "${GDRCD_VERSION}" "${DB_NAME}"
+
+# ----- confirmation --------------------------------------------------------
+
+if [ "${ASSUME_YES}" -ne 1 ]; then
+    cat <<EOF
+
+About to RESTORE on top of the live install:
+  root     : ${ROOT_DIR}
+  database : ${DB_NAME}@${DB_HOST}  ${USE_DOCKER:+(via docker gdrcd-db)}
+  mode     : $( [ "${DB_ONLY}" -eq 1 ] && echo db-only \
+             || ( [ "${FILES_ONLY}" -eq 1 ] && echo files-only \
+                  || echo "db + files" ) )
+
+This will DROP existing tables and OVERWRITE image files.
+EOF
+    printf "Type 'yes' to continue: "
+    read -r answer
+    if [ "${answer}" != "yes" ]; then
+        log "aborted by user"
+        exit 130
+    fi
+fi
+
+# ----- DB restore ----------------------------------------------------------
+
+if [ "${FILES_ONLY}" -ne 1 ]; then
+    DUMP="${STAGE}/db.sql"
+    if [ ! -r "${DUMP}" ]; then
+        err "db.sql not found in archive"
+        exit 2
+    fi
+    log "restoring database '${DB_NAME}'..."
+    if [ "${USE_DOCKER}" -eq 1 ]; then
+        docker exec -i \
+            -e MYSQL_PWD="${DB_PASS}" \
+            gdrcd-db \
+            mysql -u"${DB_USER}" "${DB_NAME}" < "${DUMP}"
+    else
+        command -v mysql >/dev/null 2>&1 \
+            || { err "mysql client not found and no gdrcd-db container running"; exit 1; }
+        MYSQL_PWD="${DB_PASS}" mysql \
+            -h "${DB_HOST}" \
+            -u "${DB_USER}" \
+            "${DB_NAME}" < "${DUMP}"
+    fi
+    log "  -> database restored"
+fi
+
+# ----- files restore -------------------------------------------------------
+
+if [ "${DB_ONLY}" -ne 1 ]; then
+    # Anything in STAGE except db.sql + manifest.json is a tree to drop in.
+    shopt -s nullglob
+    for entry in "${STAGE}"/*; do
+        base="$(basename "${entry}")"
+        case "${base}" in
+            db.sql|manifest.json) continue ;;
+        esac
+
+        # imgs/, themes/ -> copy contents into ROOT_DIR/...
+        # Walk the staged subtree to log overwrite vs new.
+        while IFS= read -r -d '' src; do
+            rel="${src#${STAGE}/}"
+            dst="${ROOT_DIR}/${rel}"
+            if [ -d "${src}" ]; then
+                mkdir -p "${dst}"
+            else
+                mkdir -p "$(dirname "${dst}")"
+                if [ -e "${dst}" ]; then
+                    log "  ~ overwrite ${rel}"
+                else
+                    log "  + new       ${rel}"
+                fi
+                cp -a "${src}" "${dst}"
+            fi
+        done < <(find "${entry}" -print0)
+    done
+    shopt -u nullglob
+fi
+
+log "restore complete"

@@ -457,4 +457,26 @@
     .gdrcd-login-inline input[type="password"],
     .gdrcd-login-inline select { @apply gdrcd-input min-w-[10rem]; }
     .gdrcd-login-inline input[type="submit"] { @apply gdrcd-btn-primary; }
+
+    /* ---------- Luoghi preferiti ---------- */
+    .gdrcd-favorite-toggle {
+        @apply inline-flex items-center justify-center w-6 h-6 rounded-md
+               text-gdrcd-muted hover:text-yellow-500 hover:bg-gdrcd-panel-alt
+               transition-colors focus:outline-none
+               focus-visible:ring-2 focus-visible:ring-gdrcd-accent-ring
+               dark:text-gdrcd-dark-muted dark:hover:bg-gdrcd-dark-panel-alt;
+    }
+    .gdrcd-favorite-toggle.is-favorite {
+        @apply text-yellow-500;
+    }
+    .gdrcd-favorite-toggle.is-favorite .gdrcd-favorite-icon {
+        fill: currentColor;
+    }
+    .gdrcd-favorite-pill {
+        @apply inline-flex items-center gap-1 px-2 py-1 rounded-full
+               border border-gdrcd-border bg-gdrcd-panel-alt text-[11px] text-gdrcd-text
+               hover:border-gdrcd-accent hover:bg-gdrcd-accent-soft transition-colors
+               dark:border-gdrcd-dark-border dark:bg-gdrcd-dark-panel-alt
+               dark:text-gdrcd-dark-text dark:hover:border-gdrcd-dark-accent;
+    }
 }

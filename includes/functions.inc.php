@@ -1294,3 +1294,262 @@ function gdrcd_login_attempts_cleanup($ip)
         }
     }
 }
+
+/**
+ * Converte un file immagine locale in una data URL base64.
+ * Usata per generare log di chat HTML autonomi (offline-friendly).
+ *
+ * @param string $localPath Percorso assoluto o relativo (rispetto alla root del progetto) al file immagine
+ * @return string Stringa "data:image/...;base64,..." oppure stringa vuota se il file non esiste/non è leggibile
+ */
+function gdrcd_inline_image($localPath)
+{
+    if (!is_string($localPath) || $localPath === '') {
+        return '';
+    }
+
+    // Rifiuta URL remoti: la funzione gestisce solo file locali.
+    if (preg_match('#^[a-z][a-z0-9+\-.]*://#i', $localPath)) {
+        return '';
+    }
+
+    // Risolve i percorsi relativi rispetto alla root del progetto (la cartella che contiene includes/).
+    $candidate = $localPath;
+    if (!@is_file($candidate)) {
+        $projectRoot = dirname(__DIR__);
+        $stripped    = ltrim($localPath, '/\\');
+        $candidate   = $projectRoot . DIRECTORY_SEPARATOR . $stripped;
+    }
+
+    if (!@is_file($candidate) || !@is_readable($candidate)) {
+        return '';
+    }
+
+    $data = @file_get_contents($candidate);
+    if ($data === false || $data === '') {
+        return '';
+    }
+
+    $ext  = strtolower(pathinfo($candidate, PATHINFO_EXTENSION));
+    $mime = 'application/octet-stream';
+    switch ($ext) {
+        case 'png':  $mime = 'image/png';     break;
+        case 'jpg':
+        case 'jpeg': $mime = 'image/jpeg';    break;
+        case 'gif':  $mime = 'image/gif';     break;
+        case 'webp': $mime = 'image/webp';    break;
+        case 'svg':  $mime = 'image/svg+xml'; break;
+        case 'bmp':  $mime = 'image/bmp';     break;
+        case 'ico':  $mime = 'image/x-icon';  break;
+    }
+
+    return 'data:' . $mime . ';base64,' . base64_encode($data);
+}
+
+/**
+ * Restituisce un blocco CSS condensato per i log di chat HTML autonomi (offline).
+ * Mantenuto inline anziché caricato da Tailwind output.css per ridurre la dimensione del file generato.
+ *
+ * @return string CSS, senza i tag <style>
+ */
+function gdrcd_chatlog_inline_css()
+{
+    return <<<CSS
+:root{
+    --bg:#f8f7f4;--panel:#ffffff;--border:#e5e0d4;
+    --text:#1f2937;--soft:#374151;--muted:#6b7280;--subtle:#9ca3af;
+    --accent:#a47e3b;--accent-soft:#f3ead4;--master:#8b5a1f;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--text);
+     font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;
+     line-height:1.55;font-size:14px;padding:24px}
+.wrap{max-width:920px;margin:0 auto;background:var(--panel);
+      border:1px solid var(--border);border-radius:12px;
+      box-shadow:0 1px 3px rgba(0,0,0,.06);overflow:hidden}
+.chatlog-header{padding:20px 24px;border-bottom:1px solid var(--border);
+                background:linear-gradient(180deg,#fbf7ee 0%,#ffffff 100%)}
+.chatlog-header h1{font-family:"Cinzel",Georgia,serif;margin:0 0 4px;
+                   font-size:22px;font-weight:700;color:var(--accent);letter-spacing:.3px}
+.chatlog-header .meta{font-size:12.5px;color:var(--muted);display:flex;
+                      flex-wrap:wrap;gap:14px;margin-top:8px}
+.chatlog-header .meta b{color:var(--soft);font-weight:600}
+.chatlog-body{padding:16px 24px 24px}
+[class^="chat_row_"]{padding:8px 0;border-bottom:1px solid var(--border);
+                     display:flex;flex-wrap:wrap;align-items:flex-start;gap:6px}
+[class^="chat_row_"]:last-child{border-bottom:0}
+.chat_avatar{width:40px;height:40px;border-radius:50%;
+             border:1px solid var(--border);flex-shrink:0;margin-right:4px;
+             background-size:cover;background-position:center;
+             vertical-align:middle;display:inline-block;object-fit:cover}
+.chat_time{font-size:12px;color:var(--muted);
+           font-variant-numeric:tabular-nums;flex-shrink:0;margin-top:2px;
+           font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.chat_name{font-weight:600;color:var(--accent);flex-shrink:0}
+.chat_name a{color:var(--accent);text-decoration:none;cursor:default}
+.chat_tag{font-size:12px;color:var(--muted)}
+.chat_msg{color:var(--soft);flex:1;min-width:0;word-wrap:break-word;overflow-wrap:anywhere}
+.chat_master{color:var(--master);font-weight:600;font-style:italic}
+.chat_icons{display:inline-flex;align-items:center;gap:4px;flex-shrink:0}
+.presenti_ico{width:16px;height:16px;border-radius:2px;vertical-align:middle;
+              background-size:contain;background-repeat:no-repeat;background-position:center;
+              display:inline-block}
+.chat_img{max-width:320px;border-radius:6px;border:1px solid var(--border)}
+.chat_row_A{font-style:italic}
+.chat_row_S{color:var(--muted);font-size:12.5px;font-style:italic}
+.chat_row_M{background:var(--accent-soft);padding:6px 12px;border-radius:6px;
+            border-bottom-color:var(--accent-soft)}
+.chat_row_I{justify-content:center}
+.chat_row_N .chat_name{color:var(--master)}
+.chatlog-footer{padding:12px 24px;border-top:1px solid var(--border);
+                font-size:11.5px;color:var(--subtle);text-align:center}
+@media print{body{padding:0;background:#fff}.wrap{box-shadow:none;border:0}}
+CSS;
+}
+
+/**
+ * Costruisce l'header HTML del log di chat autonomo.
+ *
+ * @param string $siteName     Nome del sito di gioco
+ * @param string $character    Nome del personaggio che ha generato il log
+ * @param string|null $rangeStart Data/ora di inizio intervallo (stringa formattata pronta per la stampa)
+ * @param string|null $rangeEnd   Data/ora di fine intervallo (stringa formattata pronta per la stampa)
+ * @return string Frammento HTML
+ */
+function gdrcd_chatlog_header_html($siteName, $character, $rangeStart = null, $rangeEnd = null)
+{
+    $generated = date('d/m/Y H:i');
+    $range = '';
+    if (!empty($rangeStart) && !empty($rangeEnd)) {
+        $range = '<span><b>Periodo:</b> ' . htmlspecialchars($rangeStart) . ' &rarr; ' . htmlspecialchars($rangeEnd) . '</span>';
+    } elseif (!empty($rangeStart)) {
+        $range = '<span><b>Dal:</b> ' . htmlspecialchars($rangeStart) . '</span>';
+    }
+
+    $character = $character !== '' ? htmlspecialchars($character) : '&mdash;';
+    $siteName  = htmlspecialchars($siteName);
+
+    return '<div class="chatlog-header">'
+        . '<h1>Log di chat</h1>'
+        . '<div class="meta">'
+        .   '<span><b>Sito:</b> ' . $siteName . '</span>'
+        .   '<span><b>Personaggio:</b> ' . $character . '</span>'
+        .   $range
+        .   '<span><b>Generato:</b> ' . $generated . '</span>'
+        . '</div>'
+        . '</div>';
+}
+
+/**
+ * Costruisce un nome file leggibile per i log di chat scaricati.
+ * Esempio: chat-Aragorn-20260511-153012.html
+ *
+ * @param string $character Nome del personaggio (può contenere caratteri non ASCII)
+ * @return string Nome file sanificato, senza directory
+ */
+function gdrcd_chatlog_filename($character)
+{
+    $safe = (string)$character;
+    // Sostituisce caratteri non alfanumerici (preserva lettere accentate semplici riducendole)
+    $safe = preg_replace('/[^A-Za-z0-9_\-]+/u', '_', $safe);
+    $safe = trim($safe, '_');
+    if ($safe === '') {
+        $safe = 'anon';
+    }
+    return 'chat-' . $safe . '-' . date('Ymd-His') . '.html';
+}
+
+/**
+ * Registro di immagini incorporate in un singolo log di chat.
+ * Ogni immagine locale viene letta UNA sola volta; nel markup viene emesso
+ * un <span class="..."> che fa riferimento a una classe CSS generata.
+ * Il blocco <style> con tutte le definizioni viene poi reso da render_style().
+ * Questo evita di duplicare lo stesso data URL base64 ad ogni riga della chat
+ * (riduce di ordini di grandezza le dimensioni del file generato).
+ */
+class GdrcdChatlogImageRegistry
+{
+    private $byPath = array();   // path -> classe CSS (o false se non inlinabile)
+    private $items  = array();   // classe CSS -> data URL
+    private $counter = 0;
+
+    /**
+     * Registra un'immagine locale e restituisce la classe CSS associata.
+     * @param string $localPath path relativo alla root del progetto (o assoluto)
+     * @return string Nome classe CSS, oppure stringa vuota se non incorporabile
+     */
+    public function register($localPath)
+    {
+        if (!is_string($localPath) || $localPath === '') {
+            return '';
+        }
+        if (array_key_exists($localPath, $this->byPath)) {
+            return $this->byPath[$localPath] === false ? '' : $this->byPath[$localPath];
+        }
+        $dataUrl = gdrcd_inline_image($localPath);
+        if ($dataUrl === '') {
+            $this->byPath[$localPath] = false;
+            return '';
+        }
+        $this->counter++;
+        $cls = 'gdrcd-img-' . $this->counter;
+        $this->byPath[$localPath] = $cls;
+        $this->items[$cls] = $dataUrl;
+        return $cls;
+    }
+
+    /**
+     * Markup per un'icona di chat (razza/genere/gilda) — usa <span> con
+     * background-image, ereditando la dimensione dalla classe extra passata.
+     */
+    public function iconTag($localPath, $extraClass = 'presenti_ico', $alt = '')
+    {
+        $cls = $this->register($localPath);
+        if ($cls === '') {
+            return '';
+        }
+        $extra = $extraClass !== '' ? ' ' . $extraClass : '';
+        $title = $alt !== '' ? ' title="' . htmlspecialchars($alt, ENT_QUOTES) . '"' : '';
+        return '<span class="' . $cls . $extra . '"' . $title . ' role="img" aria-label="' . htmlspecialchars($alt, ENT_QUOTES) . '"></span>';
+    }
+
+    /**
+     * Markup per un avatar di chat (40x40 default, oppure misure custom).
+     * Restituisce stringa vuota per URL esterni o file non leggibili.
+     */
+    public function avatarTag($urlImgChat, $width = null, $height = null)
+    {
+        if (empty($urlImgChat)) {
+            return '';
+        }
+        if (preg_match('#^[a-z][a-z0-9+\-.]*://#i', $urlImgChat)) {
+            return '';
+        }
+        $cls = $this->register($urlImgChat);
+        if ($cls === '') {
+            return '';
+        }
+        $style = '';
+        if ($width !== null && $height !== null) {
+            $style = ' style="width:' . (int)$width . 'px;height:' . (int)$height . 'px;"';
+        }
+        return '<span class="' . $cls . ' chat_avatar"' . $style . ' role="img" aria-label=""></span>';
+    }
+
+    /**
+     * Restituisce il blocco CSS con tutte le regole background-image per le
+     * immagini registrate. Va inserito dentro al tag <style> del log.
+     */
+    public function renderStyle()
+    {
+        if (empty($this->items)) {
+            return '';
+        }
+        $css = '';
+        foreach ($this->items as $cls => $url) {
+            $css .= '.' . $cls . '{background-image:url("' . $url . '");background-size:cover;background-position:center;display:inline-block}' . "\n";
+        }
+        return $css;
+    }
+}

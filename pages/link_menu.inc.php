@@ -45,6 +45,7 @@ $hovers = [];
 <?php endif; ?>
 
 <?php if (!empty($gotomap_list)): ?>
+    <div id="gdrcd-favorites" style="display:none"></div>
     <label class="block">
         <span class="text-[11px] uppercase tracking-wide text-gdrcd-text-soft font-display flex items-center gap-1 mb-1">
             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
