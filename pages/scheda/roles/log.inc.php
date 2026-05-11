@@ -53,22 +53,31 @@ $query = gdrcd_query(
 $num = gdrcd_query($query, 'num_rows');
 ?>
 
-<article class="gdrcd-card space-y-3">
-    <header class="flex flex-wrap items-center justify-between gap-2 border-b border-gdrcd-border pb-3">
-        <div>
-            <h3 class="font-display text-lg text-gdrcd-accent"><?= htmlspecialchars($r_nam['nome'] ?? '') ?></h3>
-            <p class="text-sm text-gdrcd-text-soft tabular-nums">
-                <?= gdrcd_filter('out', gdrcd_format_date($check_f['data_inizio'])) ?>
-                · <?= gdrcd_format_time($check_f['data_inizio']) ?> – <?= gdrcd_format_time($check_f['data_fine']) ?>
-            </p>
+<article class="gdrcd-card overflow-hidden">
+    <header class="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-gdrcd-border bg-gdrcd-panel-alt/30">
+        <div class="flex items-center gap-3">
+            <span class="inline-flex items-center justify-center w-10 h-10 rounded-md bg-gdrcd-accent-soft text-gdrcd-accent shrink-0">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
+            </span>
+            <div>
+                <h3 class="font-display text-lg text-gdrcd-accent"><?= htmlspecialchars($r_nam['nome'] ?? '') ?></h3>
+                <p class="text-xs text-gdrcd-text-soft tabular-nums">
+                    <?= gdrcd_filter('out', gdrcd_format_date($check_f['data_inizio'])) ?>
+                    · <?= gdrcd_format_time($check_f['data_inizio']) ?> – <?= gdrcd_format_time($check_f['data_fine']) ?>
+                </p>
+            </div>
         </div>
-        <span class="gdrcd-badge-accent tabular-nums"><?= $num ?> messagg<?= $num === 1 ? 'io' : 'i' ?></span>
+        <span class="gdrcd-badge-accent tabular-nums whitespace-nowrap"><?= $num ?> messagg<?= $num === 1 ? 'io' : 'i' ?></span>
     </header>
 
     <?php if ($num == 0): ?>
-        <div class="text-center text-gdrcd-text-soft py-4">Nessun record disponibile.</div>
+        <div class="text-center text-gdrcd-text-soft py-8">
+            <svg class="w-12 h-12 mx-auto text-gdrcd-subtle/50 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+            </svg>
+            <div>Nessun messaggio disponibile in questo intervallo.</div>
     <?php else: ?>
-        <div id="pagina_chat" class="log_roles space-y-1">
+        <div id="pagina_chat" class="log_roles space-y-1 p-4">
         <?php
         $add_chat = '';
         while ($row = gdrcd_query($query, 'fetch')) {

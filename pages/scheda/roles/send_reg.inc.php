@@ -20,16 +20,24 @@ if ($_REQUEST['pg'] != $_SESSION['login']) {
     return;
 }
 
-$date_a = gdrcd_filter('num', $_POST['anno']) . '-'
-    . sprintf('%02d', gdrcd_filter('num', $_POST['month_a'])) . '-'
-    . sprintf('%02d', gdrcd_filter('num', $_POST['day_a'])) . ' '
-    . sprintf('%02d', gdrcd_filter('num', $_POST['hour_a'])) . ':'
-    . sprintf('%02d', gdrcd_filter('num', $_POST['minut_a'])) . ':00';
-$date_b = gdrcd_filter('num', $_POST['anno']) . '-'
-    . sprintf('%02d', gdrcd_filter('num', $_POST['month_b'])) . '-'
-    . sprintf('%02d', gdrcd_filter('num', $_POST['day_b'])) . ' '
-    . sprintf('%02d', gdrcd_filter('num', $_POST['hour_b'])) . ':'
-    . sprintf('%02d', gdrcd_filter('num', $_POST['minut_b'])) . ':00';
+// Supporta formato datetime-local moderno (preferito) oppure campi separati legacy.
+$parse_dt = function ($key_dt, $prefix) {
+    if (!empty($_POST[$key_dt])) {
+        $dt = str_replace('T', ' ', trim((string)$_POST[$key_dt]));
+        $ts = strtotime($dt);
+        if ($ts !== false) {
+            return date('Y-m-d H:i:s', $ts);
+        }
+    }
+    // Fallback campi separati
+    return gdrcd_filter('num', $_POST['anno'] ?? 0) . '-'
+         . sprintf('%02d', gdrcd_filter('num', $_POST['month_' . $prefix] ?? 0)) . '-'
+         . sprintf('%02d', gdrcd_filter('num', $_POST['day_' . $prefix] ?? 0)) . ' '
+         . sprintf('%02d', gdrcd_filter('num', $_POST['hour_' . $prefix] ?? 0)) . ':'
+         . sprintf('%02d', gdrcd_filter('num', $_POST['minut_' . $prefix] ?? 0)) . ':00';
+};
+$date_a = $parse_dt('dt_a', 'a');
+$date_b = $parse_dt('dt_b', 'b');
 
 $luogo_id = gdrcd_filter('num', $_POST['luogo']);
 $pg_in    = gdrcd_filter('in', $_REQUEST['pg']);

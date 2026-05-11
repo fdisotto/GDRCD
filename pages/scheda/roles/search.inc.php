@@ -41,13 +41,18 @@ $render_back = function () use ($pg_url, $MESSAGE) { ?>
 <?php };
 ?>
 
-<div class="gdrcd-card flex flex-wrap items-center justify-between gap-2">
-    <div>
-        <div class="font-display text-base text-gdrcd-text">Ricerca giocate</div>
-        <p class="text-sm text-gdrcd-text-soft">
-            Per <strong><?= htmlspecialchars($label) ?></strong>:
-            <span class="text-gdrcd-accent">«<?= gdrcd_filter('out', $search) ?>»</span>
-        </p>
+<div class="gdrcd-card p-4 flex flex-wrap items-center justify-between gap-3">
+    <div class="flex items-center gap-3">
+        <span class="inline-flex items-center justify-center w-10 h-10 rounded-md bg-gdrcd-accent-soft text-gdrcd-accent">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z"/></svg>
+        </span>
+        <div>
+            <div class="font-display text-base text-gdrcd-text">Ricerca giocate</div>
+            <p class="text-xs text-gdrcd-text-soft">
+                Per <strong><?= htmlspecialchars($label) ?></strong>:
+                <span class="text-gdrcd-accent">«<?= gdrcd_filter('out', $search) ?>»</span>
+            </p>
+        </div>
     </div>
     <span class="gdrcd-badge-accent tabular-nums"><?= $totale ?> risultat<?= $totale === 1 ? 'o' : 'i' ?></span>
 </div>
@@ -90,24 +95,25 @@ while ($ry = gdrcd_query($year_res, 'fetch')):
         $any = true;
         ob_start();
         ?>
-        <article class="gdrcd-card">
-            <header class="flex items-center justify-between border-b border-gdrcd-border pb-2 mb-3">
-                <h4 class="font-display text-lg text-gdrcd-accent"><?= $mesi[$m] ?? $m ?> <?= $y ?></h4>
-                <span class="text-sm text-gdrcd-text-soft tabular-nums"><?= $num ?> giocat<?= $num === 1 ? 'a' : 'e' ?></span>
+        <article class="gdrcd-card overflow-hidden">
+            <header class="flex items-center justify-between gap-3 px-4 py-3 border-b border-gdrcd-border bg-gdrcd-panel-alt/30">
+                <h4 class="font-display text-lg text-gdrcd-accent flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3M3 11h18M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                    <?= $mesi[$m] ?? $m ?> <?= $y ?>
+                </h4>
+                <span class="text-xs text-gdrcd-text-soft tabular-nums"><?= $num ?> giocat<?= $num === 1 ? 'a' : 'e' ?></span>
             </header>
             <div class="overflow-x-auto">
                 <table class="gdrcd-table">
                     <thead>
                         <tr>
                             <th>Data</th>
-                            <th>Inizio</th>
-                            <th>Fine</th>
-                            <th>Partecipanti</th>
-                            <th class="tabular-nums">Azioni</th>
                             <th>Chat</th>
+                            <th>Partecipanti</th>
+                            <th class="tabular-nums">Az.</th>
                             <th>Tag</th>
                             <th>Note quest</th>
-                            <th class="text-right">Log</th>
+                            <th class="text-right">Azioni</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -127,25 +133,45 @@ while ($ry = gdrcd_query($year_res, 'fetch')):
                             'result'
                         );
                         $num_az = gdrcd_query($az_r, 'num_rows');
-                        $parts = explode(',', $row['partecipanti']);
-                        $listapart = htmlspecialchars(implode(', ', $parts));
+                        $parts = array_filter(array_map('trim', explode(',', $row['partecipanti'])));
                         $can_log = ($pg == $_SESSION['login']) || ($_SESSION['permessi'] >= MODERATOR);
                     ?>
                         <tr>
-                            <td class="whitespace-nowrap text-sm"><?= gdrcd_filter('out', gdrcd_format_date($row['data_inizio'])) ?></td>
-                            <td class="tabular-nums text-sm"><?= gdrcd_format_time($row['data_inizio']) ?></td>
-                            <td class="tabular-nums text-sm"><?= $row['data_fine'] !== null ? gdrcd_format_time($row['data_fine']) : '—' ?></td>
-                            <td class="text-sm"><?= $listapart ?></td>
-                            <td class="tabular-nums"><?= (int)$num_az ?></td>
-                            <td class="text-sm"><?= htmlspecialchars($r_chat['nome'] ?? '') ?></td>
-                            <td class="text-sm max-w-[12rem]"><?= htmlspecialchars($row['tags']) ?></td>
-                            <td class="text-sm max-w-[14rem]"><?= htmlspecialchars($row['quest']) ?></td>
+                            <td class="whitespace-nowrap text-sm">
+                                <div class="font-display"><?= gdrcd_filter('out', gdrcd_format_date($row['data_inizio'])) ?></div>
+                                <div class="text-xs text-gdrcd-text-soft tabular-nums">
+                                    <?= gdrcd_format_time($row['data_inizio']) ?> – <?= $row['data_fine'] ? gdrcd_format_time($row['data_fine']) : '—' ?>
+                                </div>
+                            </td>
+                            <td class="text-sm font-display"><?= htmlspecialchars($r_chat['nome'] ?? '—') ?></td>
+                            <td class="text-xs">
+                                <div class="flex flex-wrap gap-1 max-w-[14rem]">
+                                    <?php foreach ($parts as $p): ?>
+                                        <span class="inline-block px-1.5 py-0.5 rounded bg-gdrcd-accent-soft text-gdrcd-accent text-[10px] font-display"><?= htmlspecialchars($p) ?></span>
+                                    <?php endforeach; ?>
+                                </div>
+                            </td>
+                            <td class="tabular-nums text-center"><?= (int)$num_az ?></td>
+                            <td class="text-xs max-w-[10rem]">
+                                <?php if (!empty($row['tags'])): ?>
+                                    <span class="text-gdrcd-text-soft italic"><?= htmlspecialchars($row['tags']) ?></span>
+                                <?php else: ?>
+                                    <span class="text-gdrcd-subtle">—</span>
+                                <?php endif; ?>
+                            </td>
+                            <td class="text-xs max-w-[12rem]">
+                                <?php if (!empty($row['quest'])): ?>
+                                    <?= htmlspecialchars($row['quest']) ?>
+                                <?php else: ?>
+                                    <span class="text-gdrcd-subtle">—</span>
+                                <?php endif; ?>
+                            </td>
                             <td class="text-right">
                                 <?php if ($can_log): ?>
                                 <form action="main.php?page=scheda_roles&pg=<?= $pg_url ?>" method="post" class="inline">
                                     <input type="hidden" name="op" value="log">
                                     <input type="hidden" name="id" value="<?= (int)$row['id'] ?>">
-                                    <button type="submit" class="gdrcd-btn-ghost" title="Log chat">
+                                    <button type="submit" class="gdrcd-btn-ghost p-1.5" title="Log chat">
                                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
                                     </button>
                                 </form>
@@ -171,7 +197,13 @@ while ($ry = gdrcd_query($year_res, 'fetch')):
 endwhile;
 
 if (!$any): ?>
-    <div class="gdrcd-card text-center text-gdrcd-text-soft">Nessuna giocata corrisponde ai criteri di ricerca.</div>
+    <div class="gdrcd-card text-center py-10">
+        <svg class="w-16 h-16 mx-auto text-gdrcd-subtle/50 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <div class="font-display text-gdrcd-text">Nessun risultato</div>
+        <p class="text-sm text-gdrcd-text-soft mt-1">Nessuna giocata corrisponde ai criteri di ricerca.</p>
+    </div>
 <?php endif;
 
 $render_back();

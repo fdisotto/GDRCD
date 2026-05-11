@@ -23,11 +23,18 @@ $actions = [
 ?>
 
 <div class="space-y-6">
-    <header class="space-y-2">
-        <h2 class="gdrcd-h1">
-            Registrazione role
-            <span class="text-gdrcd-accent">·</span>
-            <span class="text-gdrcd-text-soft text-2xl"><?= gdrcd_filter('out', $_REQUEST['pg']) ?></span>
+    <header class="space-y-2 flex flex-wrap items-end justify-between gap-3">
+        <h2 class="gdrcd-h1 flex items-center gap-3">
+            <span class="gdrcd-icon-circle">
+                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                </svg>
+            </span>
+            <span>
+                Giocate registrate
+                <span class="text-gdrcd-accent">·</span>
+                <span class="text-gdrcd-text-soft text-2xl"><?= gdrcd_filter('out', $_REQUEST['pg']) ?></span>
+            </span>
         </h2>
     </header>
 
