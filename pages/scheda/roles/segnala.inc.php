@@ -1,59 +1,71 @@
 <?php
-############################################
+/**
+ * Scheda PG — form segnalazione giocata ai GM.
+ */
 
-#SEGNALA A GM
+$pg_url = gdrcd_filter('url', $_REQUEST['pg']);
 
-############################################
-if (SEND_GM) {
-    #Inserimento modifiche edit
-    if ($_POST['op'] == 'segnala') { ?>
-        <form action="main.php?page=scheda_roles&pg=<?php echo gdrcd_filter('in', $_REQUEST['pg']); ?>" method="post">
-            <div class="form_info">Segnala la role ai GM. Assicurati che i campi "Tag" e "Quest" siano correttamente
-                completati ed associa una nota per il GM.</center></div>
+$render_back = function () use ($pg_url, $MESSAGE) { ?>
+    <div>
+        <a href="main.php?page=scheda_roles&pg=<?= $pg_url ?>" class="gdrcd-btn-ghost">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+            <?= gdrcd_filter('out', $MESSAGE['interface']['sheet']['link']['back_roles']) ?>
+        </a>
+    </div>
+<?php };
 
-            <div class="titolo_box"> Note aggiuntive</div>
-            <input name="note" type="text" value=""/>
-            <br>
-            <div class="form_info">Scrivere la motivazione della segnalazione (esito, obiettivo, etc).</div>
-            <br>
+if (!SEND_GM) {
+    echo '<div class="gdrcd-alert-error">Segnalazioni ai GM disattivate.</div>';
+    $render_back();
+    return;
+}
 
-                <!--- modifica giocata ---->
-                <div class="form_submit">
-                    <input type="hidden"
-                           name="op"
-                           value="segnala_send"/>
-                    <input type="hidden"
-                           name="id"
-                           value="<?php echo gdrcd_filter('num', $_POST['id']); ?>"/>
-                    <input type="submit"
-                           name="submit"
-                           value="Segnala ai GM"/>
-                </div>
+$op = $_POST['op'] ?? '';
 
-        </form>
-        <div class="link_back">
-            <a href="main.php?page=scheda_roles&pg=<?=gdrcd_filter('in', $_REQUEST['pg']);?>">
-                <?php echo gdrcd_filter('out',
-                    $MESSAGE['interface']['sheet']['link']['back_roles']); ?>
-            </a>
+if ($op === 'segnala') {
+    $row_id = (int)gdrcd_filter('num', $_POST['id'] ?? 0);
+?>
+    <form action="main.php?page=scheda_roles&pg=<?= $pg_url ?>" method="post" class="space-y-4">
+        <div class="gdrcd-alert-info">
+            <svg class="w-5 h-5 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M12 22a10 10 0 110-20 10 10 0 010 20z"/></svg>
+            <div>Segnala la role ai GM. Assicurati che i campi <strong>Tag</strong> e <strong>Quest</strong> siano correttamente compilati.</div>
         </div>
-    <?php }
 
-    #Inserimento segnalazione GM
-    if ($_POST['op'] == 'segnala_send') {
-        gdrcd_query("INSERT INTO send_GM (data, autore, role_reg, note ) 
-                                VALUES ( NOW(), '" . gdrcd_filter('in', $_SESSION['login']) . "', 
-                                    " . gdrcd_filter('num', $_POST['id']) . ", 
-                                    '" . gdrcd_filter('in', $_POST['note']) . "' )");
+        <article class="gdrcd-card space-y-3">
+            <label class="block">
+                <span class="text-sm text-gdrcd-text-soft">Note aggiuntive</span>
+                <input name="note" type="text" value="" class="gdrcd-input mt-1 w-full" placeholder="Esito, obiettivo, motivazione...">
+                <span class="text-xs text-gdrcd-text-soft">Scrivere la motivazione della segnalazione (esito, obiettivo, ecc).</span>
+            </label>
+        </article>
 
-        /*Confermo l'operazione*/
-        echo '<div class="warning">
-            Segnalazione inviata con successo
-            </div>
-            <div class="link_back">
-                <a href="main.php?page=scheda_roles&pg=' . gdrcd_filter('in', $_REQUEST['pg']) . '">'. gdrcd_filter('out',
-            $MESSAGE['interface']['sheet']['link']['back_roles']).'
-                </a>
-            </div>';
-    }
+        <div class="flex justify-end gap-2">
+            <input type="hidden" name="op" value="segnala_send">
+            <input type="hidden" name="id" value="<?= $row_id ?>">
+            <button type="submit" class="gdrcd-btn-primary">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 21l1.65-3.8a9 9 0 113.4 2.9L3 21z"/></svg>
+                Segnala ai GM
+            </button>
+        </div>
+    </form>
+<?php
+    $render_back();
+    return;
+}
+
+if ($op === 'segnala_send') {
+    gdrcd_query(
+        "INSERT INTO send_GM (data, autore, role_reg, note)
+         VALUES (NOW(),
+                 '" . gdrcd_filter('in', $_SESSION['login']) . "',
+                 " . gdrcd_filter('num', $_POST['id'] ?? 0) . ",
+                 '" . gdrcd_filter('in', $_POST['note'] ?? '') . "')"
+    );
+?>
+    <div class="gdrcd-alert-success">
+        <svg class="w-5 h-5 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+        <div>Segnalazione inviata con successo.</div>
+    </div>
+<?php
+    $render_back();
 }

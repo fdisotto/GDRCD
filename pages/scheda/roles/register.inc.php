@@ -1,132 +1,127 @@
 <?php
-$pg = $_REQUEST['pg'];
-if ($_REQUEST['pg'] == $_SESSION['login']) {
-    $mesedopo = $_POST['mese']+1;
-    $meseprima=$_POST['mese']-1;
-    ?>
-    <div style="overflow:auto; margin:auto;text-align:center;">
-        <div class="form_info">In questo pannello puoi registrare le giocate che hai dimenticato di segnare in chat!
-            E' necessario inserire la chat in cui si è giocato, l'orario ed i dettagli importanti della giocata.
-            Orario e chat saranno verificati per controllare che ci siano almeno 5 azioni per giocata.
-            In caso di margini orari troppo larghi, sarà salvato tutto quel che c'è fra la prima e
-            l'ultima azione del personaggio.
-        </div><br>
-        <!-- Chat -->
-        <?php
-        $chat=gdrcd_query("SELECT nome, id FROM mappa WHERE chat=1 ORDER BY nome", 'result'); ?>
-        <form action="main.php?page=scheda_roles&pg=<?php echo gdrcd_filter('in',$_REQUEST['pg']); ?>"  method="post">
-            <div class="titolo_box" >Seleziona la <b>chat</b> di gioco</div>
-            <div class='form_field' style="margin:auto;">
-                <select name="luogo">
-                    <?php while($r_chat=gdrcd_query($chat, 'fetch')){?>
-                        <option value="<?php echo gdrcd_filter('out',$r_chat['id']); ?>" >
-                            <?php echo  gdrcd_filter('out',$r_chat['nome']); ?>
-                        </option>
-                    <?php }//while
+/**
+ * Scheda PG — form registrazione manuale giocata.
+ */
 
-                    gdrcd_query($chat, 'free');
-                    ?>
-                </select>
-            </div><br>
+$pg_url = gdrcd_filter('url', $_REQUEST['pg']);
 
-            <div class='form_field'>
-                <!-- Giorno -->
-                <div class="titolo_box">Seleziona la <b>data di inizio</b> giocata</div>
-                <br>
-                Giorno:  <select name="day_a" class="day">
-                    <?php for($i=1; $i<=31; $i++){?>
-                        <option value="<?php echo $i;?>"><?php echo $i;?></option>
-                    <?php }//for ?>
-                </select> | <select name="month_a" class="day">
-                    <?php if ($_POST['mese']!==1) { ?>
-                        <option value="<?php echo $meseprima;?>"><?php echo $meseprima;?></option>
-                    <?php } ?>
-                    <option value="<?php echo $_POST['mese'];?>" selected ><?php echo $_POST['mese'];?></option>
-                    <?php if ($_POST['mese']!==12) { ?>
-                        <option value="<?php echo $mesedopo;?>"><?php echo $mesedopo;?></option>
-                    <?php } ?>
-                </select> | <?php echo $_POST['anno']; ?><br>
-                <!-- Ora -->
-                Ora:<select name="hour_a" class="month">
-                    <?php for($i=0; $i<=23; $i++){?>
-                        <option value="<?php echo $i;?>"><?php echo sprintf('%02s', $i); ?></option>
-                    <?php }//for ?>
-                </select>:
-                <!-- Minuto -->
-                <select name="minut_a" class="month">
-                    <?php for($i=0; $i<=60; $i+=5){?>
-                        <option value="<?php echo $i;?>"><?php echo sprintf('%02s', $i); ?></option>
-                    <?php }//for ?>
-                </select>
-            </div><br>
-
-            <div class='form_field'>
-                <!-- Giorno -->
-                <div class="titolo_box">Seleziona la <b>data di fine</b> giocata</div>
-                <br>
-                Giorno:  <select name="day_b" class="day">
-                    <?php for($i=1; $i<=31; $i++){?>
-                        <option value="<?php echo $i;?>"><?php echo $i;?></option>
-                    <?php }//for ?>
-                </select> | <select name="month_b" class="day">
-                    <?php if ($_POST['mese']!==1) { ?>
-                        <option value="<?php echo $meseprima;?>"><?php echo $meseprima;?></option>
-                    <?php } ?>
-                    <option value="<?php echo $_POST['mese'];?>" selected ><?php echo $_POST['mese'];?></option>
-                    <?php if ($_POST['mese']!==12) { ?>
-                        <option value="<?php echo $mesedopo;?>"><?php echo $mesedopo;?></option>
-                    <?php } ?>
-                </select> | <?php echo $_POST['anno']; ?><br>
-                <!-- Ora -->
-                Ora:  <select name="hour_b" class="month">
-                    <?php for($i=0; $i<=23; $i++){?>
-                        <option value="<?php echo $i;?>"><?php echo sprintf('%02s', $i); ?></option>
-                    <?php }//for ?>
-                </select>:
-                <!-- Minuto -->
-                <select name="minut_b" class="month">
-                    <?php for($i=0; $i<=60; $i+=5){?>
-                        <option value="<?php echo $i;?>"><?php echo sprintf('%02s', $i); ?></option>
-                    <?php }//for ?>
-                </select>
-            </div>
-            <br>
-            <div class='form_field'>
-                <div class="titolo_box"> Inserisci dei <b>tag</b> che riassumano la giocata:</div>
-               <input name="ab" type="text" style="margin: auto;" value="" />
-            </div>
-            <div class="form_field">I tag possono essere utili per ritrovare rapidamente una role.</div>
-            <div class="titolo_box"> Note di trama</div>
-            <input name="quest" type="text" style="margin: auto;" value="" />
-            <div class="form_info">Compilare con un brevissimo riassunto di cosa fatto in giocata, focalizzandosi sulle interazioni con eventuali spunti di trama. </center></div>
-            <br>
-                <!--- registrazione giocate ---->
-                <div class="form_submit">
-                    <input type="hidden"
-                           name="op"
-                           value="send_segn" />
-                    <input type="hidden"
-                           name="mese"
-                           value="<?php echo gdrcd_filter('num',$_POST['mese']);?>" />
-                    <input type="hidden"
-                           name="anno"
-                           value="<?php echo gdrcd_filter('num',$_POST['anno']);?>" />
-                    <input type="submit"
-                           name="submit"
-                           value="Registra la giocata" />
-                </div>
-            </center>
-        </form>
-    </div>
-    <!-- Link a piè di pagina -->
-    <div class="link_back">
-        <a href="main.php?page=scheda_roles&pg=<?php echo gdrcd_filter('in',$_REQUEST['pg']); ?>">
-            <?php echo gdrcd_filter('out',
-                $MESSAGE['interface']['sheet']['link']['back_roles']); ?>
+$render_back = function () use ($pg_url, $MESSAGE) { ?>
+    <div>
+        <a href="main.php?page=scheda_roles&pg=<?= $pg_url ?>" class="gdrcd-btn-ghost">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+            <?= gdrcd_filter('out', $MESSAGE['interface']['sheet']['link']['back_roles']) ?>
         </a>
     </div>
-<?php
-} else {
-    echo '<div class="warning">Non puoi inserire registrazioni nella scheda altrui</div>';
+<?php };
+
+if ($_REQUEST['pg'] != $_SESSION['login']) {
+    echo '<div class="gdrcd-alert-error">Non puoi inserire registrazioni nella scheda altrui.</div>';
+    $render_back();
+    return;
 }
+
+$mese  = (int)($_POST['mese'] ?? date('m'));
+$anno  = (int)($_POST['anno'] ?? date('Y'));
+$mesi_avail = [];
+if ($mese !== 1)  $mesi_avail[] = $mese - 1;
+$mesi_avail[] = $mese;
+if ($mese !== 12) $mesi_avail[] = $mese + 1;
+
+$chat_res = gdrcd_query("SELECT nome, id FROM mappa WHERE chat=1 ORDER BY nome", 'result');
 ?>
+
+<form action="main.php?page=scheda_roles&pg=<?= $pg_url ?>" method="post" class="space-y-4">
+
+    <div class="gdrcd-alert-info">
+        <svg class="w-5 h-5 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M12 22a10 10 0 110-20 10 10 0 010 20z"/></svg>
+        <div>
+            <p>Registra le giocate dimenticate in chat. Specifica chat, intervallo orario e dettagli.</p>
+            <p class="text-sm mt-1">L'orario sarà verificato: servono almeno <strong><?= REG_MIN_AZIONI ?> azioni</strong>. In caso di margini troppo larghi, il sistema salverà fra la prima e l'ultima azione del personaggio.</p>
+        </div>
+    </div>
+
+    <article class="gdrcd-card space-y-3">
+        <h3 class="font-display text-lg text-gdrcd-accent">Chat di gioco</h3>
+        <label class="block">
+            <span class="text-sm text-gdrcd-text-soft">Seleziona la chat</span>
+            <select name="luogo" class="gdrcd-select mt-1 w-full">
+                <?php while ($r_chat = gdrcd_query($chat_res, 'fetch')): ?>
+                    <option value="<?= (int)$r_chat['id'] ?>"><?= gdrcd_filter('out', $r_chat['nome']) ?></option>
+                <?php endwhile; gdrcd_query($chat_res, 'free'); ?>
+            </select>
+        </label>
+    </article>
+
+    <div class="grid md:grid-cols-2 gap-4">
+        <?php foreach (['a' => 'inizio', 'b' => 'fine'] as $sx => $label): ?>
+        <article class="gdrcd-card space-y-3">
+            <h3 class="font-display text-lg text-gdrcd-accent">Data di <?= $label ?></h3>
+            <div class="grid grid-cols-3 gap-2">
+                <label class="block">
+                    <span class="text-xs text-gdrcd-text-soft">Giorno</span>
+                    <select name="day_<?= $sx ?>" class="gdrcd-select mt-1 w-full">
+                        <?php for ($i = 1; $i <= 31; $i++): ?>
+                            <option value="<?= $i ?>"><?= $i ?></option>
+                        <?php endfor; ?>
+                    </select>
+                </label>
+                <label class="block">
+                    <span class="text-xs text-gdrcd-text-soft">Mese</span>
+                    <select name="month_<?= $sx ?>" class="gdrcd-select mt-1 w-full">
+                        <?php foreach ($mesi_avail as $mm): ?>
+                            <option value="<?= $mm ?>" <?= $mm === $mese ? 'selected' : '' ?>><?= $mm ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </label>
+                <label class="block">
+                    <span class="text-xs text-gdrcd-text-soft">Anno</span>
+                    <input type="text" value="<?= $anno ?>" class="gdrcd-input mt-1 w-full" disabled>
+                </label>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <label class="block">
+                    <span class="text-xs text-gdrcd-text-soft">Ora</span>
+                    <select name="hour_<?= $sx ?>" class="gdrcd-select mt-1 w-full">
+                        <?php for ($i = 0; $i <= 23; $i++): ?>
+                            <option value="<?= $i ?>"><?= sprintf('%02d', $i) ?></option>
+                        <?php endfor; ?>
+                    </select>
+                </label>
+                <label class="block">
+                    <span class="text-xs text-gdrcd-text-soft">Minuti</span>
+                    <select name="minut_<?= $sx ?>" class="gdrcd-select mt-1 w-full">
+                        <?php for ($i = 0; $i <= 60; $i += 5): ?>
+                            <option value="<?= $i ?>"><?= sprintf('%02d', $i) ?></option>
+                        <?php endfor; ?>
+                    </select>
+                </label>
+            </div>
+        </article>
+        <?php endforeach; ?>
+    </div>
+
+    <article class="gdrcd-card space-y-3">
+        <label class="block">
+            <span class="text-sm text-gdrcd-text-soft">Tag</span>
+            <input name="ab" type="text" value="" class="gdrcd-input mt-1 w-full" placeholder="Brevi tag per ritrovare la giocata">
+            <span class="text-xs text-gdrcd-text-soft">I tag possono essere utili per ritrovare rapidamente una role.</span>
+        </label>
+        <label class="block">
+            <span class="text-sm text-gdrcd-text-soft">Note di trama</span>
+            <input name="quest" type="text" value="" class="gdrcd-input mt-1 w-full" placeholder="Breve riassunto delle interazioni di trama">
+            <span class="text-xs text-gdrcd-text-soft">In assenza di una segnalazione un GM non riceve alcuna notifica.</span>
+        </label>
+    </article>
+
+    <div class="flex justify-end gap-2">
+        <input type="hidden" name="op" value="send_segn">
+        <input type="hidden" name="mese" value="<?= $mese ?>">
+        <input type="hidden" name="anno" value="<?= $anno ?>">
+        <button type="submit" class="gdrcd-btn-primary">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+            Registra la giocata
+        </button>
+    </div>
+</form>
+
+<?php $render_back(); ?>
