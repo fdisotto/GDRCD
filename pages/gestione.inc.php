@@ -24,9 +24,9 @@ $categories = [
     ],
     'Moderazione' => [
         'title' => 'Moderazione',
-        'desc'  => 'Sanzioni, ban e blacklist.',
+        'desc'  => 'Segnalazioni utenti, sanzioni, ban e blacklist.',
         'icon'  => '<path stroke-linecap="round" stroke-linejoin="round" d="M12 2l8 4v6c0 5-3.5 9.5-8 10-4.5-.5-8-5-8-10V6l8-4z"/>',
-        'keys'  => ['ban', 'forget'],
+        'keys'  => ['moderation', 'ban', 'forget', 'audit'],
     ],
     'Utenti' => [
         'title' => 'Utenti',
@@ -38,7 +38,7 @@ $categories = [
         'title' => 'Contenuti',
         'desc'  => 'Mondo di gioco, regole, oggetti.',
         'icon'  => '<path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>',
-        'keys'  => ['plot', 'rules', 'skills', 'races', 'guilds', 'forums', 'items', 'locations', 'maps'],
+        'keys'  => ['plot', 'rules', 'skills', 'races', 'guilds', 'forums', 'items', 'locations', 'maps', 'quests'],
     ],
     'Sistema' => [
         'title' => 'Sistema',
@@ -116,6 +116,9 @@ $item_icons = [
     'legal'         => '<path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>',
     'ban'           => '<path stroke-linecap="round" stroke-linejoin="round" d="M12 2l8 4v6c0 5-3.5 9.5-8 10-4.5-.5-8-5-8-10V6l8-4z"/><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4"/>',
     'forget'        => '<path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22m-9 0V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3"/>',
+    'quests'        => '<path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6M7 8h10M5 4h10a2 2 0 012 2v14l-3-2-3 2-3-2-3 2V6a2 2 0 012-2z"/>',
+    'moderation'    => '<path stroke-linecap="round" stroke-linejoin="round" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"/>',
+    'audit'         => '<path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2M9 12h6m-6 4h4"/>',
 ];
 
 $default_item_icon = '<path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>';

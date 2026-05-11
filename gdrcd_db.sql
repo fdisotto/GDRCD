@@ -816,6 +816,73 @@ CREATE TABLE IF NOT EXISTS `deletion_requests` (
 -- --------------------------------------------------------
 
 --
+-- Struttura della tabella `moderation_reports` (coda unificata di segnalazioni
+-- utente -> staff per la moderazione di chat, comportamento, contenuto).
+--
+
+CREATE TABLE IF NOT EXISTS `moderation_reports` (
+  `id`          INT NOT NULL AUTO_INCREMENT,
+  `reporter`    VARCHAR(50) NOT NULL,
+  `subject`     VARCHAR(50) NOT NULL,
+  `kind`        ENUM('chat','behavior','content','other') NOT NULL DEFAULT 'other',
+  `body`        TEXT NOT NULL,
+  `context_url` VARCHAR(255) NULL,
+  `status`      ENUM('pending','under_review','resolved','dismissed') NOT NULL DEFAULT 'pending',
+  `severity`    ENUM('low','medium','high') NOT NULL DEFAULT 'medium',
+  `assigned_to` VARCHAR(50) NULL,
+  `resolution`  TEXT NULL,
+  `created_at`  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `resolved_at` DATETIME NULL,
+  PRIMARY KEY (`id`),
+  INDEX `idx_status` (`status`),
+  INDEX `idx_subject` (`subject`),
+  INDEX `idx_reporter` (`reporter`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
+-- Struttura della tabella `quest` (definizioni delle quest curate dal GM).
+--
+
+CREATE TABLE IF NOT EXISTS `quest` (
+  `id_quest`    INT NOT NULL AUTO_INCREMENT,
+  `titolo`      VARCHAR(255) NOT NULL,
+  `descrizione` TEXT NOT NULL,
+  `obiettivo`   TEXT NULL,
+  `ricompensa`  TEXT NULL,
+  `autore`      VARCHAR(50) NOT NULL,
+  `creata_il`   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `attiva`      TINYINT(1) NOT NULL DEFAULT 1,
+  PRIMARY KEY (`id_quest`),
+  INDEX `idx_attiva` (`attiva`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
+-- Struttura della tabella `clgquestpg` (assegnazione quest <-> personaggio,
+-- traccia stato individuale e timestamp).
+--
+
+CREATE TABLE IF NOT EXISTS `clgquestpg` (
+  `id`           INT NOT NULL AUTO_INCREMENT,
+  `id_quest`     INT NOT NULL,
+  `personaggio`  VARCHAR(50) NOT NULL,
+  `status`       ENUM('attiva','completata','fallita') NOT NULL DEFAULT 'attiva',
+  `assegnata_il` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `conclusa_il`  DATETIME NULL,
+  `note`         TEXT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_quest_pg` (`id_quest`, `personaggio`),
+  INDEX `idx_pg_status` (`personaggio`, `status`),
+  FOREIGN KEY (`id_quest`) REFERENCES `quest`(`id_quest`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
 -- Struttura della tabella `_gdrcd_db_versions`
 --
 
@@ -833,7 +900,9 @@ INSERT INTO _gdrcd_db_versions (migration_id,applied_on) VALUES
   ('2026051114', NOW()),
   ('2026051115', NOW()),
   ('2026051116', NOW()),
-  ('2026051117', NOW());
+  ('2026051117', NOW()),
+  ('2026051118', NOW()),
+  ('2026051119', NOW());
 
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

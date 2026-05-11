@@ -78,19 +78,9 @@ $render_error = function (string $title, string $details = '', array $extra_line
     exit();
 };
 
-/* Blacklist IP (ban permanenti o non ancora scaduti) */
-/* Auto-aggiunge expires_at se la migration non è stata applicata */
-try {
-    $col_check = gdrcd_query("SELECT COUNT(*) AS n FROM INFORMATION_SCHEMA.COLUMNS
-                              WHERE TABLE_SCHEMA = DATABASE()
-                              AND TABLE_NAME = 'blacklist' AND COLUMN_NAME = 'expires_at'");
-    if ((int)($col_check['n'] ?? 0) === 0) {
-        gdrcd_query("ALTER TABLE blacklist ADD COLUMN expires_at DATETIME NULL DEFAULT NULL");
-    }
-} catch (\Throwable $e) {
-    error_log('[GDRCD] cannot ensure blacklist.expires_at column: ' . $e->getMessage());
-}
-
+/* Blacklist IP (ban permanenti o non ancora scaduti).
+ * NB: la colonna expires_at è introdotta dalla migration 2026051117.
+ * Migrazioni applicate via bin/gdrcd-migrate o installer.php. */
 $result = gdrcd_query(
     "SELECT * FROM blacklist WHERE ip = '" . $_SERVER['REMOTE_ADDR'] . "' "
     . "AND granted = 0 AND (expires_at IS NULL OR expires_at > NOW())",

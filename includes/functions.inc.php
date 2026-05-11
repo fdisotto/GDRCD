@@ -1133,8 +1133,9 @@ function gdrcd_login_attempts_count($ip, $minutes = 5)
 }
 
 /**
- * Crea la tabella login_attempts se non esiste. Operazione idempotente, eseguita
- * una sola volta per request, e ignora qualsiasi errore (es. permessi DDL mancanti).
+ * Verifica che la tabella login_attempts esista. Restituisce false se manca
+ * (es. migration 2026051112 non applicata) e logga l'errore. Nessuna ALTER/CREATE
+ * automatica: la creazione è responsabilità di migrations + installer.
  *
  * @return bool true se la tabella è pronta all'uso
  */
@@ -1145,19 +1146,15 @@ function gdrcd_login_attempts_table_ready()
         return $ready;
     }
     try {
-        gdrcd_query("CREATE TABLE IF NOT EXISTS login_attempts (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            ip VARCHAR(45) NOT NULL,
-            username VARCHAR(50) NULL,
-            attempted_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            success TINYINT(1) NOT NULL DEFAULT 0,
-            INDEX idx_ip_attempted_at (ip, attempted_at),
-            INDEX idx_username_attempted_at (username, attempted_at)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-        $ready = true;
+        $row = gdrcd_query("SELECT COUNT(*) AS n FROM INFORMATION_SCHEMA.TABLES
+                            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'login_attempts'");
+        $ready = ((int)($row['n'] ?? 0) > 0);
+        if (!$ready && function_exists('gdrcd_log_error')) {
+            gdrcd_log_error('login_attempts table missing — apply migration 2026051112');
+        }
     } catch (\Throwable $e) {
         if (function_exists('gdrcd_log_error')) {
-            gdrcd_log_error('cannot ensure login_attempts table', array(
+            gdrcd_log_error('cannot check login_attempts table', array(
                 'exception' => $e->getMessage(),
             ));
         }
@@ -1313,18 +1310,15 @@ function gdrcd_config_settings_table_ready()
         return $ready;
     }
     try {
-        gdrcd_query("CREATE TABLE IF NOT EXISTS config_settings (
-            setting_key   VARCHAR(64) NOT NULL,
-            setting_value TEXT NULL,
-            setting_type  VARCHAR(16) NOT NULL DEFAULT 'string',
-            description   VARCHAR(255) NULL,
-            updated_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            PRIMARY KEY (setting_key)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-        $ready = true;
+        $row = gdrcd_query("SELECT COUNT(*) AS n FROM INFORMATION_SCHEMA.TABLES
+                            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'config_settings'");
+        $ready = ((int)($row['n'] ?? 0) > 0);
+        if (!$ready && function_exists('gdrcd_log_error')) {
+            gdrcd_log_error('config_settings table missing — apply migration 2026051114');
+        }
     } catch (\Throwable $e) {
         if (function_exists('gdrcd_log_error')) {
-            gdrcd_log_error('cannot ensure config_settings table', array(
+            gdrcd_log_error('cannot check config_settings table', array(
                 'exception' => $e->getMessage(),
             ));
         }

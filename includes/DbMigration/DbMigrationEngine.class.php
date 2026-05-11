@@ -108,13 +108,21 @@ class DbMigrationEngine
             if($fileInfo->isDot() || $fileInfo->isDir()) {
                 continue;
             }
-            $filename = basename($fileInfo->getRealPath(), '.php');
-            $parts = explode("_", $filename);
-            $className = $filename;
+            // Solo file .php; ignora README/_TEMPLATE e altri file di supporto
+            if(strtolower($fileInfo->getExtension()) !== 'php') {
+                continue;
+            }
+            $basename = $fileInfo->getBasename('.php');
+            if(strpos($basename, '_') === 0) {
+                // Sentinel come _TEMPLATE.php
+                continue;
+            }
+            $parts = explode("_", $basename);
+            $className = $basename;
             if(count($parts) > 1){
                 $className = $parts[1];
             }
-            
+
             include_once $fileInfo->getRealPath();
             if(class_exists($className)){
                 $reflected = new ReflectionClass($className);

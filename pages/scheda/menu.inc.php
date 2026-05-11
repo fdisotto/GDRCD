@@ -37,6 +37,8 @@ if (defined('PG_DIARY_ENABLED') && PG_DIARY_ENABLED) {
     echo $render_link('scheda_diario', gdrcd_filter('out', $lbl_m['diary']));
 }
 
+echo $render_link('scheda_quest', 'Quest');
+
 if ((($permessi >= ROLE_PERM) || ($pg === $me)) && REG_ROLE) {
     echo $render_link('scheda_roles', 'Giocate registrate');
 }

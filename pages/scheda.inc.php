@@ -107,6 +107,25 @@ $lbl_s = $MESSAGE['interface']['sheet'];
                 <?= gdrcd_filter('out', $lbl_s['last_login']) ?> <?= gdrcd_format_date($personaggio['ora_entrata']) ?>
             <?php endif; ?>
         </p>
+        <?php
+        /* Badge contatore quest attive: link rapido a scheda_quest. */
+        $quest_count_row = gdrcd_query(
+            "SELECT COUNT(*) AS n FROM clgquestpg WHERE personaggio = '"
+            . gdrcd_filter('in', (string)$personaggio['nome']) . "' AND status = 'attiva'"
+        );
+        $quest_active_n = (int)($quest_count_row['n'] ?? 0);
+        if ($quest_active_n > 0):
+        ?>
+            <p>
+                <a href="main.php?page=scheda_quest&pg=<?= urlencode((string)$personaggio['nome']) ?>"
+                   class="inline-flex items-center gap-1.5 gdrcd-badge-accent text-xs">
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6M7 8h10M5 4h10a2 2 0 012 2v14l-3-2-3 2-3-2-3 2V6a2 2 0 012-2z"/>
+                    </svg>
+                    Quest attive: <?= $quest_active_n ?>
+                </a>
+            </p>
+        <?php endif; ?>
     </header>
 
     <nav class="flex flex-wrap gap-2 border-b border-gdrcd-border pb-3" aria-label="Sezioni scheda">

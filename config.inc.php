@@ -710,6 +710,9 @@ $PARAMETERS['user']['privacy']['access_level'] = USER;
 $PARAMETERS['user']['rules']['text'] = 'Regolamento';
 $PARAMETERS['user']['rules']['url'] = 'main.php?page=user_regolamento';
 $PARAMETERS['user']['rules']['access_level'] = USER;
+$PARAMETERS['user']['report']['text'] = 'Segnala utente';
+$PARAMETERS['user']['report']['url'] = 'main.php?page=user_report';
+$PARAMETERS['user']['report']['access_level'] = USER;
 $PARAMETERS['user']['stats']['text'] = 'Statistiche del sito';
 $PARAMETERS['user']['stats']['url'] = 'main.php?page=user_stats&links=yes';
 $PARAMETERS['user']['stats']['access_level'] = USER;
@@ -725,6 +728,9 @@ $PARAMETERS['administration']['log_chat']['access_level'] = MODERATOR;
 $PARAMETERS['administration']['log_eventi']['text'] = 'Log eventi';
 $PARAMETERS['administration']['log_eventi']['url'] = 'main.php?page=log_eventi';
 $PARAMETERS['administration']['log_eventi']['access_level'] = MODERATOR;
+$PARAMETERS['administration']['audit']['text'] = 'Audit log';
+$PARAMETERS['administration']['audit']['url'] = 'main.php?page=gestione/audit';
+$PARAMETERS['administration']['audit']['access_level'] = MODERATOR;
 if ($PARAMETERS['mode']['spymessages'] == 'ON')
 {
     $PARAMETERS['administration']['log_messaggi']['text'] = 'Log messaggi';
@@ -792,6 +798,12 @@ $PARAMETERS['administration']['legal']['access_level'] = SUPERUSER;
 $PARAMETERS['administration']['forget']['text'] = 'Richieste cancellazione';
 $PARAMETERS['administration']['forget']['url'] = 'main.php?page=gestione/forget_requests';
 $PARAMETERS['administration']['forget']['access_level'] = SUPERUSER;
+$PARAMETERS['administration']['moderation']['text'] = 'Moderazione segnalazioni';
+$PARAMETERS['administration']['moderation']['url'] = 'main.php?page=gestione/moderation';
+$PARAMETERS['administration']['moderation']['access_level'] = MODERATOR;
+$PARAMETERS['administration']['quests']['text'] = 'Gestione quest';
+$PARAMETERS['administration']['quests']['url'] = 'main.php?page=gestione/quests';
+$PARAMETERS['administration']['quests']['access_level'] = GAMEMASTER;
 
 
 /* HELP: Elenco delle voci dei menu' dei servizi e di gestione. E' sconsigliato operare modifiche. Le opzioni sono disponibili solo agli account con il livello d'accesso specificato o superiore.
