@@ -95,7 +95,7 @@ $moon = (defined('MOON') && MOON) ? gdrcd_lunar_phase() : null;
     <!-- Immagine luogo -->
     <div class="rounded-md overflow-hidden border border-gdrcd-border bg-gdrcd-panel-alt">
         <img src="themes/<?= $theme ?>/imgs/locations/<?= htmlspecialchars($immagine_luogo) ?>"
-             alt="<?= gdrcd_filter('out', $record['descrizione'] ?? '') ?>"
+             alt="<?= gdrcd_filter('out', $nome_luogo) ?>"
              title="<?= gdrcd_filter('out', $record['descrizione'] ?? '') ?>"
              class="w-full h-32 object-cover">
     </div>

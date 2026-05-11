@@ -68,8 +68,8 @@ if (gdrcd_filter('get', $_POST['action'] ?? '') === 'searchPersonaggio') {
                                     <form action="main.php?page=messages_center&op=create" method="post" class="inline">
                                         <?= gdrcd_csrf_field() ?>
                                         <input type="hidden" name="destinatario" value="<?= htmlspecialchars($rowSearch['nome']) ?>">
-                                        <button type="submit" class="gdrcd-btn-ghost" title="<?= gdrcd_filter('out', $MESSAGE['interface']['messages']['reply']) ?>">
-                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <button type="submit" class="gdrcd-btn-ghost" title="<?= gdrcd_filter('out', $MESSAGE['interface']['messages']['reply']) ?>" aria-label="<?= gdrcd_filter('out', $MESSAGE['interface']['messages']['reply']) ?>">
+                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
                                             </svg>
                                         </button>

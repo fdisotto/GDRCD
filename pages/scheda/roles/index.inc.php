@@ -260,8 +260,8 @@ $stat_month = (int)gdrcd_query(gdrcd_query(
                                         <?= gdrcd_csrf_field() ?>
                                         <input type="hidden" name="op" value="edit">
                                         <input type="hidden" name="id" value="<?= (int)$row['id'] ?>">
-                                        <button type="submit" class="gdrcd-btn-ghost p-1.5" title="Modifica tag/quest (entro 30gg)">
-                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                        <button type="submit" class="gdrcd-btn-ghost p-1.5" title="Modifica tag/quest (entro 30gg)" aria-label="Modifica tag/quest (entro 30gg)">
+                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                                         </button>
                                     </form>
                                     <?php endif; ?>
@@ -271,8 +271,8 @@ $stat_month = (int)gdrcd_query(gdrcd_query(
                                         <?= gdrcd_csrf_field() ?>
                                         <input type="hidden" name="op" value="log">
                                         <input type="hidden" name="id" value="<?= (int)$row['id'] ?>">
-                                        <button type="submit" class="gdrcd-btn-ghost p-1.5" title="Log chat">
-                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
+                                        <button type="submit" class="gdrcd-btn-ghost p-1.5" title="Log chat" aria-label="Log chat">
+                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
                                         </button>
                                     </form>
                                     <?php endif; ?>
@@ -282,15 +282,15 @@ $stat_month = (int)gdrcd_query(gdrcd_query(
                                         <?= gdrcd_csrf_field() ?>
                                         <input type="hidden" name="op" value="segnala">
                                         <input type="hidden" name="id" value="<?= (int)$row['id'] ?>">
-                                        <button type="submit" class="gdrcd-btn-ghost p-1.5" title="Segnala ai Master">
-                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 21l1.65-3.8a9 9 0 113.4 2.9L3 21z"/></svg>
+                                        <button type="submit" class="gdrcd-btn-ghost p-1.5" title="Segnala ai Master" aria-label="Segnala ai Master">
+                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3 21l1.65-3.8a9 9 0 113.4 2.9L3 21z"/></svg>
                                         </button>
                                     </form>
                                     <?php endif; ?>
 
                                     <?php if ($pg == $_SESSION['login'] && $row['conclusa'] == 1 && SAVE_ROLE): ?>
-                                    <a href="pages/scheda/roles/save.proc.php?id=<?= (int)$row['id'] ?>" target="_blank" class="gdrcd-btn-ghost p-1.5" title="Scarica giocata">
-                                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v12m0 0l-4-4m4 4l4-4M4 20h16"/></svg>
+                                    <a href="pages/scheda/roles/save.proc.php?id=<?= (int)$row['id'] ?>" target="_blank" class="gdrcd-btn-ghost p-1.5" title="Scarica giocata" aria-label="Scarica giocata">
+                                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v12m0 0l-4-4m4 4l4-4M4 20h16"/></svg>
                                     </a>
                                     <?php endif; ?>
                                 </div>

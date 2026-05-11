@@ -143,7 +143,8 @@ $total = array_sum(array_map(function ($m) {
 
                                             <a href="main.php?page=messages_center&op=create&destinatario=<?= urlencode($r['nome']) ?>"
                                                class="ml-auto gdrcd-btn-ghost text-[11px] py-0.5 px-1.5"
-                                               title="Invia messaggio privato">
+                                               title="Invia messaggio privato a <?= gdrcd_filter('out', $r['nome']) ?>"
+                                               aria-label="Invia messaggio privato a <?= gdrcd_filter('out', $r['nome']) ?>">
                                                 MP
                                             </a>
                                         </li>

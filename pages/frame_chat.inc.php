@@ -54,7 +54,7 @@ $is_gm = ((int)$_SESSION['permessi'] >= GAMEMASTER);
 
         <!-- iframe nascosto: poll messaggi -->
         <div class="absolute -left-[9999px] w-px h-px overflow-hidden" aria-hidden="true">
-            <iframe src="pages/chat.inc.php?ref=30&chat=yes" id="chat_frame" name="chat_frame" frameborder="0"></iframe>
+            <iframe src="pages/chat.inc.php?ref=30&chat=yes" id="chat_frame" name="chat_frame" title="Aggiornamento messaggi chat" frameborder="0"></iframe>
         </div>
 
         <!-- Chat output (popolato dal JS via iframe) -->

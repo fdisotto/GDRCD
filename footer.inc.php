@@ -3,6 +3,17 @@
 <script type="text/javascript" src="/includes/modal.js"></script>
 <script type="text/javascript" src="/includes/toast.js"></script>
 <?php
+/**
+ * Notifiche desktop (PM + segnalazioni GM).
+ * Caricate solo per utenti autenticati: l'endpoint /api/notifications.inc.php
+ * comunque rifiuta sessioni non valide, ma evitiamo polling inutili dalla
+ * login/installer.
+ * @see includes/notifications.js
+ */
+if (!empty($_SESSION['login'])) { ?>
+    <script type="text/javascript" src="/includes/notifications.js" defer></script>
+<?php } ?>
+<?php
 /** * Abilitazione tooltip
  * @author Blancks
  */

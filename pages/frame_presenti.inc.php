@@ -7,6 +7,7 @@
 </div>
 
 <iframe src="pages/presenti.inc.php?ref=60"
+        title="Elenco personaggi presenti online"
         class="w-full border-0 bg-transparent block"
         style="height:32rem;"
         allowtransparency="true">

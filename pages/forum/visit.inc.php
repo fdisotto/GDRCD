@@ -149,8 +149,9 @@ $is_mod = ((int)$_SESSION['permessi'] >= MODERATOR);
                                         <input type="hidden" name="status_imp" value="<?= $next_imp ?>"/>
                                         <input type="hidden" name="ops" value="important"/>
                                         <button type="submit" title="<?= $is_imp ? 'Rendi non importante' : 'Rendi importante' ?>"
+                                                aria-label="<?= $is_imp ? 'Rendi non importante' : 'Rendi importante' ?>"
                                                 class="inline-flex items-center justify-center w-8 h-8 rounded-md <?= $is_imp ? 'text-gdrcd-accent' : 'text-gdrcd-muted' ?> hover:bg-gdrcd-accent-soft hover:text-gdrcd-accent transition-colors">
-                                            <svg class="w-4 h-4" fill="<?= $is_imp ? 'currentColor' : 'none' ?>" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg>
+                                            <svg class="w-4 h-4" fill="<?= $is_imp ? 'currentColor' : 'none' ?>" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg>
                                         </button>
                                     </form>
                                     <form action="main.php?<?= htmlspecialchars($_SERVER['QUERY_STRING'] ?? 'page=forum&op=visit&what=' . $araldo_id) ?>" method="post" class="inline">
@@ -159,8 +160,9 @@ $is_mod = ((int)$_SESSION['permessi'] >= MODERATOR);
                                         <input type="hidden" name="status_cls" value="<?= $next_cls ?>"/>
                                         <input type="hidden" name="ops" value="close"/>
                                         <button type="submit" title="<?= $is_chiuso ? 'Riapri topic' : 'Chiudi topic' ?>"
+                                                aria-label="<?= $is_chiuso ? 'Riapri topic' : 'Chiudi topic' ?>"
                                                 class="inline-flex items-center justify-center w-8 h-8 rounded-md text-gdrcd-muted hover:bg-gdrcd-accent-soft hover:text-gdrcd-accent transition-colors">
-                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                                 <?php if ($is_chiuso): ?>
                                                     <path stroke-linecap="round" stroke-linejoin="round" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"/>
                                                 <?php else: ?>
@@ -171,8 +173,9 @@ $is_mod = ((int)$_SESSION['permessi'] >= MODERATOR);
                                     </form>
                                     <a href="main.php?page=forum&op=delete_conf&id_record=<?= (int)$row['id_messaggio'] ?>&padre=-1"
                                        class="inline-flex items-center justify-center w-8 h-8 rounded-md text-gdrcd-muted hover:bg-gdrcd-error-soft hover:text-gdrcd-error transition-colors"
-                                       title="Elimina">
-                                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3"/></svg>
+                                       title="Elimina"
+                                       aria-label="Elimina">
+                                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3"/></svg>
                                     </a>
                                 </div>
                             <?php endif; ?>
