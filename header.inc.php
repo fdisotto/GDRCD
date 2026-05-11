@@ -51,42 +51,18 @@ if(($PARAMETERS['mode']['user_bbcode'] == 'ON' && $PARAMETERS['settings']['user_
 }
 
 ?>
-<!--Force IE6 into quirks mode with this comment tag-->
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="it" lang="it">
+<html xml:lang="it" lang="it">
 <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <!-- IE9: mi stai ampiamente rompendo i maroni. -->
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="shortcut icon" href="imgs/favicon.ico" type="image/png" />
-    <link rel="stylesheet" href="themes/<?php echo $PARAMETERS['themes']['current_theme']; ?>/main.css" type="text/css" />
-    <link rel="stylesheet" href="themes/<?php echo $PARAMETERS['themes']['current_theme']; ?>/chat.css" type="text/css" />
-    <link rel="stylesheet" href="themes/<?php echo $PARAMETERS['themes']['current_theme']; ?>/presenti.css" type="text/css" />
-    <link rel="stylesheet" href="themes/<?php echo $PARAMETERS['themes']['current_theme']; ?>/scheda.css" type="text/css" />
-    <link rel="stylesheet" href="themes/<?php echo $PARAMETERS['themes']['current_theme']; ?>/messaggi.css" type="text/css" />
-    <link rel="stylesheet" href="themes/<?php echo $PARAMETERS['themes']['current_theme']; ?>/forum.css" type="text/css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.css" />
-    <?php
-    /** * Il controllo individua se l'header non è impiegato per il main */
-    if( ! isset($check_for_update)) {
-        ?>
-        <link rel="stylesheet" href="layouts/<?php echo $PARAMETERS['themes']['kind_of_layout'], '_frames.php?css=true'; ?>" type="text/css" />
-        <?php
-    }
-    ?>
-    <title>
-        <?php echo $PARAMETERS['info']['site_name']; ?>
-    </title>
-    <?php
-    /** * Refresh fix, crossbrowser
-     * @author Blancks
-     */
-    if( ! empty($_GET['ref'])) {
-        //
-    }
-    ?>
+    <link rel="stylesheet" href="/themes/tailwind/output.css" type="text/css" />
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <title><?= htmlspecialchars($PARAMETERS['info']['site_name']) ?></title>
 </head>
-<body class="main_body">
+<body class="bg-gdrcd-bg text-gdrcd-text font-sans min-h-screen flex flex-col">
 <?php
 /** * CONTROLLO PER AGGIORNAMENTO DB
  * Il controllo viene lanciato solo in index e nelle pagine di installer/upgrade.
@@ -95,17 +71,24 @@ if(($PARAMETERS['mode']['user_bbcode'] == 'ON' && $PARAMETERS['settings']['user_
  * @author Blancks
  */
 if((($table == 0) && isset($dont_check) && ! $dont_check) && isset($check_for_update) && $check_for_update) {
-    echo '<div class="error">', $MESSAGE['error']['db_empty'], '</div>', '<div class="link_back"><a href="installer.php">', gdrcd_filter_out($MESSAGE['installer']['instal']), '</a></div>', '</body></html>';
+    echo '<div class="gdrcd-shell"><div class="gdrcd-container-sm"><div class="gdrcd-alert-error">',
+         gdrcd_filter_out($MESSAGE['error']['db_empty']),
+         '</div><div class="mt-4 text-center"><a class="gdrcd-btn-primary" href="installer.php">',
+         gdrcd_filter_out($MESSAGE['installer']['instal']),
+         '</a></div></div></div></body></html>';
     exit();
 
 } elseif((isset($updating_queryes[0]) && ! empty($updating_queryes[0]) && ! $dont_check) && isset($check_for_update) && $check_for_update) {
-    echo '<div class="error">', $MESSAGE['error']['db_not_updated'], '</div>';
+    echo '<div class="gdrcd-shell"><div class="gdrcd-container-sm space-y-3">',
+         '<div class="gdrcd-alert-error">', gdrcd_filter_out($MESSAGE['error']['db_not_updated']), '</div>';
 
     if($updating_password) {
-        echo '<div class="error">', $MESSAGE['warning']['pass_not_encripted'], '</div>';
+        echo '<div class="gdrcd-alert-warning">', gdrcd_filter_out($MESSAGE['warning']['pass_not_encripted']), '</div>';
     }
 
-    echo '<div class="link_back"><a href="upgrade.php">', gdrcd_filter_out($MESSAGE['homepage']['updater']['update']), '</a></div>', '</body></html>';
+    echo '<div class="text-center"><a class="gdrcd-btn-primary" href="upgrade.php">',
+         gdrcd_filter_out($MESSAGE['homepage']['updater']['update']),
+         '</a></div></div></div></body></html>';
 
     exit();
 }

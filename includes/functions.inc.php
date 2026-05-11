@@ -457,7 +457,18 @@ function gdrcd_html_filter($str)
 function gdrcd_controllo_sessione()
 {
     if (empty($_SESSION['login'])) {
-        echo '<div class="error">', $GLOBALS['MESSAGE']['error']['session_expired'], '<br />', $GLOBALS['MESSAGE']['warning']['please_login_again'], '<a href="', $GLOBALS['PARAMETERS']['info']['site_url'], '">Homepage</a></div>';
+        $msg  = $GLOBALS['MESSAGE']['error']['session_expired'];
+        $hint = $GLOBALS['MESSAGE']['warning']['please_login_again'];
+        $url  = $GLOBALS['PARAMETERS']['info']['site_url'];
+        echo '<div class="gdrcd-shell"><div class="gdrcd-container-sm">'
+           . '<div class="gdrcd-card"><div class="gdrcd-card-body text-center space-y-4 py-8">'
+           . '<span class="gdrcd-icon-circle bg-gdrcd-error-soft text-gdrcd-error border-red-200">'
+           . '<svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4c-.77-1.33-2.69-1.33-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3z"/></svg>'
+           . '</span>'
+           . '<h2 class="gdrcd-h2">' . htmlspecialchars($msg) . '</h2>'
+           . '<p class="gdrcd-muted">' . htmlspecialchars($hint) . '</p>'
+           . '<a class="gdrcd-btn-primary" href="' . htmlspecialchars($url) . '">Homepage</a>'
+           . '</div></div></div></div>';
         die();
     }
 }
