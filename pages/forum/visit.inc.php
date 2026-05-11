@@ -1,251 +1,206 @@
 <?php
-//Permessi
-$araldo = gdrcd_query("SELECT nome, tipo, proprietari FROM araldo WHERE id_araldo = ".gdrcd_filter('num', $_REQUEST['what']));
+/**
+ * Lista topic di una singola bacheca (forum/visit).
+ */
 
-if(!gdrcd_controllo_permessi_forum($araldo['tipo'],$araldo['proprietari'])){
-    /*Restrizione di visualizzazione solo master e admin*/
-    echo '<div class="error">'.gdrcd_filter('out', $MESSAGE['error']['not_allowed']).'</div>';
-    ?>
-    <div class="link_back">
-        <a href="main.php?page=forum">
-            <?php echo gdrcd_filter('out', $MESSAGE['interface']['forums']['link']['back']); ?>
+$araldo_id = gdrcd_filter('num', $_REQUEST['what'] ?? 0);
+$araldo    = gdrcd_query("SELECT nome, tipo, proprietari FROM araldo WHERE id_araldo = " . $araldo_id);
+
+if (empty($araldo) || !gdrcd_controllo_permessi_forum($araldo['tipo'], $araldo['proprietari'])):
+?>
+<div class="space-y-4">
+    <div class="gdrcd-alert-error">
+        <svg class="w-5 h-5 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4c-.77-1.33-2.69-1.33-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3z"/></svg>
+        <div><?= gdrcd_filter('out', $MESSAGE['error']['not_allowed']) ?></div>
+    </div>
+    <div>
+        <a href="main.php?page=forum" class="gdrcd-btn-ghost">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+            <?= gdrcd_filter('out', $MESSAGE['interface']['forums']['link']['back']) ?>
         </a>
     </div>
-    <?php
-} else {
-    /*
-     * Procedure messaggi importanti e chiusi
-     * @author Blancks <s.rotondo90@gmail.com>
-     */
-    if($_SESSION['permessi'] >= MODERATOR) {
-        switch($_POST['ops']) {
-            case 'important':
-                $id_record = (int) $_POST['id_record'];
-                $status_imp = (int) $_POST['status_imp'];
+</div>
+<?php
+    return;
+endif;
 
-                gdrcd_query("UPDATE messaggioaraldo SET importante = $status_imp WHERE id_messaggio = $id_record") or die(mysql_error());
-
-                break;
-
-            case 'close':
-                $id_record = (int) $_POST['id_record'];
-                $status_cls = (int) $_POST['status_cls'];
-
-                gdrcd_query("UPDATE messaggioaraldo SET chiuso = $status_cls WHERE id_messaggio = $id_record") or die(mysql_error());
-
-                break;
-        }
+/* Handler azioni master (importante / chiuso) */
+if ($_SESSION['permessi'] >= MODERATOR && isset($_POST['ops'])) {
+    if ($_POST['ops'] === 'important') {
+        $id_record  = (int)($_POST['id_record'] ?? 0);
+        $status_imp = (int)($_POST['status_imp'] ?? 0);
+        gdrcd_query("UPDATE messaggioaraldo SET importante = " . $status_imp . " WHERE id_messaggio = " . $id_record);
+    } elseif ($_POST['ops'] === 'close') {
+        $id_record  = (int)($_POST['id_record'] ?? 0);
+        $status_cls = (int)($_POST['status_cls'] ?? 0);
+        gdrcd_query("UPDATE messaggioaraldo SET chiuso = " . $status_cls . " WHERE id_messaggio = " . $id_record);
     }
-    /*
-     *  Fine Procedura per topic importanti/chiusi
-     */
-    //Determinazione pagina (paginazione)
-    $pagebegin = (int) $_REQUEST['offset'] * $PARAMETERS['settings']['posts_per_page'];
-    $pageend = $pagebegin + $PARAMETERS['settings']['posts_per_page'];
+}
 
-    //Conteggio record totali
-    $record_globale = gdrcd_query("SELECT COUNT(*) FROM messaggioaraldo WHERE id_messaggio_padre = -1 AND id_araldo = ".gdrcd_filter('num', $_REQUEST['what']));
-    $totaleresults = $record_globale['COUNT(*)'];
+$offset    = (int)($_REQUEST['offset'] ?? 0);
+$per_page  = (int)$PARAMETERS['settings']['posts_per_page'];
+$pagebegin = $offset * $per_page;
 
-    /*Carico l'elenco dei forum*/
-    $result = gdrcd_query("SELECT MA.id_messaggio, MA.titolo, MA.autore, MA.data_messaggio, MA.data_ultimo_messaggio, MA.importante, MA.chiuso, AL.id AS new_msg FROM messaggioaraldo AS MA LEFT JOIN araldo_letto AS AL ON MA.id_messaggio=AL.thread_id AND AL.nome='".$_SESSION['login']."' WHERE MA.id_messaggio_padre = -1 AND MA.id_araldo = ".gdrcd_filter('num', $_REQUEST['what'])." ORDER BY MA.importante DESC, MA.data_ultimo_messaggio DESC LIMIT ".$pagebegin.", ".$PARAMETERS['settings']['posts_per_page']."", 'result');
+$count_row     = gdrcd_query("SELECT COUNT(*) AS c FROM messaggioaraldo WHERE id_messaggio_padre = -1 AND id_araldo = " . $araldo_id);
+$totaleresults = (int)$count_row['c'];
 
-    if(gdrcd_query($result, 'num_rows') == 0) {
-        echo '<div class="warning">'.gdrcd_filter('out', $MESSAGE['interface']['forums']['warning']['no_topic']).'</div>';
-    } else {
-        ?>
-        <!-- Elenco forum -->
-        <div class="elenco_esteso">
-            <div class="elenco_record_gioco">
-                <table>
-                    <tr><!-- Intestazione tabella -->
-                        <?php if($_SESSION['permessi'] >= MODERATOR) {
-                        ?>
-                        <td colspan="4">
-                        <?php } else  { ?>
-                        <td colspan="3">
-                        <?php } ?>
-                            <div class="capitolo_elenco">
-                                <?php echo gdrcd_filter('get', $araldo['nome']); ?>
-                            </div>
-                        </td>
-                    </tr>
-                    <tr><!-- Intestazione tabella -->
-                        <td class="casella_titolo">
-                            <div class="capitolo_elenco">
-                                <?php echo gdrcd_filter('out', $MESSAGE['interface']['forums']['topic']['title']); ?>
-                            </div>
-                        </td>
-                        <td class="casella_titolo">
-                            <div class="capitolo_elenco">
-                                <?php echo gdrcd_filter('out', $MESSAGE['interface']['forums']['topic']['author']); ?>
-                            </div>
-                        </td>
-                        <td class="casella_titolo">
-                            <div class="capitolo_elenco">
-                                <?php echo gdrcd_filter('out', $MESSAGE['interface']['forums']['topic']['posts']); ?>
-                            </div>
-                        </td>
-                        <?php
-                        if($_SESSION['permessi'] >= MODERATOR) {  ?>
-                            <td class="casella_titolo">
-                                <div class="capitolo_elenco">
-                                    <?php echo '&nbsp;'; ?>
-                                </div>
-                            </td>
-                            <?php
-                        } ?>
-                    </tr>
-                    <?php
-                    while($row = gdrcd_query($result, 'fetch')) {
-                        $readinfo = gdrcd_query("SELECT MAX(data_messaggio) AS latest, COUNT(*) AS replies FROM messaggioaraldo WHERE id_messaggio_padre = ".gdrcd_filter('get', $row['id_messaggio']));
-                        $lastupdate = $readinfo['latest'];
-                        $postsnumber = $readinfo['replies'];
-                        ?>
-                        <tr><!-- Topic -->
-                            <td class="casella_elemento">
-                                <div class="elementi_elenco"><!-- Titolo -->
-                                    <a href="main.php?page=forum&op=read&what=<?php echo gdrcd_filter('out', $row['id_messaggio']
-                                    ); ?>&where=<?php echo gdrcd_filter('num', $_REQUEST['what']); ?>">
-                                        <div class="forum_column">
-                                            <?php
-                                            /**    * Topic importante
-                                             * @author Blancks <s.rotondo90@gmail.com>
-                                             */
-                                            echo ($row['importante']) ? $MESSAGE['interface']['administration']['ops']['important'].': ' : '';
-                                            /**    * Fine
-                                             */
-                                            echo gdrcd_filter('out', $row['titolo']);
+$result = gdrcd_query(
+    "SELECT MA.id_messaggio, MA.titolo, MA.autore, MA.data_messaggio, MA.data_ultimo_messaggio,
+            MA.importante, MA.chiuso, AL.id AS read_id
+     FROM messaggioaraldo AS MA
+     LEFT JOIN araldo_letto AS AL ON MA.id_messaggio = AL.thread_id AND AL.nome = '" . gdrcd_filter('in', $_SESSION['login']) . "'
+     WHERE MA.id_messaggio_padre = -1 AND MA.id_araldo = " . $araldo_id . "
+     ORDER BY MA.importante DESC, MA.data_ultimo_messaggio DESC
+     LIMIT " . $pagebegin . ", " . $per_page,
+    'result'
+);
+$numresults = (int)gdrcd_query($result, 'num_rows');
 
-                                            if($row['new_msg'] == 0) {
-                                                echo '('.$MESSAGE['interface']['forums']['topic']['new_posts']['plur'].')';
-                                            }
-                                            ?>
-                                        </div>
-                                    </a>
-                                    <?php
-                                    /**    * Topic Chiuso
-                                     * @author Blancks <s.rotondo90@gmail.com>
-                                     */
-                                    echo ($row['chiuso']) ? '<div class="forum_column">'.$MESSAGE['interface']['forums']['topic']['title'].' '.$MESSAGE['interface']['administration']['ops']['close'].'</div>' : '';
-                                    /**    * Fine
-                                     */
-                                    ?>
-                                    <div class="forum_date_big"><?php echo gdrcd_format_date($row['data_messaggio']).' '.gdrcd_format_time($row['data_messaggio']); ?></div>
-                                </div>
-                            </td>
-                            <td class="casella_elemento">
-                                <div class="elementi_elenco"><!-- Autore -->
-                                    <a href="main.php?page=scheda&pg=<?php echo gdrcd_filter('out', $row['autore']); ?>">
-                                        <?php echo gdrcd_filter('out', $row['autore']); ?>
-                                    </a>
-                                </div>
-                            </td>
-                            <td class="casella_elemento">
-                                <div class="elementi_elenco"><!-- Data -->
-                                    <?php echo $postsnumber.' '.gdrcd_filter('out', $MESSAGE['interface']['forums']['topic']['posts']); ?>
-                                    <div class="forum_date_big">
-                                        <?php if($postsnumber > 0) {
-                                            echo gdrcd_filter('out', $MESSAGE['interface']['forums']['topic']['last_post']).':   '.gdrcd_format_date($lastupdate).' '.gdrcd_format_time($lastupdate);
-                                        } ?>
-                                    </div>
-                                </div>
-                            </td>
-                            <?php
-                            if($_SESSION['permessi'] >= MODERATOR) {
-                                /**    * Topic importanti/chiusi
-                                 * @author Blancks <s.rotondo90@gmail.com>
-                                 */
-                                $set_imp = ($row['importante']) ? '0' : '1';
-                                $set_cls = ($row['chiuso']) ? '0' : '1';
+$is_mod = ((int)$_SESSION['permessi'] >= MODERATOR);
+?>
 
-                                $img_imp = ($row['importante']) ? 'importante.png' : 'non_importante.png';
-                                $img_cls = ($row['chiuso']) ? 'topic_chiuso.png' : 'topic_aperto.png';
+<div class="space-y-6">
 
-                                $label_imp = ($row['importante']) ? 'important' : 'not_important';
-                                $label_cls = ($row['chiuso']) ? 'close' : 'open';
-
-                                /**    * Fine
-                                 */
-                                ?>
-                                <td class="casella_titolo">
-                                    <div class="controlli_elenco"><!-- controlli -->
-
-                                                                  <!--
-                                                                  /**	* Topic importanti/chiusi
-                                                                      * @author Blancks <s.rotondo90@gmail.com>
-                                                                  */
-                                                                  -->
-
-                                                                  <!-- Importante -->
-                                        <div class="controllo_elenco">
-                                            <form action="main.php?<?php echo $_SERVER['QUERY_STRING']; ?>" method="post">
-                                                <input type="hidden" name="id_record" value="<?php echo $row['id_messaggio'] ?>" />
-                                                <input type="hidden" name="status_imp" value="<?php echo $set_imp; ?>" />
-                                                <input type="hidden" name="ops" value="important" />
-                                                <input type="image" src="imgs/icons/<?php echo $img_imp; ?>"
-                                                       alt="<?php echo gdrcd_filter('out', $MESSAGE['interface']['administration']['ops'][$label_imp]); ?>"
-                                                       title="<?php echo gdrcd_filter('out', $MESSAGE['interface']['administration']['ops'][$label_imp]); ?>" />
-                                            </form>
-                                        </div>
-                                                                  <!-- Topic Chiuso -->
-                                        <div class="controllo_elenco">
-                                            <form action="main.php?<?php echo $_SERVER['QUERY_STRING']; ?>" method="post">
-                                                <input type="hidden" name="id_record" value="<?php echo $row['id_messaggio'] ?>" />
-                                                <input type="hidden" name="status_cls" value="<?php echo $set_cls; ?>" />
-                                                <input type="hidden" name="ops" value="close" />
-                                                <input type="image" src="imgs/icons/<?php echo $img_cls; ?>"
-                                                       alt="<?php echo gdrcd_filter('out', $MESSAGE['interface']['administration']['ops'][$label_cls]); ?>"
-                                                       title="<?php echo gdrcd_filter('out', $MESSAGE['interface']['administration']['ops'][$label_cls]); ?>" />
-                                            </form>
-                                        </div>
-                                                                  <!-- Elimina -->
-                                        <div class="controllo_elenco">
-                                            <a href="main.php?page=forum&op=delete_conf&id_record=<?php echo $row['id_messaggio']; ?>&padre=-1">
-                                                <img src="imgs/icons/erase.png" alt="Elimina" width="15" />
-                                            </a>
-                                        </div>
-                                    </div>
-                                </td>
-                            <?php } ?>
-                        </tr>
-                        <?php
-                    }//while
-                    gdrcd_query($result, 'free');
-                    ?>
-                </table>
-            </div>
+    <header class="flex flex-wrap items-end justify-between gap-3">
+        <div class="space-y-2">
+            <nav class="text-xs">
+                <a href="main.php?page=forum" class="gdrcd-link-quiet">
+                    <?= gdrcd_filter('out', $PARAMETERS['names']['forum']['plur']) ?>
+                </a>
+                <span class="text-gdrcd-subtle mx-1">/</span>
+            </nav>
+            <h2 class="gdrcd-h1"><?= gdrcd_filter('out', $araldo['nome']) ?></h2>
+            <p class="gdrcd-muted"><?= $totaleresults ?> topic</p>
         </div>
-        <?php
-    }//else
-    ?>
-    <!-- Paginatore elenco -->
-    <div class="pager">
-        <?php
-        if($totaleresults > $PARAMETERS['settings']['posts_per_page']) {
-            echo gdrcd_filter('out', $MESSAGE['interface']['pager']['pages_name']);
-            for($i = 0; $i <= floor($totaleresults / $PARAMETERS['settings']['posts_per_page']); $i++) {
-                if($i != $_REQUEST['offset']) {
-                    ?>
-                    <a href="main.php?page=forum&op=visit&what=<?php echo gdrcd_filter('num', $_REQUEST['what']
-                    ) ?>&offset=<?php echo $i; ?>"><?php echo $i + 1; ?></a>
-                    <?php
-                } else {
-                    echo ' '.($i + 1).' ';
-                }
-            } //for
-        }//if
-        ?>
-    </div>
-
-    <!-- link crea nuovo -->
-    <div class="link_back">
-        <a href="main.php?page=forum&op=composer&what=-1&where=<?php echo gdrcd_filter('num', $_REQUEST['what']); ?>">
-            <?php echo gdrcd_filter('out', $MESSAGE['interface']['forums']['link']['new_topic']); ?>
-        </a><br />
-        <a href="main.php?page=forum">
-            <?php echo gdrcd_filter('out', $MESSAGE['interface']['forums']['link']['back']); ?>
+        <a href="main.php?page=forum&op=composer&what=-1&where=<?= $araldo_id ?>" class="gdrcd-btn-primary">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+            <?= gdrcd_filter('out', $MESSAGE['interface']['forums']['link']['new_topic']) ?>
         </a>
-    </div>
-    <?php
-} //else
+    </header>
+
+    <?php if ($numresults === 0): ?>
+        <div class="gdrcd-alert-info">
+            <svg class="w-5 h-5 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <div><?= gdrcd_filter('out', $MESSAGE['interface']['forums']['warning']['no_topic']) ?></div>
+        </div>
+    <?php else: ?>
+        <div class="gdrcd-card overflow-hidden">
+            <ul class="divide-y divide-gdrcd-border">
+                <?php while ($row = gdrcd_query($result, 'fetch')):
+                    $info = gdrcd_query("SELECT MAX(data_messaggio) AS latest, COUNT(*) AS replies
+                                          FROM messaggioaraldo WHERE id_messaggio_padre = " . (int)$row['id_messaggio']);
+                    $is_new      = ((int)($row['read_id'] ?? 0) === 0);
+                    $is_imp      = !empty($row['importante']);
+                    $is_chiuso   = !empty($row['chiuso']);
+                    $replies     = (int)$info['replies'];
+                    $latest      = $info['latest'];
+                    $url_read    = 'main.php?page=forum&op=read&what=' . (int)$row['id_messaggio'] . '&where=' . $araldo_id;
+                    ?>
+                    <li class="group <?= $is_new ? 'bg-gdrcd-accent-soft/10' : '' ?> hover:bg-gdrcd-accent-soft/30 transition-colors">
+                        <div class="flex items-start gap-3 px-4 py-3">
+                            <span class="inline-flex items-center justify-center w-10 h-10 rounded-full shrink-0 <?= $is_new ? 'bg-gdrcd-accent text-white' : 'bg-gdrcd-accent-soft text-gdrcd-accent border border-gdrcd-accent-ring/30' ?>">
+                                <?php if ($is_chiuso): ?>
+                                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                                <?php else: ?>
+                                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/></svg>
+                                <?php endif; ?>
+                            </span>
+
+                            <a href="<?= htmlspecialchars($url_read) ?>" class="flex-1 min-w-0 block">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <?php if ($is_imp): ?>
+                                        <span class="gdrcd-badge-accent text-[10px]">
+                                            <?= gdrcd_filter('out', $MESSAGE['interface']['administration']['ops']['important']) ?>
+                                        </span>
+                                    <?php endif; ?>
+                                    <?php if ($is_chiuso): ?>
+                                        <span class="gdrcd-badge-neutral text-[10px]">
+                                            <?= gdrcd_filter('out', $MESSAGE['interface']['administration']['ops']['close']) ?>
+                                        </span>
+                                    <?php endif; ?>
+                                    <span class="<?= $is_new ? 'font-semibold text-gdrcd-text' : 'text-gdrcd-text-soft' ?>">
+                                        <?= gdrcd_filter('out', $row['titolo']) ?>
+                                    </span>
+                                    <?php if ($is_new): ?>
+                                        <span class="inline-block w-2 h-2 rounded-full bg-gdrcd-accent" title="Nuovi messaggi"></span>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="mt-1 text-xs text-gdrcd-muted flex flex-wrap gap-2">
+                                    <span>di <strong class="text-gdrcd-text-soft"><?= gdrcd_filter('out', $row['autore']) ?></strong></span>
+                                    <span class="text-gdrcd-subtle">·</span>
+                                    <span><?= gdrcd_format_date($row['data_messaggio']) ?></span>
+                                    <span class="text-gdrcd-subtle">·</span>
+                                    <span><?= $replies ?> <?= gdrcd_filter('out', $MESSAGE['interface']['forums']['topic']['posts']) ?></span>
+                                    <?php if ($replies > 0): ?>
+                                        <span class="text-gdrcd-subtle">·</span>
+                                        <span><?= gdrcd_filter('out', $MESSAGE['interface']['forums']['topic']['last_post']) ?>: <?= gdrcd_format_date($latest) ?> <?= gdrcd_format_time($latest) ?></span>
+                                    <?php endif; ?>
+                                </div>
+                            </a>
+
+                            <?php if ($is_mod):
+                                $next_imp = $is_imp ? 0 : 1;
+                                $next_cls = $is_chiuso ? 0 : 1;
+                                ?>
+                                <div class="shrink-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                                    <form action="main.php?<?= htmlspecialchars($_SERVER['QUERY_STRING'] ?? 'page=forum&op=visit&what=' . $araldo_id) ?>" method="post" class="inline">
+                                        <input type="hidden" name="id_record" value="<?= (int)$row['id_messaggio'] ?>"/>
+                                        <input type="hidden" name="status_imp" value="<?= $next_imp ?>"/>
+                                        <input type="hidden" name="ops" value="important"/>
+                                        <button type="submit" title="<?= $is_imp ? 'Rendi non importante' : 'Rendi importante' ?>"
+                                                class="inline-flex items-center justify-center w-8 h-8 rounded-md <?= $is_imp ? 'text-gdrcd-accent' : 'text-gdrcd-muted' ?> hover:bg-gdrcd-accent-soft hover:text-gdrcd-accent transition-colors">
+                                            <svg class="w-4 h-4" fill="<?= $is_imp ? 'currentColor' : 'none' ?>" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg>
+                                        </button>
+                                    </form>
+                                    <form action="main.php?<?= htmlspecialchars($_SERVER['QUERY_STRING'] ?? 'page=forum&op=visit&what=' . $araldo_id) ?>" method="post" class="inline">
+                                        <input type="hidden" name="id_record" value="<?= (int)$row['id_messaggio'] ?>"/>
+                                        <input type="hidden" name="status_cls" value="<?= $next_cls ?>"/>
+                                        <input type="hidden" name="ops" value="close"/>
+                                        <button type="submit" title="<?= $is_chiuso ? 'Riapri topic' : 'Chiudi topic' ?>"
+                                                class="inline-flex items-center justify-center w-8 h-8 rounded-md text-gdrcd-muted hover:bg-gdrcd-accent-soft hover:text-gdrcd-accent transition-colors">
+                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                <?php if ($is_chiuso): ?>
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"/>
+                                                <?php else: ?>
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                                                <?php endif; ?>
+                                            </svg>
+                                        </button>
+                                    </form>
+                                    <a href="main.php?page=forum&op=delete_conf&id_record=<?= (int)$row['id_messaggio'] ?>&padre=-1"
+                                       class="inline-flex items-center justify-center w-8 h-8 rounded-md text-gdrcd-muted hover:bg-gdrcd-error-soft hover:text-gdrcd-error transition-colors"
+                                       title="Elimina">
+                                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3"/></svg>
+                                    </a>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                    </li>
+                <?php endwhile;
+                gdrcd_query($result, 'free');
+                ?>
+            </ul>
+        </div>
+    <?php endif; ?>
+
+    <?php if ($totaleresults > $per_page): ?>
+        <nav class="gdrcd-pager" aria-label="Paginazione">
+            <span class="gdrcd-pager-label !border-0 !bg-transparent">
+                <?= gdrcd_filter('out', $MESSAGE['interface']['pager']['pages_name']) ?>
+            </span>
+            <?php $pages = (int)floor($totaleresults / $per_page);
+            for ($i = 0; $i <= $pages; $i++):
+                if ($i === $offset): ?>
+                    <span class="is-current" aria-current="page"><?= $i + 1 ?></span>
+                <?php else:
+                    $url = 'main.php?' . http_build_query([
+                        'page' => 'forum', 'op' => 'visit',
+                        'what' => $araldo_id, 'offset' => $i,
+                    ]); ?>
+                    <a href="<?= htmlspecialchars($url) ?>"><?= $i + 1 ?></a>
+                <?php endif;
+            endfor; ?>
+        </nav>
+    <?php endif; ?>
+
+</div>
