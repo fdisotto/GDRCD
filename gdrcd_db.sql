@@ -765,6 +765,32 @@ CREATE TABLE IF NOT EXISTS `login_attempts` (
 -- --------------------------------------------------------
 
 --
+-- Struttura della tabella `legal_pages` (testo delle pagine pubbliche
+-- privacy policy e termini di servizio, editabile da admin).
+--
+
+CREATE TABLE IF NOT EXISTS `legal_pages` (
+  `slug`       varchar(64) NOT NULL,
+  `title`      varchar(255) NOT NULL,
+  `body`       mediumtext NOT NULL,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `updated_by` varchar(50) DEFAULT NULL,
+  PRIMARY KEY (`slug`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+--
+-- Dump dei dati per la tabella `legal_pages`
+--
+
+INSERT INTO `legal_pages` (`slug`, `title`, `body`) VALUES
+('privacy_policy', 'Informativa sulla privacy',
+ '[b]Informativa sulla privacy[/b]\n\nLa presente informativa descrive le modalita\' con cui vengono trattati i dati personali degli utenti che utilizzano questo sito di gioco di ruolo.\n\n[b]1. Titolare del trattamento[/b]\nIl titolare del trattamento e\' il webmaster del sito, contattabile all\'indirizzo email indicato nella homepage del gioco.\n\n[b]2. Dati raccolti[/b]\nVengono raccolti e trattati i seguenti dati:\n- Indirizzo email fornito in fase di registrazione, utilizzato per le comunicazioni di servizio (recupero password, notifiche amministrative).\n- Indirizzo IP di accesso, registrato a fini di sicurezza (rate-limit dei tentativi di login, tracciamento abusi, log tecnici).\n- Dati di attivita\' di gioco (messaggi in chat, missive private, post sui forum, modifiche alla scheda del personaggio) connessi alla normale funzione del sito.\n- Cookie tecnici necessari al mantenimento della sessione di login.\n\n[b]3. Finalita\' del trattamento[/b]\nI dati sono trattati esclusivamente per:\n- Erogazione del servizio di gioco.\n- Sicurezza del sito e prevenzione di abusi.\n- Adempimento di obblighi di legge.\n\n[b]4. Conservazione dei dati[/b]\nI dati di gioco sono conservati per tutta la durata dell\'account. I log tecnici (tentativi di login, log di chat) sono conservati per il tempo strettamente necessario alle finalita\' di sicurezza, e comunque non oltre 12 mesi salvo diversa necessita\' legale.\n\n[b]5. Diritti dell\'interessato (GDPR)[/b]\nAi sensi del Regolamento (UE) 2016/679 (GDPR) l\'utente ha diritto di:\n- Accedere ai propri dati personali.\n- Richiederne la rettifica o la cancellazione.\n- Limitare il trattamento o opporvisi.\n- Richiedere la portabilita\' dei dati.\n- Proporre reclamo all\'autorita\' di controllo competente (Garante per la protezione dei dati personali).\n\n[b]6. Contatti[/b]\nPer esercitare i propri diritti o richiedere ulteriori informazioni e\' possibile contattare il webmaster all\'indirizzo email indicato in homepage.\n\n[i]Il presente testo costituisce un modello di base e deve essere personalizzato dal gestore del sito in base alle specifiche modalita\' di trattamento adottate.[/i]'),
+('tos', 'Termini di servizio',
+ '[b]Termini di servizio[/b]\n\nL\'utilizzo di questo sito di gioco di ruolo e\' subordinato all\'accettazione dei seguenti termini di servizio. La registrazione di un account costituisce piena accettazione delle presenti condizioni.\n\n[b]1. Oggetto del servizio[/b]\nIl sito offre un ambiente di gioco di ruolo testuale a scopo ricreativo. La partecipazione e\' gratuita e volontaria.\n\n[b]2. Regole d\'uso del sito[/b]\nL\'utente si impegna a:\n- Fornire dati di registrazione veritieri (in particolare un indirizzo email valido).\n- Utilizzare il sito in conformita\' alla legge italiana e al regolamento di gioco pubblicato.\n- Non condividere le proprie credenziali con terzi e non utilizzare account di altri utenti.\n- Rispettare gli altri giocatori e lo staff.\n\n[b]3. Comportamento in gioco[/b]\nAll\'interno della chat, dei forum e di tutti gli spazi interattivi del sito e\' richiesto un comportamento corretto, coerente con l\'ambientazione e rispettoso degli altri partecipanti. Il regolamento di gioco specifico (consultabile dal menu utente) integra le presenti regole.\n\n[b]4. Divieti[/b]\nE\' espressamente vietato:\n- Pubblicare contenuti illegali, diffamatori, offensivi, discriminatori, osceni o lesivi dei diritti di terzi.\n- Utilizzare il sito per attivita\' di spam, phishing, distribuzione di malware o qualunque altra attivita\' illecita.\n- Tentare di compromettere la sicurezza del sito, accedere ad aree riservate o sfruttare bug del software.\n- Utilizzare bot, script automatici o strumenti che alterino il normale funzionamento del gioco.\n\n[b]5. Sospensione e cancellazione dell\'account[/b]\nLo staff si riserva il diritto, a propria insindacabile discrezione, di:\n- Sospendere temporaneamente l\'account in caso di violazione delle presenti regole o del regolamento di gioco.\n- Cancellare definitivamente l\'account in caso di violazioni gravi o reiterate.\nL\'utente puo\' in ogni momento richiedere la cancellazione del proprio account dal menu utente o tramite richiesta scritta al webmaster.\n\n[b]6. Limitazione di responsabilita\'[/b]\nIl sito e\' fornito \"cosi\' com\'e\'\", senza alcuna garanzia di disponibilita\' continua o di conservazione dei dati di gioco. I gestori non rispondono di interruzioni del servizio ne\' di eventuali perdite di dati di gioco.\n\n[b]7. Modifiche ai termini[/b]\nI presenti termini possono essere aggiornati in qualunque momento. L\'utente e\' tenuto a consultarli periodicamente. La data dell\'ultimo aggiornamento e\' indicata in calce alla pagina.\n\n[b]8. Legge applicabile e foro competente[/b]\nI presenti termini sono regolati dalla legge italiana. Per ogni controversia derivante dall\'utilizzo del sito e\' competente in via esclusiva il foro del luogo di residenza del gestore del sito, salvo diversa disposizione di legge inderogabile.\n\n[i]Il presente testo costituisce un modello di base e deve essere personalizzato dal gestore del sito.[/i]');
+
+-- --------------------------------------------------------
+
+--
 -- Struttura della tabella `_gdrcd_db_versions`
 --
 
@@ -778,7 +804,9 @@ INSERT INTO _gdrcd_db_versions (migration_id,applied_on) VALUES
   ('2020072500', NOW()),
   ('2021103018', NOW()),
   ('2026051112', NOW()),
-  ('2026051113', NOW());
+  ('2026051113', NOW()),
+  ('2026051114', NOW()),
+  ('2026051115', NOW());
 
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

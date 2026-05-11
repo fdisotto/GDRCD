@@ -113,5 +113,10 @@ $users = gdrcd_query("SELECT COUNT(nome) AS online FROM personaggio WHERE ora_en
     <div class="gdrcd-page-footer-inner space-y-1">
         <p><?= $REFERENCES ?></p>
         <p><?= $CREDITS, ' ', $LICENCE ?></p>
+        <p class="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs">
+            <a href="main.php?page=privacy_policy">Informativa privacy</a>
+            <span class="text-gdrcd-subtle" aria-hidden="true">&middot;</span>
+            <a href="main.php?page=tos">Termini di servizio</a>
+        </p>
     </div>
 </footer>

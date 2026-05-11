@@ -65,16 +65,18 @@ A installazione completata accedi alla homepage `http://localhost:8080/`.
 
 ### Container avviati
 
-| Container         | Servizio          | Porta host | Note                              |
-|-------------------|-------------------|------------|-----------------------------------|
-| `gdrcd-web`       | PHP 8.2 + Apache  | `8080`     | Applicazione GDRCD                |
-| `gdrcd-db`        | MariaDB 10.11     | `3306`     | Database                          |
-| `gdrcd-pma`       | phpMyAdmin 5      | `8081`     | UI web a `http://localhost:8081`  |
-| `gdrcd-tailwind`  | Tailwind watcher  | —          | Rebuild di `output.css` in dev    |
+| Container            | Servizio              | Porta host    | Note                                       |
+|----------------------|-----------------------|---------------|--------------------------------------------|
+| `gdrcd-web`          | PHP 8.2 + Apache      | `8080`        | Applicazione GDRCD                         |
+| `gdrcd-db`           | MariaDB 10.11         | `3306`        | Database                                   |
+| `gdrcd-pma`          | phpMyAdmin 5          | `8081`        | UI web a `http://localhost:8081`           |
+| `gdrcd-tailwind`     | Tailwind watcher      | —             | Rebuild di `output.css` in dev             |
+| `gdrcd-browsersync`  | BrowserSync proxy     | `3000`/`3001` | Live-reload del browser in dev             |
 
 Il file `docker-compose.override.yml` viene caricato automaticamente in
-sviluppo e aggiunge il container `gdrcd-tailwind` più un bind mount del
-sorgente nel container `web` (così le modifiche PHP sono immediate).
+sviluppo e aggiunge i container `gdrcd-tailwind` e `gdrcd-browsersync`,
+più un bind mount del sorgente nel container `web` (così le modifiche
+PHP sono immediate).
 
 ---
 
@@ -92,6 +94,31 @@ Per intervenire sul design system basta quindi:
 1. Modificare `themes/tailwind/input.css` (o aggiungere classi nei file PHP)
 2. Attendere il rebuild (visibile in `docker compose logs -f tailwind`)
 3. Ricaricare la pagina
+
+### Hot reload dev (BrowserSync)
+
+In sviluppo lo stack avvia anche `gdrcd-browsersync`, un proxy
+[BrowserSync](https://browsersync.io/) che osserva i file del progetto e
+ricarica automaticamente le schede del browser ad ogni salvataggio.
+
+- URL da usare in dev: **`http://localhost:3000`** (al posto di
+  `http://localhost:8080`); la UI di controllo di BrowserSync è su
+  `http://localhost:3001`.
+- File osservati: `**/*.php`, `**/*.inc.php`, `includes/*.js` e
+  `themes/tailwind/output.css` (rigenerato dal watcher Tailwind, quindi
+  modifiche a `input.css` o classi nei file PHP attivano comunque il
+  reload una volta completato il rebuild del bundle).
+- Debounce di 500 ms per evitare reload eccessivi durante salvataggi
+  multipli ravvicinati.
+- Il proxy punta direttamente al container `gdrcd-web`, quindi gli
+  endpoint, le sessioni e i cookie restano gli stessi di `:8080`.
+- Per disattivarlo senza toccare la compose:
+  `docker compose stop gdrcd-browsersync`.
+
+Al **primissimo** avvio l'immagine `node:20-alpine` esegue
+`npm install -g browser-sync`: aspettarsi ~30 s prima che la porta 3000
+sia disponibile (i log di `docker compose logs -f browsersync` mostrano
+lo stato). I lanci successivi sono immediati grazie al layer cache.
 
 ### Credenziali DB di sviluppo
 

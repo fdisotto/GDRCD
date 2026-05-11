@@ -116,3 +116,11 @@ $me = htmlspecialchars($_SESSION['login'] ?? '');
 
     </div>
 </main>
+
+<footer class="gdrcd-page-footer">
+    <div class="gdrcd-page-footer-inner flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs">
+        <a href="main.php?page=privacy_policy">Informativa privacy</a>
+        <span class="text-gdrcd-subtle" aria-hidden="true">&middot;</span>
+        <a href="main.php?page=tos">Termini di servizio</a>
+    </div>
+</footer>

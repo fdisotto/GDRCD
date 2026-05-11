@@ -713,6 +713,9 @@ $PARAMETERS['user']['stats']['access_level'] = USER;
 /* PANNELLO GESTIONE */
 $PARAMETERS['administration_page_name'] = 'Gestione';
 $PARAMETERS['administration']['image_file'] = '';
+$PARAMETERS['administration']['dashboard']['text'] = 'Dashboard';
+$PARAMETERS['administration']['dashboard']['url'] = 'main.php?page=gestione/dashboard';
+$PARAMETERS['administration']['dashboard']['access_level'] = MODERATOR;
 $PARAMETERS['administration']['log_chat']['text'] = 'Log chat';
 $PARAMETERS['administration']['log_chat']['url'] = 'main.php?page=log_chat';
 $PARAMETERS['administration']['log_chat']['access_level'] = MODERATOR;
@@ -777,6 +780,9 @@ $PARAMETERS['administration']['maintenance']['access_level'] = SUPERUSER;
 $PARAMETERS['administration']['configurazioni']['text'] = 'Configurazioni sistema';
 $PARAMETERS['administration']['configurazioni']['url'] = 'main.php?page=gestione/configurazioni';
 $PARAMETERS['administration']['configurazioni']['access_level'] = SUPERUSER;
+$PARAMETERS['administration']['legal']['text'] = 'Pagine legali';
+$PARAMETERS['administration']['legal']['url'] = 'main.php?page=gestione/legal';
+$PARAMETERS['administration']['legal']['access_level'] = SUPERUSER;
 
 
 /* HELP: Elenco delle voci dei menu' dei servizi e di gestione. E' sconsigliato operare modifiche. Le opzioni sono disponibili solo agli account con il livello d'accesso specificato o superiore.

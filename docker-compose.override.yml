@@ -2,6 +2,7 @@
 # Overrides production compose with:
 #  - source bind mount on web (live PHP edits)
 #  - Tailwind watcher rebuilding output.css on .php changes
+#  - BrowserSync proxy con live-reload su PHP/JS/CSS
 
 services:
   web:
@@ -20,4 +21,28 @@ services:
     volumes:
       - ./:/build
     command: ["bash", "/build/docker/tailwind-watch.sh", "/build"]
+    restart: unless-stopped
+
+  browsersync:
+    image: node:20-alpine
+    container_name: gdrcd-browsersync
+    working_dir: /app
+    volumes:
+      - ./:/app
+    command: >
+      sh -c "if ! command -v browser-sync >/dev/null; then npm install -g browser-sync; fi &&
+             browser-sync start
+             --proxy 'gdrcd-web'
+             --files '**/*.php,**/*.inc.php,includes/*.js,themes/tailwind/output.css'
+             --no-notify
+             --no-open
+             --port 3000
+             --ui-port 3001
+             --reload-debounce 500"
+    ports:
+      - "3000:3000"
+      - "3001:3001"
+    depends_on:
+      - web
+      - tailwind
     restart: unless-stopped
