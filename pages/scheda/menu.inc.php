@@ -1,66 +1,47 @@
 <?php
+/**
+ * Menu navigazione scheda PG.
+ * Render come pill button group (border + hover accent).
+ */
 
-$pg = gdrcd_filter('out', $_REQUEST['pg']);
-$me = gdrcd_filter('out',$_SESSION['login']);
-$permessi  = gdrcd_filter('out',$_SESSION['permessi']);
+$pg       = $_REQUEST['pg'] ?? '';
+$me       = $_SESSION['login'] ?? '';
+$permessi = (int)($_SESSION['permessi'] ?? 0);
+$current  = $_REQUEST['page'] ?? 'scheda';
 
-# Modifica
-if (($pg == $me) || ($permessi >= GUILDMODERATOR)) { ?>
-    <a href="main.php?page=scheda_modifica&pg=<?=$pg;?>">
-        <?php echo gdrcd_filter('out', $MESSAGE['interface']['sheet']['menu']['update']); ?>
-    </a>
-<?php } ?>
-    <!-- Descrizione e Storia separate dalla pagina principale della scheda -->
-    <a href="main.php?page=scheda_descrizione&pg=<?=$pg;?>">
-        <?php echo gdrcd_filter('out', $MESSAGE['interface']['sheet']['menu']['detail']); ?>
-    </a>
-    <a href="main.php?page=scheda_storia&pg=<?=$pg;?>">
-        <?php echo gdrcd_filter('out', $MESSAGE['interface']['sheet']['menu']['background']); ?>
-    </a>
-    <!-- TRASFERIMENTI -->
-    <a href="main.php?page=scheda_trans&pg=<?=$pg;?>">
-        <?php echo gdrcd_filter('out', $MESSAGE['interface']['sheet']['menu']['transictions']); ?>
-    </a>
+$pg_url = urlencode($pg);
 
-    <!-- ESPERIENZA -->
-    <a href="main.php?page=scheda_px&pg=<?=$pg;?>">
-        <?php echo gdrcd_filter('out', $MESSAGE['interface']['sheet']['menu']['experience']); ?>
-    </a>
+$render_link = function (string $page, string $label) use ($pg_url, $current) {
+    $active = ($current === $page);
+    $cls = $active
+        ? 'inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-full bg-gdrcd-accent text-white border border-gdrcd-accent'
+        : 'inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full text-gdrcd-text-soft border border-gdrcd-border hover:bg-gdrcd-accent-soft hover:text-gdrcd-accent-hover hover:border-gdrcd-accent-ring/60 transition-colors';
+    return '<a href="main.php?page=' . $page . '&pg=' . $pg_url . '" class="' . $cls . '">' . $label . '</a>';
+};
 
-    <!-- OGGETTI -->
-    <a href="main.php?page=scheda_oggetti&pg=<?=$pg;?>">
-        <?php echo gdrcd_filter('out', $MESSAGE['interface']['sheet']['menu']['inventory']); ?>
-    </a>
+$lbl_m = $MESSAGE['interface']['sheet']['menu'];
 
-    <!-- INVENTARIO -->
-    <a href="main.php?page=scheda_equip&pg=<?=$pg;?>">
-        <?php echo gdrcd_filter('out', $MESSAGE['interface']['sheet']['menu']['equipment']); ?>
-    </a>
+echo $render_link('scheda', 'Scheda');
 
-    <!-- DIARIO -->
-<?php if (defined('PG_DIARY_ENABLED') and PG_DIARY_ENABLED) { ?>
-    <a href="main.php?page=scheda_diario&pg=<?=$pg;?>">
-        <?php echo gdrcd_filter('out', $MESSAGE['interface']['sheet']['menu']['diary']); ?>
-    </a>
-<?php } ?>
+if ($pg === $me || $permessi >= GUILDMODERATOR) {
+    echo $render_link('scheda_modifica', gdrcd_filter('out', $lbl_m['update']));
+}
+echo $render_link('scheda_descrizione', gdrcd_filter('out', $lbl_m['detail']));
+echo $render_link('scheda_storia',      gdrcd_filter('out', $lbl_m['background']));
+echo $render_link('scheda_trans',       gdrcd_filter('out', $lbl_m['transictions']));
+echo $render_link('scheda_px',          gdrcd_filter('out', $lbl_m['experience']));
+echo $render_link('scheda_oggetti',     gdrcd_filter('out', $lbl_m['inventory']));
+echo $render_link('scheda_equip',       gdrcd_filter('out', $lbl_m['equipment']));
 
-    <!-- ROLES -->
-<?php if ( ( ($permessi >= ROLE_PERM) || ($pg == $me) ) && REG_ROLE) { ?>
-    <a href="main.php?page=scheda_roles&pg=<?=$pg;?>">
-        Giocate registrate
-    </a>
-<?php } ?>
+if (defined('PG_DIARY_ENABLED') && PG_DIARY_ENABLED) {
+    echo $render_link('scheda_diario', gdrcd_filter('out', $lbl_m['diary']));
+}
 
-    <!-- Se maggiore di moderatore -->
-<?php if ($permessi >= MODERATOR) { ?>
+if ((($permessi >= ROLE_PERM) || ($pg === $me)) && REG_ROLE) {
+    echo $render_link('scheda_roles', 'Giocate registrate');
+}
 
-    <!-- LOG -->
-    <a href="main.php?page=scheda_log&pg=<?=$pg;?>">
-        <?php echo gdrcd_filter('out', $MESSAGE['interface']['sheet']['menu']['log']); ?>
-    </a>
-
-    <!-- AMMINISTRA -->
-    <a href="main.php?page=scheda_gst&pg=<?=$pg;?>">
-        <?php echo gdrcd_filter('out', $MESSAGE['interface']['sheet']['menu']['gst']); ?>
-    </a>
-<?php }
+if ($permessi >= MODERATOR) {
+    echo $render_link('scheda_log', gdrcd_filter('out', $lbl_m['log']));
+    echo $render_link('scheda_gst', gdrcd_filter('out', $lbl_m['gst']));
+}

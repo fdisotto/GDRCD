@@ -1,129 +1,159 @@
 <?php
+/**
+ * Sezione abilità della scheda PG (skill system).
+ * Renderizzata dentro un gdrcd-card-body del wrapper in scheda.inc.php.
+ */
 
-//carico le sole abilità del pg
-$abilita = gdrcd_query("SELECT id_abilita, grado FROM clgpersonaggioabilita WHERE nome='".gdrcd_filter('in', $_REQUEST['pg'])."'", 'result');
+// Carico abilità del pg + ranks
+$abilita = gdrcd_query(
+    "SELECT id_abilita, grado FROM clgpersonaggioabilita
+     WHERE nome = '" . gdrcd_filter('in', $_REQUEST['pg']) . "'",
+    'result'
+);
 
 $px_spesi = 0;
-while($row = gdrcd_query($abilita, 'fetch')) {
-    /*Costo in px della singola abilità*/
-    $px_abi = $PARAMETERS['settings']['px_x_rank'] * (($row['grado'] * ($row['grado'] + 1)) / 2);
-    /*Costo totale*/
-    $px_spesi += $px_abi;
-    $ranks[$row['id_abilita']] = $row['grado'];
+$ranks    = [];
+while ($r = gdrcd_query($abilita, 'fetch')) {
+    $g           = (int)$r['grado'];
+    $px_abi      = $PARAMETERS['settings']['px_x_rank'] * (($g * ($g + 1)) / 2);
+    $px_spesi   += $px_abi;
+    $ranks[(int)$r['id_abilita']] = $g;
 }
 
-// In caso non siano state estratte in precedenza informazioni sul personaggio, le riottengo
-if(!isset($personaggio['id_razza']) || !isset($personaggio['esperienza']) ) {
-    // Eseguo la query
-    $personaggioInfo = gdrcd_query("SELECT id_razza, esperienza FROM personaggio WHERE nome='".gdrcd_filter('in', $_REQUEST['pg'])."'", 'query');
-    // Salvo i dati
-    $personaggio['id_razza'] = $personaggioInfo['id_razza'];
-    $personaggio['esperienza'] = $personaggioInfo['esperienza'];
+if (!isset($personaggio['id_razza']) || !isset($personaggio['esperienza'])) {
+    $info = gdrcd_query(
+        "SELECT id_razza, esperienza FROM personaggio
+         WHERE nome = '" . gdrcd_filter('in', $_REQUEST['pg']) . "' LIMIT 1"
+    );
+    $personaggio['id_razza']  = $info['id_razza'];
+    $personaggio['esperienza'] = $info['esperienza'];
 }
 
-// Calcolo il totale di esperienza del personaggio
-$px_totali_pg = gdrcd_filter('int', $personaggio['esperienza']) ;
+$px_totali_pg = (int)$personaggio['esperienza'];
 
-?>
-<div class="elenco_abilita"><!-- Elenco abilità -->
-    <div class="titolo_box">
-        <?php echo gdrcd_filter('out', $MESSAGE['interface']['sheet']['box_title']['skills']); ?>
-    </div>
-    <?php
-    //Incremento skill
-    if((gdrcd_filter('get', $_REQUEST['op']) == 'addskill') && (($_SESSION['login'] == gdrcd_filter('out', $_REQUEST['pg'])) || ($_SESSION['permessi'] >= MODERATOR))) {
-        $px_necessari = $PARAMETERS['settings']['px_x_rank'] * ($ranks[$_REQUEST['what']] + 1);
-        if(($px_totali_pg - $px_spesi) >= $px_necessari) {
-            $px_spesi += $px_necessari;
-            if($px_necessari == $PARAMETERS['settings']['px_x_rank']) {
-                $query = "INSERT INTO clgpersonaggioabilita (id_abilita, nome, grado) VALUES (".gdrcd_filter('num', $_REQUEST['what']).", '".gdrcd_filter('in', $_REQUEST['pg'])."', 1)";
-                $ranks[$_REQUEST['what']] = 1;
-            } else {
-                $ranks[$_REQUEST['what']]++;
-                $query = "UPDATE clgpersonaggioabilita SET grado = ".$ranks[$_REQUEST['what']]." WHERE id_abilita = ".gdrcd_filter('num', $_REQUEST['what'])." AND nome = '".gdrcd_filter('in', $_REQUEST['pg'])."'";
-            }//else
-            gdrcd_query($query);
-            echo '<div class="warning">'.gdrcd_filter('out', $MESSAGE['warning']['modified']).'</div>';
-        }
-    }//Fine incremento skill
-    //Decremento skill
-    if((gdrcd_filter('get', $_REQUEST['op']) == 'subskill') && ($_SESSION['permessi'] >= MODERATOR)) {
-        if($ranks[$_REQUEST['what']] == 1) {
-            $query = "DELETE FROM clgpersonaggioabilita WHERE id_abilita = ".$_REQUEST['what']." AND nome = '".gdrcd_filter('in', $_REQUEST['pg'])."' LIMIT 1";
-            $ranks[$_REQUEST['what']] = 0;
+$is_owner = ($_SESSION['login'] === gdrcd_filter('out', $_REQUEST['pg']));
+$is_mod   = ((int)$_SESSION['permessi'] >= MODERATOR);
+
+$op   = gdrcd_filter('get', $_REQUEST['op']   ?? '');
+$what = gdrcd_filter('num', $_REQUEST['what'] ?? 0);
+
+$alerts = [];
+
+// ============================================================
+// Increment
+// ============================================================
+if ($op === 'addskill' && ($is_owner || $is_mod)) {
+    $cur_rank     = $ranks[$what] ?? 0;
+    $px_necessari = $PARAMETERS['settings']['px_x_rank'] * ($cur_rank + 1);
+    if (($px_totali_pg - $px_spesi) >= $px_necessari) {
+        $px_spesi += $px_necessari;
+        if ($cur_rank === 0) {
+            gdrcd_query(
+                "INSERT INTO clgpersonaggioabilita (id_abilita, nome, grado) VALUES ("
+                . $what . ","
+                . "'" . gdrcd_filter('in', $_REQUEST['pg']) . "', 1)"
+            );
+            $ranks[$what] = 1;
         } else {
-            $ranks[$_REQUEST['what']]--;
-            $query = "UPDATE clgpersonaggioabilita SET grado = ".$ranks[$_REQUEST['what']]." WHERE id_abilita = ".$_REQUEST['what']." AND nome = '".gdrcd_filter('in', $_REQUEST['pg'])."'";
-        }//else
-        gdrcd_query($query);
-        echo '<div class="warning">'.gdrcd_filter('out', $MESSAGE['warning']['modified']).'</div>';
-    }//Fine decremento skill
-    //conteggio le abilità
-    $row = gdrcd_query("SELECT COUNT(*) FROM abilita WHERE id_razza=-1 OR id_razza= ".$personaggio['id_razza']."");
-    $num = $row['COUNT(*)'];
+            $ranks[$what] = $cur_rank + 1;
+            gdrcd_query(
+                "UPDATE clgpersonaggioabilita SET grado = " . $ranks[$what] .
+                " WHERE id_abilita = " . $what .
+                "   AND nome = '" . gdrcd_filter('in', $_REQUEST['pg']) . "'"
+            );
+        }
+        $alerts[] = gdrcd_filter('out', $MESSAGE['warning']['modified']);
+    }
+}
 
-    //carico l'elenco delle abilità
-    $result = gdrcd_query("SELECT nome, car, id_abilita FROM abilita WHERE id_razza=-1 OR id_razza= ".$personaggio['id_razza']." ORDER BY id_razza DESC, nome", 'result');
-    $count = 0;
-    $total = 0;
-    ?>
-    <div class="form_info">
-        <?php echo gdrcd_filter('out', $MESSAGE['interface']['sheet']['avalaible_xp']).': '.($px_totali_pg - $px_spesi); ?>
+// ============================================================
+// Decrement (mod only)
+// ============================================================
+if ($op === 'subskill' && $is_mod) {
+    $cur_rank = $ranks[$what] ?? 0;
+    if ($cur_rank === 1) {
+        gdrcd_query(
+            "DELETE FROM clgpersonaggioabilita
+             WHERE id_abilita = " . $what . "
+               AND nome = '" . gdrcd_filter('in', $_REQUEST['pg']) . "' LIMIT 1"
+        );
+        $ranks[$what] = 0;
+    } elseif ($cur_rank > 1) {
+        $ranks[$what] = $cur_rank - 1;
+        gdrcd_query(
+            "UPDATE clgpersonaggioabilita SET grado = " . $ranks[$what] .
+            " WHERE id_abilita = " . $what .
+            "   AND nome = '" . gdrcd_filter('in', $_REQUEST['pg']) . "'"
+        );
+    }
+    $alerts[] = gdrcd_filter('out', $MESSAGE['warning']['modified']);
+}
+
+// Lista abilità (sempre da DB per riflettere update)
+$result = gdrcd_query(
+    "SELECT nome, car, id_abilita FROM abilita
+     WHERE id_razza = -1 OR id_razza = " . (int)$personaggio['id_razza'] . "
+     ORDER BY id_razza DESC, nome",
+    'result'
+);
+
+$px_available = $px_totali_pg - $px_spesi;
+$pg_url       = urlencode($_REQUEST['pg']);
+$skills_cap   = (int)$PARAMETERS['settings']['skills_cap'];
+?>
+
+<div class="space-y-4">
+    <?php foreach ($alerts as $msg): ?>
+        <div class="gdrcd-alert-success">
+            <svg class="w-5 h-5 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+            <div><?= $msg ?></div>
+        </div>
+    <?php endforeach; ?>
+
+    <div class="flex flex-wrap items-baseline justify-between gap-3 p-3 rounded-md bg-gdrcd-accent-soft/40 border border-gdrcd-accent-ring/30">
+        <div class="text-sm">
+            <span class="gdrcd-muted"><?= gdrcd_filter('out', $MESSAGE['interface']['sheet']['avalaible_xp']) ?>:</span>
+            <strong class="text-gdrcd-accent tabular-nums ml-1"><?= $px_available ?></strong>
+            <span class="gdrcd-muted">/ <?= $px_totali_pg ?> totali</span>
+        </div>
+        <p class="text-xs text-gdrcd-muted"><?= gdrcd_filter('out', $MESSAGE['interface']['sheet']['info_skill_cost']) ?></p>
     </div>
-    <div class="div_colonne_abilita_scheda">
-        <table class="colonne_abilita_scheda">
-            <tr>
-                <?php while($row = gdrcd_query($result, 'fetch')) {
-                    if($count == 0) {
-                        echo '<td><table>';
-                    } ?>
-                    <tr>
-                        <td>
-                            <div class="abilita_scheda_nome">
-                                <?php echo gdrcd_filter('out', $row['nome']); ?>
-                            </div>
-                        </td>
-                        <td>
-                            <div class="abilita_scheda_car">
-                                <?php echo '('.gdrcd_filter('out', $PARAMETERS['names']['stats']['car'.$row['car']]).')'; ?>
-                            </div>
-                        </td>
-                        <td>
-                            <div class="abilita_scheda_tank">
-                                <?php echo 0 + gdrcd_filter('int', $ranks[$row['id_abilita']]); ?>
-                            </div>
-                        </td>
-                        <td>
-                            <div class="abilita_scheda_sub">
-                                <?php /*Stampo il form di incremento se il pg ha abbastanza px*/
-                                if((((($ranks[$row['id_abilita']] + 1) * $PARAMETERS['settings']['px_x_rank']) <= ($px_totali_pg - $px_spesi)) && (gdrcd_filter('get', $_REQUEST['pg']) == $_SESSION['login']) && ($ranks[$row['id_abilita']] < $PARAMETERS['settings']['skills_cap'])) || ($_SESSION['permessi'] >= MODERATOR)) { ?>
-                                    [<a href="main.php?page=scheda&pg=<?php echo gdrcd_filter('url', $_REQUEST['pg']
-                                    ) ?>&op=addskill&what=<?php echo $row['id_abilita'] ?>">+</a>]
-                                    <?php if(($_SESSION['permessi'] >= MODERATOR) && ($ranks[$row['id_abilita']] > 0)) { ?>
-                                        [<a href="main.php?page=scheda&pg=<?php echo gdrcd_filter('url', $_REQUEST['pg']) ?>&op=subskill&what=<?php echo $row['id_abilita'] ?>">-</a>]
-                                    <?php
-                                    }
-                                } else {
-                                    echo '&nbsp;';
-                                }
-                                ?>
-                            </div>
-                        </td>
-                    </tr>
-                    <?php
-                    $count++;
-                    $total++;
-                    if(($count >= ceil($num / 2)) || ($total >= $num)) {
-                        $count = 0;
-                        echo '</table></td>';
-                    }
-                }//while
 
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+        <?php while ($row = gdrcd_query($result, 'fetch')):
+            $id        = (int)$row['id_abilita'];
+            $rank      = $ranks[$id] ?? 0;
+            $next_cost = $PARAMETERS['settings']['px_x_rank'] * ($rank + 1);
+            $can_add   = (($next_cost <= $px_available) && $is_owner && ($rank < $skills_cap)) || $is_mod;
+            $can_sub   = $is_mod && $rank > 0;
             ?>
-            </tr>
-        </table>
-    </div>
-    <div class="form_info">
-        <?php echo gdrcd_filter('out', $MESSAGE['interface']['sheet']['info_skill_cost']); ?>
+            <div class="flex items-center gap-3 px-3 py-2 rounded-md border border-gdrcd-border bg-gdrcd-panel hover:bg-gdrcd-panel-alt/40 transition-colors">
+                <div class="flex-1 min-w-0">
+                    <div class="text-sm font-medium text-gdrcd-text truncate">
+                        <?= gdrcd_filter('out', $row['nome']) ?>
+                    </div>
+                    <div class="text-xs text-gdrcd-muted">
+                        <?= gdrcd_filter('out', $PARAMETERS['names']['stats']['car'.(int)$row['car']]) ?>
+                    </div>
+                </div>
+                <div class="inline-flex items-center gap-2 shrink-0">
+                    <?php if ($can_sub): ?>
+                        <a href="main.php?page=scheda&pg=<?= $pg_url ?>&op=subskill&what=<?= $id ?>"
+                           class="inline-flex items-center justify-center w-9 h-9 rounded-md border border-gdrcd-border text-gdrcd-muted hover:border-gdrcd-error hover:text-gdrcd-error transition-colors text-lg leading-none"
+                           title="Riduci grado">−</a>
+                    <?php endif; ?>
+                    <span class="inline-flex items-center justify-center min-w-[3rem] h-9 px-3 rounded-md bg-gdrcd-accent-soft text-gdrcd-accent border border-gdrcd-accent-ring/30 font-display font-bold tabular-nums text-lg leading-none">
+                        <?= $rank ?>
+                    </span>
+                    <?php if ($can_add): ?>
+                        <a href="main.php?page=scheda&pg=<?= $pg_url ?>&op=addskill&what=<?= $id ?>"
+                           class="inline-flex items-center justify-center w-9 h-9 rounded-md border border-gdrcd-accent-ring/40 text-gdrcd-accent hover:bg-gdrcd-accent hover:text-white hover:border-gdrcd-accent transition-colors text-lg leading-none"
+                           title="Aumenta grado (costo: <?= $next_cost ?> px)">+</a>
+                    <?php endif; ?>
+                </div>
+            </div>
+        <?php endwhile;
+        gdrcd_query($result, 'free');
+        ?>
     </div>
 </div>

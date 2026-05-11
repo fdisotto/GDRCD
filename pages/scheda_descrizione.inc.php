@@ -1,74 +1,61 @@
-<div class="pagina_scheda_storia">
-    <?php /*HELP: */
-    //Se non e' stato specificato il nome del pg
-    if(isset($_REQUEST['pg']) === false) {
-        echo gdrcd_filter('out', $MESSAGE['error']['unknonw_character_sheet']);
-        exit();
+<?php
+/**
+ * Scheda PG — descrizione + affetti.
+ */
+
+if (!isset($_REQUEST['pg'])) {
+    echo '<div class="gdrcd-alert-error">' . gdrcd_filter('out', $MESSAGE['error']['unknown_character_sheet'] ?? 'Personaggio sconosciuto') . '</div>';
+    return;
+}
+
+$personaggio = gdrcd_query(
+    "SELECT descrizione, affetti FROM personaggio
+     WHERE nome = '" . gdrcd_filter('in', $_REQUEST['pg']) . "'"
+);
+
+$render_text = function (?string $txt) use ($PARAMETERS) {
+    if ($txt === null || $txt === '') return '<span class="text-gdrcd-subtle italic">Nessun contenuto.</span>';
+    if (($PARAMETERS['mode']['user_bbcode'] ?? 'OFF') === 'ON') {
+        $type = $PARAMETERS['settings']['user_bbcode']['type'] ?? '';
+        $free = ($PARAMETERS['settings']['bbd']['free_html'] ?? 'OFF') === 'ON';
+        if ($type === 'bbd' && $free) return bbdecoder(gdrcd_html_filter($txt), true);
+        if ($type === 'bbd')           return bbdecoder(gdrcd_filter('out', $txt), true);
+        return gdrcd_bbcoder(gdrcd_filter('out', $txt));
     }
-    /*Visualizzo la pagina*/
-    ?>
-    <div class="page_title">
-        <h2><?php echo gdrcd_filter('out', $MESSAGE['interface']['sheet']['page_name']); ?></h2>
-    </div>
+    return gdrcd_html_filter($txt);
+};
 
+$lbl_m = $MESSAGE['interface']['sheet']['menu'];
+?>
 
-    <div class="page_title">
-        <h2><?php echo gdrcd_filter('out', $MESSAGE['interface']['sheet']['menu']['description']); ?></h2>
-    </div>
-    <div class="page_body">
-        <div class="panels_box">
-            <?php /*Oggetti nello zaino*/
-            $personaggio = gdrcd_query("SELECT descrizione, affetti FROM personaggio WHERE nome = '".gdrcd_filter('in', $_REQUEST['pg'])."'");
+<div class="space-y-6">
+    <header class="space-y-2">
+        <h2 class="gdrcd-h1">
+            <?= gdrcd_filter('out', $lbl_m['detail']) ?>
+            <span class="text-gdrcd-accent">·</span>
+            <span class="text-gdrcd-text-soft text-2xl"><?= gdrcd_filter('out', $_REQUEST['pg']) ?></span>
+        </h2>
+    </header>
 
-            ?>
-            <div class="body_box">
-                <?php
-                /** * Html, bbcode o entrambi ?
-                 * @author Blancks
-                 */
-                if($PARAMETERS['mode']['user_bbcode'] == 'ON') {
-                    if($PARAMETERS['settings']['user_bbcode']['type'] == 'bbd' && $PARAMETERS['settings']['bbd']['free_html'] == 'ON') {
-                        echo bbdecoder(gdrcd_html_filter($personaggio['descrizione']), true);
-                    } elseif($PARAMETERS['settings']['user_bbcode']['type'] == 'bbd') {
-                        echo bbdecoder(gdrcd_filter('out', $personaggio['descrizione']), true);
-                    } else {
-                        echo gdrcd_bbcoder(gdrcd_filter('out', $personaggio['descrizione']));
-                    }
-                } else {
-                    echo gdrcd_html_filter($personaggio['descrizione']);
-                } ?>
-            </div>
+    <nav class="flex flex-wrap gap-2 border-b border-gdrcd-border pb-3" aria-label="Sezioni scheda">
+        <?php include 'scheda/menu.inc.php'; ?>
+    </nav>
+
+    <section class="gdrcd-card">
+        <div class="gdrcd-card-header">
+            <h3 class="gdrcd-h3"><?= gdrcd_filter('out', $lbl_m['description'] ?? 'Descrizione') ?></h3>
         </div>
-        <!-- Link a piè di pagina -->
-
-    </div>
-    <div class="page_title">
-        <h2><?php echo gdrcd_filter('out', $MESSAGE['interface']['sheet']['menu']['friend']); ?></h2>
-    </div>
-    <div class="page_body">
-        <div class="panels_box">
-            <div class="body_box">
-                <?php
-                /** * Html, bbcode o entrambi ?
-                 * @author Blancks
-                 */
-                if($PARAMETERS['mode']['user_bbcode'] == 'ON') {
-                    if($PARAMETERS['settings']['user_bbcode']['type'] == 'bbd' && $PARAMETERS['settings']['bbd']['free_html'] == 'ON') {
-                        echo bbdecoder(gdrcd_html_filter($personaggio['affetti']), true);
-                    } elseif($PARAMETERS['settings']['user_bbcode']['type'] == 'bbd') {
-                        echo bbdecoder(gdrcd_filter('out', $personaggio['affetti']), true);
-                    } else {
-                        echo gdrcd_bbcoder(gdrcd_filter('out', $personaggio['affetti']));
-                    }
-                } else {
-                    echo gdrcd_html_filter($personaggio['affetti']);
-                } ?>
-            </div>
+        <div class="gdrcd-card-body gdrcd-prose">
+            <?= $render_text($personaggio['descrizione']) ?>
         </div>
-        <!-- Link a piè di pagina -->
-        <div class="link_back">
-            <a href="main.php?page=scheda&pg=<?php echo gdrcd_filter('url', $_REQUEST['pg']); ?>"><?php echo gdrcd_filter('out', $MESSAGE['interface']['sheet']['link']['back']); ?></a>
-        </div>
-    </div>
+    </section>
 
-</div><!-- Pagina -->
+    <section class="gdrcd-card">
+        <div class="gdrcd-card-header">
+            <h3 class="gdrcd-h3"><?= gdrcd_filter('out', $lbl_m['friend'] ?? 'Affetti e legami') ?></h3>
+        </div>
+        <div class="gdrcd-card-body gdrcd-prose">
+            <?= $render_text($personaggio['affetti']) ?>
+        </div>
+    </section>
+</div>
