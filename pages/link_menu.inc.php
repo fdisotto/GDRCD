@@ -104,7 +104,7 @@ $hovers = [];
             <a href="<?= htmlspecialchars($link_menu['url']) ?>"
                id="<?= htmlspecialchars($id_attr) ?>"
                title="<?= $title ?>"
-               class="link_menu group flex flex-col items-center gap-1 p-2 rounded-md border border-gdrcd-border bg-gdrcd-panel-alt hover:border-gdrcd-accent hover:bg-gdrcd-accent-soft transition text-center"
+               class="link_menu group flex flex-col items-center justify-center gap-1 p-2 rounded-md border border-gdrcd-border bg-gdrcd-panel-alt hover:border-gdrcd-accent hover:bg-gdrcd-accent-soft transition text-center min-h-[5rem]"
                <?= $extra_attrs ?>>
                 <?php if (!empty($link_menu['image_file']) && empty($link_menu['sprite'])): ?>
                     <img src="/themes/<?= htmlspecialchars($theme) ?>/imgs/<?= htmlspecialchars($mkey) ?>/<?= htmlspecialchars($link_menu['image_file']) ?>"
