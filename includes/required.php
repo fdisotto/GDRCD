@@ -12,6 +12,7 @@ require_once dirname(__FILE__) . '/DbMigration/DbMigration.class.php';
 
 require_once(dirname(__FILE__) . '/../vocabulary/' . $PARAMETERS['languages']['set'] . '.vocabulary.php');
 require_once(dirname(__FILE__) . '/functions.inc.php');
+require_once(dirname(__FILE__) . '/icons.inc.php');
 
 /** Gestione dei Suoni */
 require_once(dirname(__FILE__) . '/AudioController.class.php');

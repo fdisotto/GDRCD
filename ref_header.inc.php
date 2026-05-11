@@ -336,7 +336,9 @@ if((gdrcd_filter_get($_REQUEST['chat']) == 'yes') && (empty($_SESSION['login']) 
 
         if($PARAMETERS['mode']['chaticons'] == 'ON') {
             $icone_chat = explode(";", gdrcd_filter('out', $row['imgs']));
-            $add_icon = '<span class="chat_icons"> <img class="presenti_ico" src="themes/'.$PARAMETERS['themes']['current_theme'].'/imgs/races/'.$icone_chat[1].'"><img class="presenti_ico" src="imgs/icons/testamini'.$icone_chat[0].'.png"> </span>';
+            $race_icon  = gdrcd_icon_race($icone_chat[1] ?? '', $PARAMETERS['themes']['current_theme'], '', 'themes');
+            $gender_svg = gdrcd_icon_gender($icone_chat[0] ?? '', '');
+            $add_icon = '<span class="chat_icons inline-flex items-center gap-1 align-middle">' . $race_icon . $gender_svg . '</span>';
         }
         /**    * Fix problema visualizzazione spazi vuoti con i sussurri
          * @author eLDiabolo
@@ -444,9 +446,9 @@ if((gdrcd_filter_get($_REQUEST['chat']) == 'yes') && (empty($_SESSION['login']) 
     <!--meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1"-->
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta http-equiv="refresh" content="<?php echo $i_ref_time; ?>">
-    <link rel="stylesheet" href="../themes/<?php echo $PARAMETERS['themes']['current_theme']; ?>/presenti.css" TYPE="text/css">
-    <link rel="stylesheet" href="../themes/<?php echo $PARAMETERS['themes']['current_theme']; ?>/main.css" TYPE="text/css">
-    <link rel="stylesheet" href="../themes/<?php echo $PARAMETERS['themes']['current_theme']; ?>/chat.css" TYPE="text/css">
+    <link rel="stylesheet" href="../themes/<?php echo $PARAMETERS['themes']['current_theme']; ?>/main.css" type="text/css">
+    <link rel="stylesheet" href="../themes/<?php echo $PARAMETERS['themes']['current_theme']; ?>/chat.css" type="text/css">
+    <link rel="stylesheet" href="../themes/tailwind/output.css" type="text/css">
     <title>Chat</title>
 </head>
 <body class="transparent_body" <?php if(gdrcd_filter('get', $_REQUEST['chat']) == 'yes') {
