@@ -6,10 +6,7 @@
 
 /* ---------- Permessi ---------- */
 if (($_SESSION['permessi'] < MODERATOR) || ($PARAMETERS['mode']['spymessages'] !== 'ON')) {
-    echo '<div class="gdrcd-alert-error">'
-       . '<svg class="w-5 h-5 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4c-.77-1.33-2.69-1.33-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3z"/></svg>'
-       . '<div>' . gdrcd_filter('out', $MESSAGE['error']['not_allowed']) . '</div>'
-       . '</div>';
+    echo gdrcd_alert_error(gdrcd_filter('out', $MESSAGE['error']['not_allowed']), ['raw' => true]);
     return;
 }
 
@@ -221,15 +218,12 @@ $render_table = function ($rows_iter, callable $sender_for_row) use ($page_label
                 <?= $render_table($result, fn($row) => $row['nome']) ?>
                 <?= $render_pager($totaleresults, $offset, ['page' => 'log_chat', 'op' => 'view_user', 'pg' => $pg]) ?>
             <?php else: ?>
-                <div class="gdrcd-alert-info">
-                    <svg class="w-5 h-5 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                    <div>Nessun risultato per questo personaggio.</div>
-                </div>
+                <?= gdrcd_alert_info('Nessun risultato per questo personaggio.') ?>
             <?php endif; ?>
 
             <div>
                 <a href="main.php?page=log_chat" class="gdrcd-btn-ghost">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                    <?= gdrcd_icon('arrow-left', 'w-4 h-4') ?>
                     <?= gdrcd_filter('out', $MESSAGE['interface']['administration']['log']['messages']['link']['back']) ?>
                 </a>
             </div>
@@ -273,15 +267,12 @@ $render_table = function ($rows_iter, callable $sender_for_row) use ($page_label
                         'luogo' => $luogo, 'data_a' => $data_a, 'data_b' => $data_b,
                     ]) ?>
             <?php else: ?>
-                <div class="gdrcd-alert-info">
-                    <svg class="w-5 h-5 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                    <div>Nessun messaggio nella stanza in questo intervallo.</div>
-                </div>
+                <?= gdrcd_alert_info('Nessun messaggio nella stanza in questo intervallo.') ?>
             <?php endif; ?>
 
             <div>
                 <a href="main.php?page=log_chat" class="gdrcd-btn-ghost">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                    <?= gdrcd_icon('arrow-left', 'w-4 h-4') ?>
                     <?= gdrcd_filter('out', $MESSAGE['interface']['administration']['log']['messages']['link']['back']) ?>
                 </a>
             </div>
@@ -296,10 +287,7 @@ $render_table = function ($rows_iter, callable $sender_for_row) use ($page_label
 
         // Validazione min 3 chars (FULLTEXT richiede >= ft_min_word_len).
         if (mb_strlen($q) < 3) {
-            echo '<div class="gdrcd-alert-warning">'
-               . '<svg class="w-5 h-5 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4c-.77-1.33-2.69-1.33-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3z"/></svg>'
-               . '<div>Inserisci almeno 3 caratteri.</div>'
-               . '</div>';
+            echo gdrcd_alert_warning('Inserisci almeno 3 caratteri.');
         } else {
             // Composizione WHERE con prepared params.
             $where  = ["MATCH(chat.testo) AGAINST (? IN NATURAL LANGUAGE MODE)"];
@@ -410,17 +398,14 @@ $render_table = function ($rows_iter, callable $sender_for_row) use ($page_label
                             'data_b'   => $data_b_q,
                         ]) ?>
                 <?php else: ?>
-                    <div class="gdrcd-alert-info">
-                        <svg class="w-5 h-5 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                        <div>Nessun risultato.</div>
-                    </div>
+                    <?= gdrcd_alert_info('Nessun risultato.') ?>
                 <?php endif; ?>
             </section>
         <?php } ?>
 
         <div>
             <a href="main.php?page=log_chat" class="gdrcd-btn-ghost">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                <?= gdrcd_icon('arrow-left', 'w-4 h-4') ?>
                 <?= gdrcd_filter('out', $MESSAGE['interface']['administration']['log']['messages']['link']['back']) ?>
             </a>
         </div>

@@ -24,7 +24,7 @@ if (!isset($_REQUEST['pg']) || $_REQUEST['pg'] === '') {
     if (!empty($_SESSION['login'])) {
         $_REQUEST['pg'] = $_SESSION['login'];
     } else {
-        echo '<div class="gdrcd-alert-error">PG non specificato.</div>';
+        echo gdrcd_alert_error('PG non specificato.');
         return;
     }
 }
@@ -45,7 +45,7 @@ $personaggio = Db::preparedFetch(
 );
 
 if (empty($personaggio)) {
-    echo '<div class="gdrcd-alert-error">Personaggio non trovato.</div>';
+    echo gdrcd_alert_error('Personaggio non trovato.');
     return;
 }
 
@@ -134,9 +134,7 @@ $render_text = function (?string $txt): string {
     <div class="no-print flex justify-end gap-2 mb-4">
         <button type="button" class="gdrcd-btn-primary"
                 onclick="window.print();">
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4H7v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
-            </svg>
+            <?= gdrcd_icon('printer', 'w-4 h-4') ?>
             Stampa / Salva PDF
         </button>
         <a class="gdrcd-btn-ghost"
