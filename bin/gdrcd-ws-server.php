@@ -58,13 +58,14 @@ $loop    = \React\EventLoop\Factory::create();
 $handler = new \GDRCD\WebSocket\ChatHandler($loop, $tick);
 
 $wsServer = new \Ratchet\WebSocket\WsServer($handler);
-// Disabilita controllo origin: la pagina lato gioco serve da qualsiasi host
-// (sviluppo via browsersync, prod su dominio diverso). Per ambienti pubblici
-// si raccomanda di restringere via reverse proxy.
-$wsServer->disableVersion(0);
+
+// Wrapper HTTP che bypassa il controllo origin (in dev BrowserSync usa
+// :3000 mentre l'app sta su :8080; in prod si raccomanda di restringere
+// via reverse proxy / proxy_set_header Origin).
+$httpServer = new \Ratchet\Http\HttpServer($wsServer);
 
 $server = \Ratchet\Server\IoServer::factory(
-    new \Ratchet\Http\HttpServer($wsServer),
+    $httpServer,
     $port,
     $host
 );
