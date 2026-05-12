@@ -54,21 +54,17 @@ if ($tick < 0.2) {
     $tick = 0.2;
 }
 
+// Loop condiviso: il timer di poll del ChatHandler DEVE girare sullo stesso
+// loop dell'IoServer altrimenti non scatta mai (IoServer::factory crea un
+// loop interno isolato).
 $loop    = \React\EventLoop\Factory::create();
 $handler = new \GDRCD\WebSocket\ChatHandler($loop, $tick);
 
-$wsServer = new \Ratchet\WebSocket\WsServer($handler);
-
-// Wrapper HTTP che bypassa il controllo origin (in dev BrowserSync usa
-// :3000 mentre l'app sta su :8080; in prod si raccomanda di restringere
-// via reverse proxy / proxy_set_header Origin).
+$wsServer   = new \Ratchet\WebSocket\WsServer($handler);
 $httpServer = new \Ratchet\Http\HttpServer($wsServer);
 
-$server = \Ratchet\Server\IoServer::factory(
-    $httpServer,
-    $port,
-    $host
-);
+$socket = new \React\Socket\Server($host . ':' . $port, $loop);
+$server = new \Ratchet\Server\IoServer($httpServer, $socket, $loop);
 
 fwrite(STDOUT, sprintf(
     "[gdrcd-ws] in ascolto su ws://%s:%d (tick=%.2fs)\n",
