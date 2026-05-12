@@ -26,6 +26,8 @@
         lastPm: 'gdrcd_notif_last_pm',
         lastSeg: 'gdrcd_notif_last_segnalazioni',
         lastPmId: 'gdrcd_notif_last_pm_id',
+        lastQuestId: 'gdrcd_notif_last_quest_id',
+        lastQuestStatus: 'gdrcd_notif_last_quest_status',
         enabled: 'gdrcd_notifications_enabled',
         promptDismissed: 'gdrcd_notif_prompt_dismissed'
     };
@@ -280,22 +282,23 @@
     }
 
     // --- Fire a desktop notification -----------------------------------
-    function fireNotification(title, body) {
+    function fireNotification(title, body, opts) {
         if (!isEnabled()) return;
         if (Notification.permission !== 'granted') return;
         // Tab gia' a fuoco: aggiorna il badge ma niente popup invadente.
         if (document.hasFocus()) return;
 
+        opts = opts || {};
         try {
             var n = new Notification(title, {
                 body: body || '',
                 icon: ICON_URL,
-                tag: 'gdrcd-pm'
+                tag:  opts.tag || 'gdrcd-pm'
             });
             n.onclick = function () {
                 try { window.focus(); } catch (e) { /* no-op */ }
                 try { n.close(); } catch (e) { /* no-op */ }
-                window.location.href = TARGET_URL;
+                window.location.href = opts.href || TARGET_URL;
             };
         } catch (e) {
             // Qualche browser tira eccezioni in contesti non sicuri (http).
@@ -336,6 +339,39 @@
             );
         }
         lsSet(LS_KEYS.lastSeg, unreadSeg);
+
+        // Quest: nuova assegnazione o cambio di stato.
+        var quest = (data && data.latest_quest) || null;
+        if (quest && quest.id) {
+            var prevQId = parseInt(lsGet(LS_KEYS.lastQuestId, '0'), 10) || 0;
+            var prevQSt = lsGet(LS_KEYS.lastQuestStatus, '') || '';
+            var qId     = parseInt(quest.id, 10) || 0;
+            var qStatus = (quest.status || '').toString();
+            var qTitolo = (quest.titolo || 'Quest').toString();
+
+            if (qId !== prevQId) {
+                // Nuova assegnazione.
+                fireNotification('Nuova quest assegnata', qTitolo, {
+                    tag:  'gdrcd-quest-' + qId,
+                    href: '/main.php?page=scheda_quest&pg=' + encodeURIComponent(
+                        document.body.getAttribute('data-login') || ''
+                    )
+                });
+            } else if (qStatus !== prevQSt && prevQSt !== '') {
+                // Stessa assegnazione, stato cambiato.
+                var label = qStatus === 'completata' ? 'completata'
+                          : qStatus === 'fallita'    ? 'fallita'
+                          : 'riaperta';
+                fireNotification('Quest ' + label, qTitolo, {
+                    tag:  'gdrcd-quest-' + qId,
+                    href: '/main.php?page=scheda_quest&pg=' + encodeURIComponent(
+                        document.body.getAttribute('data-login') || ''
+                    )
+                });
+            }
+            lsSet(LS_KEYS.lastQuestId, qId);
+            lsSet(LS_KEYS.lastQuestStatus, qStatus);
+        }
     }
 
     // --- WS state ------------------------------------------------------

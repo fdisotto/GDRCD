@@ -104,7 +104,8 @@ if(($PARAMETERS['mode']['user_bbcode'] == 'ON' && $PARAMETERS['settings']['user_
     <?php endif; ?>
     <title><?= htmlspecialchars($PARAMETERS['info']['site_name']) ?></title>
 </head>
-<body class="bg-gdrcd-bg text-gdrcd-text font-sans min-h-screen flex flex-col dark:bg-gdrcd-dark-bg dark:text-gdrcd-dark-text">
+<body class="bg-gdrcd-bg text-gdrcd-text font-sans min-h-screen flex flex-col dark:bg-gdrcd-dark-bg dark:text-gdrcd-dark-text"
+      data-login="<?= htmlspecialchars($_SESSION['login'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
 <?php
 /** * CONTROLLO PER AGGIORNAMENTO DB
  * Il controllo viene lanciato solo in index e nelle pagine di installer/upgrade.

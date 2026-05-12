@@ -59,8 +59,8 @@ final class ChatHandler implements MessageComponentInterface
 
     /**
      * Ultimo payload notifiche inviato per login (per diff).
-     * `login => ['pm' => int, 'seg' => int, 'pm_id' => int]`.
-     * @var array<string, array{pm:int,seg:int,pm_id:int}>
+     * `login => ['pm' => int, 'seg' => int, 'pm_id' => int, 'quest_id' => int, 'quest_status' => string]`.
+     * @var array<string, array{pm:int,seg:int,pm_id:int,quest_id:int,quest_status:string}>
      */
     private array $notifLast = [];
 
@@ -425,12 +425,15 @@ final class ChatHandler implements MessageComponentInterface
             'unread_pm'           => $payload['pm'],
             'unread_segnalazioni' => $payload['seg'],
             'latest_pm'           => $payload['latest_pm'],
+            'latest_quest'        => $payload['latest_quest'],
         ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
 
         $this->notifLast[$login] = [
-            'pm'    => $payload['pm'],
-            'seg'   => $payload['seg'],
-            'pm_id' => $payload['latest_pm']['id'] ?? 0,
+            'pm'           => $payload['pm'],
+            'seg'          => $payload['seg'],
+            'pm_id'        => $payload['latest_pm']['id'] ?? 0,
+            'quest_id'     => $payload['latest_quest']['id'] ?? 0,
+            'quest_status' => $payload['latest_quest']['status'] ?? '',
         ];
     }
 
@@ -462,20 +465,28 @@ final class ChatHandler implements MessageComponentInterface
             if ($sample === null) continue;
 
             $data = $this->computeNotifications($sample);
-            $last = $this->notifLast[$login] ?? ['pm' => -1, 'seg' => -1, 'pm_id' => -1];
+            $last = $this->notifLast[$login] ?? [
+                'pm' => -1, 'seg' => -1, 'pm_id' => -1, 'quest_id' => -1, 'quest_status' => '',
+            ];
 
-            $latestId = $data['latest_pm']['id'] ?? 0;
+            $latestId       = $data['latest_pm']['id']    ?? 0;
+            $latestQuestId  = $data['latest_quest']['id'] ?? 0;
+            $latestQuestSt  = $data['latest_quest']['status'] ?? '';
             $changed = (
-                $data['pm']  !== $last['pm']  ||
-                $data['seg'] !== $last['seg'] ||
-                $latestId    !== $last['pm_id']
+                $data['pm']    !== $last['pm']           ||
+                $data['seg']   !== $last['seg']          ||
+                $latestId      !== $last['pm_id']        ||
+                $latestQuestId !== $last['quest_id']     ||
+                $latestQuestSt !== $last['quest_status']
             );
             if (!$changed) continue;
 
             $this->notifLast[$login] = [
-                'pm'    => $data['pm'],
-                'seg'   => $data['seg'],
-                'pm_id' => $latestId,
+                'pm'           => $data['pm'],
+                'seg'          => $data['seg'],
+                'pm_id'        => $latestId,
+                'quest_id'     => $latestQuestId,
+                'quest_status' => $latestQuestSt,
             ];
 
             $payload = json_encode([
@@ -483,6 +494,7 @@ final class ChatHandler implements MessageComponentInterface
                 'unread_pm'           => $data['pm'],
                 'unread_segnalazioni' => $data['seg'],
                 'latest_pm'           => $data['latest_pm'],
+                'latest_quest'        => $data['latest_quest'],
             ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
             foreach ($conns as $conn) {
@@ -492,9 +504,16 @@ final class ChatHandler implements MessageComponentInterface
     }
 
     /**
-     * Replica logica di api/notifications.inc.php per il login della conn.
+     * Replica logica di api/notifications.inc.php per il login della conn,
+     * piu' ultimo evento quest (assegnazione o cambio stato) per la corsia
+     * "notifiche in-app delle quest".
      *
-     * @return array{pm:int, seg:int, latest_pm:?array{id:int,from:string,subject:string}}
+     * @return array{
+     *     pm:int,
+     *     seg:int,
+     *     latest_pm:?array{id:int,from:string,subject:string},
+     *     latest_quest:?array{id:int,id_quest:int,titolo:string,status:string,assegnata_il:string,conclusa_il:?string}
+     * }
      */
     private function computeNotifications(ConnectionInterface $conn): array
     {
@@ -567,7 +586,36 @@ final class ChatHandler implements MessageComponentInterface
             $seg = (int)($r['c'] ?? 0);
         }
 
-        return ['pm' => $pm, 'seg' => $seg, 'latest_pm' => $latestPm];
+        // --- Ultima quest del PG (assegnazione o cambio stato) -----------
+        $latestQuest = null;
+        $qrow = Db::preparedFetch(
+            "SELECT cqp.id, cqp.id_quest, cqp.status, cqp.assegnata_il, cqp.conclusa_il, q.titolo
+             FROM clgquestpg cqp
+             INNER JOIN quest q ON q.id_quest = cqp.id_quest
+             WHERE cqp.personaggio = ?
+             ORDER BY GREATEST(cqp.assegnata_il, IFNULL(cqp.conclusa_il, cqp.assegnata_il)) DESC,
+                      cqp.id DESC
+             LIMIT 1",
+            's',
+            [$login]
+        );
+        if (!empty($qrow)) {
+            $latestQuest = [
+                'id'           => (int)$qrow['id'],
+                'id_quest'     => (int)$qrow['id_quest'],
+                'titolo'       => (string)$qrow['titolo'],
+                'status'       => (string)$qrow['status'],
+                'assegnata_il' => (string)$qrow['assegnata_il'],
+                'conclusa_il'  => isset($qrow['conclusa_il']) ? (string)$qrow['conclusa_il'] : null,
+            ];
+        }
+
+        return [
+            'pm'           => $pm,
+            'seg'          => $seg,
+            'latest_pm'    => $latestPm,
+            'latest_quest' => $latestQuest,
+        ];
     }
 
     // ------------------------------------------------------------------
