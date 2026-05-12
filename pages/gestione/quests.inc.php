@@ -229,21 +229,11 @@ $load_assignees = function (int $id_quest): array {
 
 <div class="space-y-6">
 
-    <header class="space-y-2">
-        <h2 class="gdrcd-h1 flex items-center gap-3">
-            <span class="gdrcd-icon-circle">
-                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6M7 8h10M5 4h10a2 2 0 012 2v14l-3-2-3 2-3-2-3 2V6a2 2 0 012-2z"/>
-                </svg>
-            </span>
-            Gestione quest
-        </h2>
-        <p class="gdrcd-muted">
-            Crea, modifica e assegna le quest ai personaggi.
-            Le quest disattivate restano leggibili sulle schede dei PG che le hanno gia' assegnate
-            ma non possono essere assegnate a nuovi PG.
-        </p>
-    </header>
+    <?= gdrcd_view_page_header(
+        'Gestione quest',
+        'Crea, modifica e assegna le quest ai personaggi. Le quest disattivate restano leggibili sulle schede dei PG che le hanno gia\' assegnate ma non possono essere assegnate a nuovi PG.',
+        ['icon' => 'journal']
+    ) ?>
 
     <?php if ($flash !== null): ?>
         <?= gdrcd_view_alert($flash['kind'] === 'success' ? 'success' : 'warning', $flash['message'], ['raw' => true]) ?>
