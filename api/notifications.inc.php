@@ -112,35 +112,11 @@ if (ESITI && $permessi >= ESITI_PERM) {
     $unreadSegnalazioni = (int)($res['c'] ?? 0);
 }
 
-// --- Ultima quest del PG (assegnazione o cambio stato) ---------------
-$latestQuest = null;
-$qrow = Db::preparedFetch(
-    "SELECT cqp.id, cqp.id_quest, cqp.status, cqp.assegnata_il, cqp.conclusa_il, q.titolo
-     FROM clgquestpg cqp
-     INNER JOIN quest q ON q.id_quest = cqp.id_quest
-     WHERE cqp.personaggio = ?
-     ORDER BY GREATEST(cqp.assegnata_il, IFNULL(cqp.conclusa_il, cqp.assegnata_il)) DESC,
-              cqp.id DESC
-     LIMIT 1",
-    's',
-    array($me)
-);
-if (!empty($qrow)) {
-    $latestQuest = [
-        'id'           => (int)$qrow['id'],
-        'id_quest'     => (int)$qrow['id_quest'],
-        'titolo'       => (string)$qrow['titolo'],
-        'status'       => (string)$qrow['status'],
-        'assegnata_il' => (string)$qrow['assegnata_il'],
-        'conclusa_il'  => isset($qrow['conclusa_il']) ? (string)$qrow['conclusa_il'] : null,
-    ];
-}
-
 echo json_encode([
     'unread_pm'           => $unreadPm,
     'unread_segnalazioni' => $unreadSegnalazioni,
     'latest_pm'           => $latestPm,
-    'latest_quest'        => $latestQuest,
+    'latest_quest'        => \GDRCD\Models\Quest::latestForPg($me),
 ]);
 
 if (isset($handleDBConnection)) {

@@ -23,38 +23,15 @@ if (!isset($_REQUEST['pg']) || $_REQUEST['pg'] === '') {
     return;
 }
 
-$pg_q = gdrcd_filter('in', $_REQUEST['pg']);
+use GDRCD\Models\Quest;
 
-/* ------------------------------------------------------------------
- * Quest attive del PG.
- * ------------------------------------------------------------------ */
-$rs_active = gdrcd_query(
-    "SELECT q.id_quest, q.titolo, q.descrizione, q.obiettivo, q.ricompensa, "
-    . "q.autore, cqp.assegnata_il, cqp.note "
-    . "FROM clgquestpg cqp "
-    . "INNER JOIN quest q ON q.id_quest = cqp.id_quest "
-    . "WHERE cqp.personaggio = '" . $pg_q . "' "
-    . "  AND cqp.status = 'attiva' "
-    . "ORDER BY cqp.assegnata_il DESC",
-    'result'
-);
+$pg_q = (string)$_REQUEST['pg'];
+$quests = Quest::forPg($pg_q);
+$active = $quests['active'];
+$done   = $quests['done'];
 
-/* ------------------------------------------------------------------
- * Quest concluse (completate o fallite).
- * ------------------------------------------------------------------ */
-$rs_done = gdrcd_query(
-    "SELECT q.id_quest, q.titolo, q.descrizione, q.obiettivo, q.ricompensa, "
-    . "q.autore, cqp.assegnata_il, cqp.conclusa_il, cqp.status, cqp.note "
-    . "FROM clgquestpg cqp "
-    . "INNER JOIN quest q ON q.id_quest = cqp.id_quest "
-    . "WHERE cqp.personaggio = '" . $pg_q . "' "
-    . "  AND cqp.status IN ('completata','fallita') "
-    . "ORDER BY cqp.conclusa_il DESC, cqp.assegnata_il DESC",
-    'result'
-);
-
-$active_n = gdrcd_query($rs_active, 'num_rows');
-$done_n   = gdrcd_query($rs_done, 'num_rows');
+$active_n = count($active);
+$done_n   = count($done);
 
 /**
  * Helper rendering BBCode-safe per i campi descrittivi.
@@ -101,7 +78,7 @@ $status_badge = [
             <?php if ((int)$active_n === 0): ?>
                 <p class="text-gdrcd-muted italic">Nessuna quest attiva per questo personaggio.</p>
             <?php else: ?>
-                <?php while ($q = gdrcd_query($rs_active, 'assoc')): ?>
+                <?php foreach ($active as $q): ?>
                     <article class="rounded-md border border-gdrcd-border bg-gdrcd-panel-alt/60 p-4 space-y-2">
                         <header class="flex flex-wrap items-baseline justify-between gap-2">
                             <h4 class="font-semibold text-gdrcd-text text-base">
@@ -130,7 +107,7 @@ $status_badge = [
                             </div>
                         <?php endif; ?>
                     </article>
-                <?php endwhile; gdrcd_query($rs_active, 'free'); ?>
+                <?php endforeach; ?>
             <?php endif; ?>
         </div>
     </section>
@@ -145,7 +122,7 @@ $status_badge = [
                 <?php if ((int)$done_n === 0): ?>
                     <p class="text-gdrcd-muted italic">Nessuna quest conclusa.</p>
                 <?php else: ?>
-                    <?php while ($q = gdrcd_query($rs_done, 'assoc')):
+                    <?php foreach ($done as $q):
                         $st = (string)$q['status'];
                         $badge = $status_badge[$st] ?? ['label' => $st, 'class' => 'gdrcd-badge-neutral'];
                     ?>
@@ -180,7 +157,7 @@ $status_badge = [
                                 </div>
                             <?php endif; ?>
                         </article>
-                    <?php endwhile; gdrcd_query($rs_done, 'free'); ?>
+                    <?php endforeach; ?>
                 <?php endif; ?>
             </div>
         </details>

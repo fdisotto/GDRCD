@@ -35,6 +35,8 @@ $me_login = (string)($_SESSION['login'] ?? '');
 $flash      = null;
 $open_form  = null; // 'new' | ['edit', $id] | ['assign', $id] | ['assignees', $id]
 
+use GDRCD\Models\Quest;
+
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     $op = $_POST['op'] ?? '';
 
@@ -48,11 +50,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             $flash = ['kind' => 'warning', 'message' => 'Titolo e descrizione sono obbligatori.'];
             $open_form = 'new';
         } else {
-            Db::preparedExecute(
-                "INSERT INTO quest (titolo, descrizione, obiettivo, ricompensa, autore) VALUES (?, ?, ?, ?, ?)",
-                'sssss',
-                array($titolo, $descrizione, $obiettivo, $ricompensa, $me_login)
-            );
+            Quest::create($titolo, $descrizione, $obiettivo, $ricompensa, $me_login);
             $flash = ['kind' => 'success', 'message' => 'Quest creata.'];
         }
 
@@ -69,31 +67,27 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             $flash = ['kind' => 'warning', 'message' => 'Titolo e descrizione sono obbligatori.'];
             $open_form = ['edit', $id];
         } else {
-            Db::preparedExecute(
-                "UPDATE quest SET titolo = ?, descrizione = ?, obiettivo = ?, ricompensa = ? WHERE id_quest = ?",
-                'ssssi',
-                array($titolo, $descrizione, $obiettivo, $ricompensa, $id)
-            );
+            Quest::update($id, $titolo, $descrizione, $obiettivo, $ricompensa);
             $flash = ['kind' => 'success', 'message' => 'Quest aggiornata.'];
         }
 
     } elseif ($op === 'toggle') {
         $id = (int)($_POST['id_quest'] ?? 0);
         if ($id > 0) {
-            Db::preparedExecute("UPDATE quest SET attiva = 1 - attiva WHERE id_quest = ?", 'i', array($id));
+            Quest::toggle($id);
             $flash = ['kind' => 'success', 'message' => 'Stato quest aggiornato.'];
         }
 
     } elseif ($op === 'assign') {
-        $id = (int)($_POST['id_quest'] ?? 0);
-        $pg = trim((string)($_POST['personaggio'] ?? ''));
+        $id   = (int)($_POST['id_quest'] ?? 0);
+        $pg   = trim((string)($_POST['personaggio'] ?? ''));
         $note = (string)($_POST['note'] ?? '');
 
         if ($id <= 0 || $pg === '') {
             $flash = ['kind' => 'warning', 'message' => 'Quest o personaggio non validi.'];
             if ($id > 0) { $open_form = ['assign', $id]; }
         } else {
-            // Verifica esistenza PG.
+            // Verifica esistenza PG. (TODO: estrarre in src/Models/Personaggio.)
             $pg_check = Db::preparedFetch(
                 "SELECT nome FROM personaggio WHERE nome = ? LIMIT 1",
                 's',
@@ -103,11 +97,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                 $flash = ['kind' => 'warning', 'message' => 'Personaggio "' . htmlspecialchars($pg) . '" non trovato.'];
                 $open_form = ['assign', $id];
             } else {
-                $affected = Db::preparedAffected(
-                    "INSERT IGNORE INTO clgquestpg (id_quest, personaggio, status, note) VALUES (?, ?, 'attiva', ?)",
-                    'iss',
-                    array($id, (string)$pg_check['nome'], $note)
-                );
+                $affected = Quest::assign($id, (string)$pg_check['nome'], $note);
                 if ($affected > 0) {
                     $flash = ['kind' => 'success', 'message' => 'Quest assegnata a ' . htmlspecialchars((string)$pg_check['nome']) . '.'];
                 } else {
@@ -122,18 +112,10 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         $status = (string)($_POST['status'] ?? '');
         $note   = (string)($_POST['note'] ?? '');
 
-        if ($row_id <= 0 || !in_array($status, ['completata', 'fallita', 'attiva'], true)) {
+        if ($row_id <= 0 || !in_array($status, Quest::STATUSES, true)) {
             $flash = ['kind' => 'warning', 'message' => 'Parametri non validi.'];
         } else {
-            // $status validato da whitelist sopra.
-            $set_conclusa = ($status === 'attiva')
-                ? "conclusa_il = NULL"
-                : "conclusa_il = NOW()";
-            Db::preparedExecute(
-                "UPDATE clgquestpg SET status = ?, " . $set_conclusa . ", note = ? WHERE id = ?",
-                'ssi',
-                array($status, $note, $row_id)
-            );
+            Quest::setStatus($row_id, $status, $note);
             $flash = ['kind' => 'success', 'message' => 'Stato assegnazione aggiornato.'];
             if ($id > 0) { $open_form = ['assignees', $id]; }
         }
@@ -142,7 +124,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         $row_id = (int)($_POST['row_id'] ?? 0);
         $id     = (int)($_POST['id_quest'] ?? 0);
         if ($row_id > 0) {
-            Db::preparedExecute("DELETE FROM clgquestpg WHERE id = ?", 'i', array($row_id));
+            Quest::unassign($row_id);
             $flash = ['kind' => 'success', 'message' => 'Assegnazione rimossa.'];
             if ($id > 0) { $open_form = ['assignees', $id]; }
         }
@@ -150,46 +132,15 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
 }
 
 /* ------------------------------------------------------------------
- * Tab di filtro.
+ * Tab di filtro + dati.
  * ------------------------------------------------------------------ */
 $tab = $_REQUEST['tab'] ?? 'all';
 if (!in_array($tab, ['all', 'active', 'inactive'], true)) {
     $tab = 'all';
 }
 
-$where = '';
-if ($tab === 'active')   { $where = ' WHERE q.attiva = 1'; }
-if ($tab === 'inactive') { $where = ' WHERE q.attiva = 0'; }
-
-/* ------------------------------------------------------------------
- * Conteggi tab.
- * ------------------------------------------------------------------ */
-$counts_row = gdrcd_query(
-    "SELECT "
-    . "SUM(attiva = 1) AS active_n, "
-    . "SUM(attiva = 0) AS inactive_n, "
-    . "COUNT(*)        AS all_n "
-    . "FROM quest"
-);
-$counts = [
-    'all'      => (int)($counts_row['all_n']      ?? 0),
-    'active'   => (int)($counts_row['active_n']   ?? 0),
-    'inactive' => (int)($counts_row['inactive_n'] ?? 0),
-];
-
-/* ------------------------------------------------------------------
- * Recupero lista quest + numero di assegnatari per ognuna.
- * ------------------------------------------------------------------ */
-$rs = gdrcd_query(
-    "SELECT q.id_quest, q.titolo, q.descrizione, q.obiettivo, q.ricompensa, "
-    . "q.autore, q.creata_il, q.attiva, "
-    . "(SELECT COUNT(*) FROM clgquestpg cqp WHERE cqp.id_quest = q.id_quest) AS n_assegnati, "
-    . "(SELECT COUNT(*) FROM clgquestpg cqp WHERE cqp.id_quest = q.id_quest AND cqp.status = 'attiva') AS n_attive "
-    . "FROM quest q"
-    . $where
-    . " ORDER BY q.creata_il DESC LIMIT 500",
-    'result'
-);
+$counts    = Quest::counts();
+$quest_list = Quest::listFiltered($tab);
 
 /* ------------------------------------------------------------------
  * Eventuali pannelli da pre-espandere a seguito di un POST.
@@ -211,20 +162,6 @@ $status_badge = [
     'fallita'    => ['label' => 'Fallita',    'class' => 'gdrcd-badge-neutral'],
 ];
 
-/**
- * Helper: carica gli assegnatari di una quest, ordinati per stato.
- *
- * @return array<int, array<string,mixed>>
- */
-$load_assignees = function (int $id_quest): array {
-    return Db::preparedFetchAll(
-        "SELECT id, personaggio, status, assegnata_il, conclusa_il, note "
-        . "FROM clgquestpg WHERE id_quest = ? "
-        . "ORDER BY (status = 'attiva') DESC, assegnata_il DESC",
-        'i',
-        array($id_quest)
-    );
-};
 ?>
 
 <div class="space-y-6">
@@ -316,7 +253,7 @@ $load_assignees = function (int $id_quest): array {
     <div class="space-y-4">
         <?php
         $any = false;
-        while ($q = gdrcd_query($rs, 'assoc')):
+        foreach ($quest_list as $q):
             $any = true;
             $id_quest = (int)$q['id_quest'];
         ?>
@@ -444,7 +381,7 @@ $load_assignees = function (int $id_quest): array {
                         </summary>
                         <div class="mt-3 p-4 rounded-md border border-gdrcd-border bg-gdrcd-panel-alt/30">
                             <?php
-                            $assignees = $load_assignees($id_quest);
+                            $assignees = Quest::assignees($id_quest);
                             if (empty($assignees)):
                             ?>
                                 <p class="text-xs text-gdrcd-muted italic">Nessun PG assegnato.</p>
@@ -509,7 +446,7 @@ $load_assignees = function (int $id_quest): array {
                     </details>
                 </div>
             </section>
-        <?php endwhile; gdrcd_query($rs, 'free'); ?>
+        <?php endforeach; ?>
 
         <?php if (!$any): ?>
             <div class="gdrcd-card">
