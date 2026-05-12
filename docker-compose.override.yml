@@ -15,7 +15,6 @@ services:
       context: .
       dockerfile: Dockerfile
       target: tailwind-builder
-    image: gdrcd-tailwind:latest
     container_name: gdrcd-tailwind
     working_dir: /build
     volumes:
@@ -55,7 +54,6 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile.ws
-    image: gdrcd-ws:latest
     container_name: gdrcd-ws
     working_dir: /var/www/html
     volumes:
