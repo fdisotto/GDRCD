@@ -766,15 +766,14 @@ function gdrcd_pages_format($page)
  */
 function gdrcd_pages_path($page)
 {
-    global $MESSAGE;
+    global $MESSAGE, $PARAMETERS;
 
     // Controllo che sia stato attribuito un valore a page
     if(empty($page)) {
         throw new Exception($MESSAGE['interface']['page_missing']);
     }
 
-    // Inizializzo le variabili del metodo
-    $pagesPath = dirname(__FILE__) . DIRECTORY_SEPARATOR. '..'.DIRECTORY_SEPARATOR.'pages';
+    $root = dirname(__FILE__) . DIRECTORY_SEPARATOR . '..';
     $pageFormatted = gdrcd_pages_format($page);
 
     // Imposto i possibili percorsi che posso caricare
@@ -783,30 +782,37 @@ function gdrcd_pages_path($page)
         DIRECTORY_SEPARATOR.'index.inc.php'
     ];
 
-    // Inizializzo la variabile contenitore dei moduli
-    $modules = [];
+    // Theme override: se attivo e theme override esiste, ha priorita'.
+    // Esempio: themes/<slug>/views/messages/create.inc.php sostituisce
+    // pages/messages/create.inc.php senza toccare i call site (main.php /
+    // popup.php / include diretti).
+    $theme = (string)($_SESSION['theme']
+                      ?? ($PARAMETERS['themes']['current_theme'] ?? ''));
+    $searchDirs = [];
+    if ($theme !== '') {
+        $searchDirs[] = $root . DIRECTORY_SEPARATOR . 'themes'
+                      . DIRECTORY_SEPARATOR . $theme
+                      . DIRECTORY_SEPARATOR . 'views';
+    }
+    $searchDirs[] = $root . DIRECTORY_SEPARATOR . 'pages';
 
-    // Scorro i percorsi impostati per individuare corrispondenze
-    foreach ($routes AS $route) {
-        $file = implode(DIRECTORY_SEPARATOR, [$pagesPath, $pageFormatted.$route]);
-        // Se esiste la corrispondenza, allora inserisco
-        if(file_exists($file)) {
-            $modules[] = $file;
+    foreach ($searchDirs as $dir) {
+        $modules = [];
+        foreach ($routes AS $route) {
+            $file = implode(DIRECTORY_SEPARATOR, [$dir, $pageFormatted . $route]);
+            if (file_exists($file)) {
+                $modules[] = $file;
+            }
+        }
+        if (count($modules) > 1) {
+            throw new Exception($MESSAGE['interface']['multiple_page_found']);
+        }
+        if (!empty($modules)) {
+            return $modules[0];
         }
     }
 
-    // Controllo che sia stata trovata almeno una corrispondenza
-    if(empty($modules)) {
-        throw new Exception($MESSAGE['interface']['page_not_found']);
-    }
-
-    // Se sono state trovate piu corrispondenze, blocco il caricamento
-    if(count($modules) > 1) {
-        throw new Exception($MESSAGE['interface']['multiple_page_found']);
-    }
-
-    // Ritorno il modulo
-    return $modules[0];
+    throw new Exception($MESSAGE['interface']['page_not_found']);
 }
 
 /**

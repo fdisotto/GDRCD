@@ -131,9 +131,24 @@ echo gdrcd_form_close();
 
 `gdrcd_form_open` injetta automaticamente `gdrcd_csrf_field()` su POST.
 
+## View loader + theme override
+
+```php
+// Render diretto (echo) con override theme automatico.
+gdrcd_render('messages/create.inc.php', ['prefill_dest' => $name]);
+
+// Variant che cattura output.
+$html = gdrcd_partial('partials/quest_row.inc.php', ['q' => $q]);
+```
+
+Lookup: `themes/<active>/views/<path>` → `pages/<path>` → root.
+
+Vedi `docs/templating.md` per il sistema completo + model layer.
+
 ## Roadmap successiva
 
-1. `gdrcd_render($view, $vars)` — view loader con override theme.
-2. Model layer `src/Models/<X>.php` — niente piu' SQL nelle view.
+1. Hook system stile WP (`Hooks::action`, `Hooks::filter`).
+2. Plugin manifest + loader.
+3. Theme manifest + admin UI selezione tema.
 
 Vedi brainstorm completo in conversazione del 12/05/2026.

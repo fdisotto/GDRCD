@@ -78,6 +78,63 @@ if (!function_exists('gdrcd_alert_info')) {
 }
 
 /* =====================================================================
+ * View loader.
+ *
+ * gdrcd_render(\$view, \$vars):
+ *   - cerca prima `themes/<active>/views/<view>` (override theme)
+ *   - poi `pages/<view>`
+ *   - infine `<view>` (path relativo a project root)
+ *
+ * \$vars vengono estratti nello scope locale via extract().
+ *
+ * Theme attivo: \$_SESSION['theme'] -> \$PARAMETERS['themes']['current_theme'].
+ * ===================================================================== */
+if (!function_exists('gdrcd_render')) {
+    function gdrcd_render(string $view, array $vars = []): void
+    {
+        $root  = dirname(__DIR__);
+        $theme = (string)($_SESSION['theme']
+                          ?? ($GLOBALS['PARAMETERS']['themes']['current_theme'] ?? ''));
+
+        // Normalizza: rimuovi prefisso "pages/" se presente (caller passa
+        // sia "messages/create.inc.php" che "pages/messages/create.inc.php").
+        $rel = ltrim($view, '/');
+        $rel = preg_replace('#^pages/#', '', $rel);
+
+        $candidates = [];
+        if ($theme !== '') {
+            $candidates[] = $root . '/themes/' . $theme . '/views/' . $rel;
+        }
+        $candidates[] = $root . '/pages/'  . $rel;
+        $candidates[] = $root . '/'        . $rel;
+
+        foreach ($candidates as $path) {
+            if (is_file($path)) {
+                if (!empty($vars)) extract($vars, EXTR_SKIP);
+                include $path;
+                return;
+            }
+        }
+        throw new RuntimeException('view not found: ' . $view);
+    }
+}
+
+/** Variant che ritorna stringa (cattura output). Utile dentro callable. */
+if (!function_exists('gdrcd_partial')) {
+    function gdrcd_partial(string $view, array $vars = []): string
+    {
+        ob_start();
+        try {
+            gdrcd_render($view, $vars);
+        } catch (Throwable $e) {
+            ob_end_clean();
+            throw $e;
+        }
+        return (string)ob_get_clean();
+    }
+}
+
+/* =====================================================================
  * Card / section / header helpers.
  * ===================================================================== */
 
