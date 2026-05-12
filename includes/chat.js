@@ -338,7 +338,7 @@
         }
 
         function poll() {
-            if (inFlight || paused) return;
+            if (inFlight || paused || wsActive) return;
             inFlight = true;
             var lastId = window.gdrcdChatLastId | 0;
             fetch(cfg.url + '?after=' + lastId, {
@@ -485,15 +485,15 @@
             wsActive: function () { return wsActive; }
         };
 
-        // Avvio: prima tenta WS (push), e se non disponibile fa partire
-        // direttamente il polling come fallback.
+        // Avvio: prima tenta WS (push). Se l'handshake non e' completato
+        // entro 3s, attiva polling come fallback. Se WS non disponibile
+        // del tutto (no support / no URL), avvia subito il polling.
         if (!wsConnect()) {
             start();
         } else {
-            // wsConnect ha avviato l'handshake: facciamo partire comunque il
-            // polling subito, lo fermeremo a onOpen. Cosi' se il server WS
-            // non risponde entro qualche secondo non perdiamo messaggi.
-            start();
+            window.setTimeout(function () {
+                if (!wsActive) start();
+            }, 3000);
         }
     }
 
