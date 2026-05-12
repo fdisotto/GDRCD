@@ -276,245 +276,256 @@ $load_assignees = function (int $id_quest): array {
             <?php endforeach; ?>
         </nav>
 
-        <details class="inline-block" <?= $expand_new ? 'open' : '' ?>>
-            <summary class="gdrcd-btn-primary cursor-pointer">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
-                Nuova quest
-            </summary>
-            <div class="mt-3 p-4 rounded-md border border-gdrcd-border bg-gdrcd-panel space-y-3 w-full max-w-2xl">
-                <form action="main.php?page=gestione/quests" method="post" class="space-y-3">
-                    <?= gdrcd_csrf_field() ?>
-                    <input type="hidden" name="op" value="create">
-                    <div>
-                        <label class="gdrcd-label" for="new_titolo">Titolo</label>
-                        <input class="gdrcd-input w-full" type="text" id="new_titolo" name="titolo"
-                               maxlength="255" required>
-                    </div>
-                    <div>
-                        <label class="gdrcd-label" for="new_descrizione">Descrizione</label>
-                        <textarea class="gdrcd-textarea w-full" id="new_descrizione" name="descrizione"
-                                  rows="5" required></textarea>
-                        <p class="gdrcd-help"><?= gdrcd_filter('out', $MESSAGE['interface']['help']['bbcode'] ?? 'BBCode supportato.') ?></p>
-                    </div>
-                    <div>
-                        <label class="gdrcd-label" for="new_obiettivo">Obiettivo (opzionale)</label>
-                        <textarea class="gdrcd-textarea w-full" id="new_obiettivo" name="obiettivo" rows="3"></textarea>
-                    </div>
-                    <div>
-                        <label class="gdrcd-label" for="new_ricompensa">Ricompensa (opzionale)</label>
-                        <textarea class="gdrcd-textarea w-full" id="new_ricompensa" name="ricompensa" rows="3"></textarea>
-                    </div>
-                    <div class="flex justify-end">
-                        <button type="submit" class="gdrcd-btn-primary">
-                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                            Crea quest
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </details>
+        <a href="#new-quest-form"
+           class="gdrcd-btn-primary inline-flex items-center gap-2"
+           onclick="var d=document.getElementById('new-quest-form'); if(d){d.open=true;}">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+            Nuova quest
+        </a>
     </div>
 
-    <section class="gdrcd-card">
-        <div class="gdrcd-card-body">
-            <div class="gdrcd-table-wrap">
-                <table class="gdrcd-table">
-                    <thead>
-                        <tr>
-                            <th class="w-12">ID</th>
-                            <th>Titolo</th>
-                            <th>Autore</th>
-                            <th>Creata il</th>
-                            <th>Stato</th>
-                            <th>Assegnati</th>
-                            <th class="text-right">Azioni</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php
-                        $any = false;
-                        while ($q = gdrcd_query($rs, 'assoc')):
-                            $any = true;
-                            $id_quest = (int)$q['id_quest'];
-                        ?>
-                            <tr class="align-top">
-                                <td class="tabular-nums">#<?= $id_quest ?></td>
-                                <td>
-                                    <div class="font-semibold text-gdrcd-text">
-                                        <?= gdrcd_filter('out', (string)$q['titolo']) ?>
-                                    </div>
-                                </td>
-                                <td class="text-sm"><?= gdrcd_filter('out', (string)$q['autore']) ?></td>
-                                <td class="tabular-nums text-xs text-gdrcd-muted">
-                                    <?= htmlspecialchars(date('d/m/Y H:i', strtotime((string)$q['creata_il']))) ?>
-                                </td>
-                                <td>
-                                    <?php if ((int)$q['attiva'] === 1): ?>
-                                        <span class="gdrcd-badge-success">Attiva</span>
-                                    <?php else: ?>
-                                        <span class="gdrcd-badge-neutral">Disattivata</span>
-                                    <?php endif; ?>
-                                </td>
-                                <td class="text-xs">
-                                    <span class="tabular-nums"><?= (int)$q['n_assegnati'] ?></span> PG
-                                    <?php if ((int)$q['n_attive'] > 0): ?>
-                                        <span class="text-gdrcd-muted">(<?= (int)$q['n_attive'] ?> attive)</span>
-                                    <?php endif; ?>
-                                </td>
-                                <td class="text-right">
-                                    <div class="inline-flex flex-col gap-1 items-end">
-
-                                        <details class="inline-block text-left w-full"
-                                                 <?= $expand_edit_id === $id_quest ? 'open' : '' ?>>
-                                            <summary class="gdrcd-btn-secondary cursor-pointer text-xs">Modifica</summary>
-                                            <div class="mt-2 p-3 rounded-md border border-gdrcd-border bg-gdrcd-card space-y-2 w-96">
-                                                <form action="main.php?page=gestione/quests" method="post" class="space-y-2">
-                                                    <?= gdrcd_csrf_field() ?>
-                                                    <input type="hidden" name="op" value="edit">
-                                                    <input type="hidden" name="id_quest" value="<?= $id_quest ?>">
-                                                    <label class="gdrcd-label text-xs">Titolo</label>
-                                                    <input class="gdrcd-input w-full text-sm" type="text" name="titolo"
-                                                           maxlength="255" required
-                                                           value="<?= gdrcd_filter('out', (string)$q['titolo']) ?>">
-                                                    <label class="gdrcd-label text-xs">Descrizione</label>
-                                                    <textarea class="gdrcd-textarea w-full text-sm" name="descrizione"
-                                                              rows="4" required><?= gdrcd_filter('out', (string)$q['descrizione']) ?></textarea>
-                                                    <label class="gdrcd-label text-xs">Obiettivo</label>
-                                                    <textarea class="gdrcd-textarea w-full text-sm" name="obiettivo"
-                                                              rows="2"><?= gdrcd_filter('out', (string)($q['obiettivo'] ?? '')) ?></textarea>
-                                                    <label class="gdrcd-label text-xs">Ricompensa</label>
-                                                    <textarea class="gdrcd-textarea w-full text-sm" name="ricompensa"
-                                                              rows="2"><?= gdrcd_filter('out', (string)($q['ricompensa'] ?? '')) ?></textarea>
-                                                    <button type="submit" class="gdrcd-btn-primary w-full text-xs">Salva</button>
-                                                </form>
-                                            </div>
-                                        </details>
-
-                                        <details class="inline-block text-left w-full"
-                                                 <?= $expand_assign_id === $id_quest ? 'open' : '' ?>>
-                                            <summary class="gdrcd-btn-secondary cursor-pointer text-xs">Assegna</summary>
-                                            <div class="mt-2 p-3 rounded-md border border-gdrcd-border bg-gdrcd-card space-y-2 w-80">
-                                                <form action="main.php?page=gestione/quests" method="post" class="space-y-2">
-                                                    <?= gdrcd_csrf_field() ?>
-                                                    <input type="hidden" name="op" value="assign">
-                                                    <input type="hidden" name="id_quest" value="<?= $id_quest ?>">
-                                                    <label class="gdrcd-label text-xs">Nome PG</label>
-                                                    <input class="gdrcd-input w-full text-sm" type="text"
-                                                           name="personaggio" list="quest_pg_list_<?= $id_quest ?>"
-                                                           autocomplete="off" required>
-                                                    <datalist id="quest_pg_list_<?= $id_quest ?>">
-                                                        <?php
-                                                        $pg_rs = gdrcd_query(
-                                                            "SELECT nome FROM personaggio WHERE permessi >= 0 "
-                                                            . "ORDER BY nome ASC LIMIT 1000",
-                                                            'result'
-                                                        );
-                                                        while ($p = gdrcd_query($pg_rs, 'assoc')):
-                                                        ?>
-                                                            <option value="<?= gdrcd_filter('out', (string)$p['nome']) ?>"></option>
-                                                        <?php endwhile; gdrcd_query($pg_rs, 'free'); ?>
-                                                    </datalist>
-                                                    <label class="gdrcd-label text-xs">Nota iniziale (opzionale)</label>
-                                                    <textarea class="gdrcd-textarea w-full text-sm" name="note" rows="2"></textarea>
-                                                    <button type="submit" class="gdrcd-btn-primary w-full text-xs">Assegna</button>
-                                                </form>
-                                            </div>
-                                        </details>
-
-                                        <details class="inline-block text-left w-full"
-                                                 <?= $expand_list_id === $id_quest ? 'open' : '' ?>>
-                                            <summary class="gdrcd-btn-ghost cursor-pointer text-xs">
-                                                Lista assegnatari (<?= (int)$q['n_assegnati'] ?>)
-                                            </summary>
-                                            <div class="mt-2 p-3 rounded-md border border-gdrcd-border bg-gdrcd-card space-y-3 w-[28rem]">
-                                                <?php
-                                                $assignees = $load_assignees($id_quest);
-                                                if (empty($assignees)):
-                                                ?>
-                                                    <p class="text-xs text-gdrcd-muted italic">Nessun PG assegnato.</p>
-                                                <?php else:
-                                                    foreach ($assignees as $a):
-                                                        $row_id = (int)$a['id'];
-                                                        $st     = (string)$a['status'];
-                                                        $badge  = $status_badge[$st] ?? ['label' => $st, 'class' => 'gdrcd-badge-neutral'];
-                                                ?>
-                                                    <div class="border border-gdrcd-border rounded p-2 space-y-2">
-                                                        <div class="flex items-center justify-between gap-2">
-                                                            <div class="text-sm font-semibold text-gdrcd-text">
-                                                                <?= gdrcd_filter('out', (string)$a['personaggio']) ?>
-                                                            </div>
-                                                            <span class="<?= htmlspecialchars($badge['class']) ?> text-[10px]">
-                                                                <?= htmlspecialchars($badge['label']) ?>
-                                                            </span>
-                                                        </div>
-                                                        <div class="text-[11px] text-gdrcd-muted">
-                                                            Assegnata:
-                                                            <span class="tabular-nums">
-                                                                <?= htmlspecialchars(date('d/m/Y H:i', strtotime((string)$a['assegnata_il']))) ?>
-                                                            </span>
-                                                            <?php if (!empty($a['conclusa_il'])): ?>
-                                                                &middot; Conclusa:
-                                                                <span class="tabular-nums">
-                                                                    <?= htmlspecialchars(date('d/m/Y H:i', strtotime((string)$a['conclusa_il']))) ?>
-                                                                </span>
-                                                            <?php endif; ?>
-                                                        </div>
-                                                        <form action="main.php?page=gestione/quests" method="post" class="space-y-1">
-                                                            <?= gdrcd_csrf_field() ?>
-                                                            <input type="hidden" name="op" value="conclude">
-                                                            <input type="hidden" name="row_id" value="<?= $row_id ?>">
-                                                            <input type="hidden" name="id_quest" value="<?= $id_quest ?>">
-                                                            <label class="gdrcd-label text-[11px]">Stato</label>
-                                                            <select class="gdrcd-input w-full text-xs" name="status">
-                                                                <option value="attiva"     <?= $st === 'attiva'     ? 'selected' : '' ?>>Attiva</option>
-                                                                <option value="completata" <?= $st === 'completata' ? 'selected' : '' ?>>Completata</option>
-                                                                <option value="fallita"    <?= $st === 'fallita'    ? 'selected' : '' ?>>Fallita</option>
-                                                            </select>
-                                                            <label class="gdrcd-label text-[11px]">Note</label>
-                                                            <textarea class="gdrcd-textarea w-full text-xs" name="note" rows="2"><?= gdrcd_filter('out', (string)($a['note'] ?? '')) ?></textarea>
-                                                            <div class="flex gap-2">
-                                                                <button type="submit" class="gdrcd-btn-primary flex-1 text-xs">Salva</button>
-                                                            </div>
-                                                        </form>
-                                                        <form action="main.php?page=gestione/quests" method="post"
-                                                              onsubmit="return confirm('Rimuovere l\'assegnazione a <?= htmlspecialchars((string)$a['personaggio'], ENT_QUOTES) ?>?');">
-                                                            <?= gdrcd_csrf_field() ?>
-                                                            <input type="hidden" name="op" value="unassign">
-                                                            <input type="hidden" name="row_id" value="<?= $row_id ?>">
-                                                            <input type="hidden" name="id_quest" value="<?= $id_quest ?>">
-                                                            <button type="submit" class="gdrcd-btn-ghost w-full text-[11px] text-red-600">
-                                                                Rimuovi assegnazione
-                                                            </button>
-                                                        </form>
-                                                    </div>
-                                                <?php endforeach; endif; ?>
-                                            </div>
-                                        </details>
-
-                                        <form action="main.php?page=gestione/quests" method="post"
-                                              onsubmit="return confirm('<?= (int)$q['attiva'] === 1 ? 'Disattivare' : 'Attivare' ?> la quest #<?= $id_quest ?>?');">
-                                            <?= gdrcd_csrf_field() ?>
-                                            <input type="hidden" name="op" value="toggle">
-                                            <input type="hidden" name="id_quest" value="<?= $id_quest ?>">
-                                            <button type="submit" class="gdrcd-btn-ghost text-xs w-full">
-                                                <?= (int)$q['attiva'] === 1 ? 'Disattiva' : 'Attiva' ?>
-                                            </button>
-                                        </form>
-                                    </div>
-                                </td>
-                            </tr>
-                        <?php endwhile; gdrcd_query($rs, 'free'); ?>
-
-                        <?php if (!$any): ?>
-                            <tr>
-                                <td colspan="7" class="text-center text-gdrcd-muted py-6">
-                                    Nessuna quest in questa categoria.
-                                </td>
-                            </tr>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
-            </div>
+    <details id="new-quest-form" class="gdrcd-card" <?= $expand_new ? 'open' : '' ?>>
+        <summary class="cursor-pointer px-4 py-3 font-semibold text-gdrcd-text flex items-center gap-2 border-b border-gdrcd-border bg-gdrcd-panel-alt/40">
+            <svg class="w-4 h-4 text-gdrcd-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+            Crea nuova quest
+        </summary>
+        <div class="p-4 sm:p-6">
+            <form action="main.php?page=gestione/quests" method="post" class="space-y-4 max-w-3xl">
+                <?= gdrcd_csrf_field() ?>
+                <input type="hidden" name="op" value="create">
+                <div>
+                    <label class="gdrcd-label" for="new_titolo">Titolo</label>
+                    <input class="gdrcd-input w-full" type="text" id="new_titolo" name="titolo"
+                           maxlength="255" required>
+                </div>
+                <div>
+                    <label class="gdrcd-label" for="new_descrizione">Descrizione</label>
+                    <textarea class="gdrcd-textarea w-full" id="new_descrizione" name="descrizione"
+                              rows="5" required data-bbcode></textarea>
+                    <p class="gdrcd-help"><?= gdrcd_filter('out', $MESSAGE['interface']['help']['bbcode'] ?? 'BBCode supportato.') ?></p>
+                </div>
+                <div>
+                    <label class="gdrcd-label" for="new_obiettivo">Obiettivo (opzionale)</label>
+                    <textarea class="gdrcd-textarea w-full" id="new_obiettivo" name="obiettivo" rows="3" data-bbcode></textarea>
+                </div>
+                <div>
+                    <label class="gdrcd-label" for="new_ricompensa">Ricompensa (opzionale)</label>
+                    <textarea class="gdrcd-textarea w-full" id="new_ricompensa" name="ricompensa" rows="3" data-bbcode></textarea>
+                </div>
+                <div class="flex justify-end">
+                    <button type="submit" class="gdrcd-btn-primary">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        Crea quest
+                    </button>
+                </div>
+            </form>
         </div>
-    </section>
+    </details>
+
+    <div class="space-y-4">
+        <?php
+        $any = false;
+        while ($q = gdrcd_query($rs, 'assoc')):
+            $any = true;
+            $id_quest = (int)$q['id_quest'];
+        ?>
+            <section class="gdrcd-card">
+                <header class="flex flex-wrap items-start gap-3 px-4 py-3 border-b border-gdrcd-border bg-gdrcd-panel-alt/30">
+                    <div class="flex-1 min-w-0">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span class="text-xs text-gdrcd-muted tabular-nums">#<?= $id_quest ?></span>
+                            <h3 class="text-base font-semibold text-gdrcd-text truncate">
+                                <?= gdrcd_filter('out', (string)$q['titolo']) ?>
+                            </h3>
+                            <?php if ((int)$q['attiva'] === 1): ?>
+                                <span class="gdrcd-badge-success text-[10px]">Attiva</span>
+                            <?php else: ?>
+                                <span class="gdrcd-badge-neutral text-[10px]">Disattivata</span>
+                            <?php endif; ?>
+                        </div>
+                        <div class="mt-1 text-xs text-gdrcd-muted flex flex-wrap items-center gap-x-3 gap-y-1">
+                            <span>Autore: <span class="text-gdrcd-text"><?= gdrcd_filter('out', (string)$q['autore']) ?></span></span>
+                            <span class="tabular-nums">
+                                <?= htmlspecialchars(date('d/m/Y H:i', strtotime((string)$q['creata_il']))) ?>
+                            </span>
+                            <span>
+                                <span class="tabular-nums text-gdrcd-text"><?= (int)$q['n_assegnati'] ?></span> PG assegnati
+                                <?php if ((int)$q['n_attive'] > 0): ?>
+                                    (<span class="tabular-nums"><?= (int)$q['n_attive'] ?></span> attive)
+                                <?php endif; ?>
+                            </span>
+                        </div>
+                    </div>
+                    <form action="main.php?page=gestione/quests" method="post" class="shrink-0"
+                          onsubmit="return confirm('<?= (int)$q['attiva'] === 1 ? 'Disattivare' : 'Attivare' ?> la quest #<?= $id_quest ?>?');">
+                        <?= gdrcd_csrf_field() ?>
+                        <input type="hidden" name="op" value="toggle">
+                        <input type="hidden" name="id_quest" value="<?= $id_quest ?>">
+                        <button type="submit" class="gdrcd-btn-ghost text-xs">
+                            <?= (int)$q['attiva'] === 1 ? 'Disattiva' : 'Attiva' ?>
+                        </button>
+                    </form>
+                </header>
+
+                <div class="p-4 space-y-3">
+                    <details <?= $expand_edit_id === $id_quest ? 'open' : '' ?>>
+                        <summary class="cursor-pointer text-sm font-semibold text-gdrcd-text flex items-center gap-2 select-none">
+                            <svg class="w-4 h-4 text-gdrcd-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                            Modifica quest
+                        </summary>
+                        <div class="mt-3 p-4 rounded-md border border-gdrcd-border bg-gdrcd-panel-alt/30">
+                            <form action="main.php?page=gestione/quests" method="post" class="space-y-3 max-w-3xl">
+                                <?= gdrcd_csrf_field() ?>
+                                <input type="hidden" name="op" value="edit">
+                                <input type="hidden" name="id_quest" value="<?= $id_quest ?>">
+                                <div>
+                                    <label class="gdrcd-label" for="ed_titolo_<?= $id_quest ?>">Titolo</label>
+                                    <input class="gdrcd-input w-full" type="text" id="ed_titolo_<?= $id_quest ?>"
+                                           name="titolo" maxlength="255" required
+                                           value="<?= gdrcd_filter('out', (string)$q['titolo']) ?>">
+                                </div>
+                                <div>
+                                    <label class="gdrcd-label" for="ed_descr_<?= $id_quest ?>">Descrizione</label>
+                                    <textarea class="gdrcd-textarea w-full" id="ed_descr_<?= $id_quest ?>"
+                                              name="descrizione" rows="5" required data-bbcode><?= gdrcd_filter('out', (string)$q['descrizione']) ?></textarea>
+                                </div>
+                                <div>
+                                    <label class="gdrcd-label" for="ed_obiet_<?= $id_quest ?>">Obiettivo</label>
+                                    <textarea class="gdrcd-textarea w-full" id="ed_obiet_<?= $id_quest ?>"
+                                              name="obiettivo" rows="3" data-bbcode><?= gdrcd_filter('out', (string)($q['obiettivo'] ?? '')) ?></textarea>
+                                </div>
+                                <div>
+                                    <label class="gdrcd-label" for="ed_ric_<?= $id_quest ?>">Ricompensa</label>
+                                    <textarea class="gdrcd-textarea w-full" id="ed_ric_<?= $id_quest ?>"
+                                              name="ricompensa" rows="3" data-bbcode><?= gdrcd_filter('out', (string)($q['ricompensa'] ?? '')) ?></textarea>
+                                </div>
+                                <div class="flex justify-end">
+                                    <button type="submit" class="gdrcd-btn-primary">Salva modifiche</button>
+                                </div>
+                            </form>
+                        </div>
+                    </details>
+
+                    <details <?= $expand_assign_id === $id_quest ? 'open' : '' ?>>
+                        <summary class="cursor-pointer text-sm font-semibold text-gdrcd-text flex items-center gap-2 select-none">
+                            <svg class="w-4 h-4 text-gdrcd-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                            Assegna a un PG
+                        </summary>
+                        <div class="mt-3 p-4 rounded-md border border-gdrcd-border bg-gdrcd-panel-alt/30">
+                            <form action="main.php?page=gestione/quests" method="post" class="space-y-3 max-w-xl">
+                                <?= gdrcd_csrf_field() ?>
+                                <input type="hidden" name="op" value="assign">
+                                <input type="hidden" name="id_quest" value="<?= $id_quest ?>">
+                                <div>
+                                    <label class="gdrcd-label" for="as_pg_<?= $id_quest ?>">Nome PG</label>
+                                    <input class="gdrcd-input w-full" type="text" id="as_pg_<?= $id_quest ?>"
+                                           name="personaggio" list="quest_pg_list_<?= $id_quest ?>"
+                                           autocomplete="off" required>
+                                    <datalist id="quest_pg_list_<?= $id_quest ?>">
+                                        <?php
+                                        $pg_rs = gdrcd_query(
+                                            "SELECT nome FROM personaggio WHERE permessi >= 0 "
+                                            . "ORDER BY nome ASC LIMIT 1000",
+                                            'result'
+                                        );
+                                        while ($p = gdrcd_query($pg_rs, 'assoc')):
+                                        ?>
+                                            <option value="<?= gdrcd_filter('out', (string)$p['nome']) ?>"></option>
+                                        <?php endwhile; gdrcd_query($pg_rs, 'free'); ?>
+                                    </datalist>
+                                </div>
+                                <div>
+                                    <label class="gdrcd-label" for="as_note_<?= $id_quest ?>">Nota iniziale (opzionale)</label>
+                                    <textarea class="gdrcd-textarea w-full" id="as_note_<?= $id_quest ?>"
+                                              name="note" rows="2"></textarea>
+                                </div>
+                                <div class="flex justify-end">
+                                    <button type="submit" class="gdrcd-btn-primary">Assegna</button>
+                                </div>
+                            </form>
+                        </div>
+                    </details>
+
+                    <details <?= $expand_list_id === $id_quest ? 'open' : '' ?>>
+                        <summary class="cursor-pointer text-sm font-semibold text-gdrcd-text flex items-center gap-2 select-none">
+                            <svg class="w-4 h-4 text-gdrcd-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                            Lista assegnatari (<?= (int)$q['n_assegnati'] ?>)
+                        </summary>
+                        <div class="mt-3 p-4 rounded-md border border-gdrcd-border bg-gdrcd-panel-alt/30">
+                            <?php
+                            $assignees = $load_assignees($id_quest);
+                            if (empty($assignees)):
+                            ?>
+                                <p class="text-xs text-gdrcd-muted italic">Nessun PG assegnato.</p>
+                            <?php else: ?>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    <?php foreach ($assignees as $a):
+                                        $row_id = (int)$a['id'];
+                                        $st     = (string)$a['status'];
+                                        $badge  = $status_badge[$st] ?? ['label' => $st, 'class' => 'gdrcd-badge-neutral'];
+                                    ?>
+                                        <div class="border border-gdrcd-border rounded p-3 space-y-2 bg-gdrcd-panel">
+                                            <div class="flex items-center justify-between gap-2">
+                                                <div class="text-sm font-semibold text-gdrcd-text truncate">
+                                                    <?= gdrcd_filter('out', (string)$a['personaggio']) ?>
+                                                </div>
+                                                <span class="<?= htmlspecialchars($badge['class']) ?> text-[10px] shrink-0">
+                                                    <?= htmlspecialchars($badge['label']) ?>
+                                                </span>
+                                            </div>
+                                            <div class="text-[11px] text-gdrcd-muted">
+                                                Assegnata
+                                                <span class="tabular-nums">
+                                                    <?= htmlspecialchars(date('d/m/Y H:i', strtotime((string)$a['assegnata_il']))) ?>
+                                                </span>
+                                                <?php if (!empty($a['conclusa_il'])): ?>
+                                                    &middot; Conclusa
+                                                    <span class="tabular-nums">
+                                                        <?= htmlspecialchars(date('d/m/Y H:i', strtotime((string)$a['conclusa_il']))) ?>
+                                                    </span>
+                                                <?php endif; ?>
+                                            </div>
+                                            <form action="main.php?page=gestione/quests" method="post" class="space-y-2">
+                                                <?= gdrcd_csrf_field() ?>
+                                                <input type="hidden" name="op" value="conclude">
+                                                <input type="hidden" name="row_id" value="<?= $row_id ?>">
+                                                <input type="hidden" name="id_quest" value="<?= $id_quest ?>">
+                                                <label class="gdrcd-label text-[11px]">Stato</label>
+                                                <select class="gdrcd-select w-full text-xs" name="status">
+                                                    <option value="attiva"     <?= $st === 'attiva'     ? 'selected' : '' ?>>Attiva</option>
+                                                    <option value="completata" <?= $st === 'completata' ? 'selected' : '' ?>>Completata</option>
+                                                    <option value="fallita"    <?= $st === 'fallita'    ? 'selected' : '' ?>>Fallita</option>
+                                                </select>
+                                                <label class="gdrcd-label text-[11px]">Note</label>
+                                                <textarea class="gdrcd-textarea w-full text-xs" name="note" rows="2"><?= gdrcd_filter('out', (string)($a['note'] ?? '')) ?></textarea>
+                                                <button type="submit" class="gdrcd-btn-primary w-full text-xs">Salva</button>
+                                            </form>
+                                            <form action="main.php?page=gestione/quests" method="post"
+                                                  onsubmit="return confirm('Rimuovere l\'assegnazione a <?= htmlspecialchars((string)$a['personaggio'], ENT_QUOTES) ?>?');">
+                                                <?= gdrcd_csrf_field() ?>
+                                                <input type="hidden" name="op" value="unassign">
+                                                <input type="hidden" name="row_id" value="<?= $row_id ?>">
+                                                <input type="hidden" name="id_quest" value="<?= $id_quest ?>">
+                                                <button type="submit" class="gdrcd-btn-ghost w-full text-[11px] text-red-600">
+                                                    Rimuovi assegnazione
+                                                </button>
+                                            </form>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                    </details>
+                </div>
+            </section>
+        <?php endwhile; gdrcd_query($rs, 'free'); ?>
+
+        <?php if (!$any): ?>
+            <div class="gdrcd-card">
+                <div class="p-6 text-center text-gdrcd-muted text-sm">
+                    Nessuna quest in questa categoria.
+                </div>
+            </div>
+        <?php endif; ?>
+    </div>
 </div>
