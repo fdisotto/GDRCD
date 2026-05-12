@@ -88,7 +88,7 @@ $render_table = function ($rows_iter, callable $sender_for_row) use ($page_label
 
     <?php if ($op === null): ?>
         <section class="gdrcd-card">
-            <div class="gdrcd-card-body grid grid-cols-1 lg:grid-cols-2 gap-6 lg:divide-x lg:divide-gdrcd-border">
+            <div class="gdrcd-card-body grid grid-cols-1 lg:grid-cols-3 gap-6 lg:divide-x lg:divide-gdrcd-border">
 
                 <form action="main.php?page=log_chat" method="post" class="space-y-3 lg:pr-6">
                     <?= gdrcd_csrf_field() ?>
@@ -113,7 +113,7 @@ $render_table = function ($rows_iter, callable $sender_for_row) use ($page_label
                     </button>
                 </form>
 
-                <form action="main.php?page=log_chat" method="post" class="space-y-3 lg:pl-6">
+                <form action="main.php?page=log_chat" method="post" class="space-y-3 lg:px-6">
                     <?= gdrcd_csrf_field() ?>
                     <h3 class="gdrcd-h3"><?= gdrcd_filter('out', $page_label_msg['log_by_room']) ?></h3>
                     <div>
@@ -145,6 +145,51 @@ $render_table = function ($rows_iter, callable $sender_for_row) use ($page_label
                     <button type="submit" class="gdrcd-btn-primary w-full sm:w-auto">
                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                         <?= gdrcd_filter('out', $MESSAGE['interface']['forms']['submit']) ?>
+                    </button>
+                </form>
+
+                <form action="main.php?page=log_chat" method="get" class="space-y-3 lg:pl-6">
+                    <input type="hidden" name="page" value="log_chat"/>
+                    <input type="hidden" name="op"   value="search"/>
+                    <h3 class="gdrcd-h3">Ricerca testuale</h3>
+                    <div>
+                        <label class="gdrcd-label" for="lc_q">Parole chiave</label>
+                        <input class="gdrcd-input" type="text" id="lc_q" name="q"
+                               placeholder="es. taverna pioggia" minlength="3" required/>
+                        <p class="gdrcd-help">Match FULLTEXT su <code>chat.testo</code>. Min 3-4 caratteri per token.</p>
+                    </div>
+                    <div>
+                        <label class="gdrcd-label" for="lc_q_luogo">Stanza (opzionale)</label>
+                        <select class="gdrcd-select" id="lc_q_luogo" name="luogo">
+                            <option value="">— Tutte —</option>
+                            <?php
+                            $result = gdrcd_query("SELECT nome, id FROM mappa WHERE chat=1 ORDER BY nome", 'result');
+                            while ($row = gdrcd_query($result, 'fetch')):
+                                ?>
+                                <option value="<?= (int)$row['id'] ?>"><?= gdrcd_filter('out', $row['nome']) ?></option>
+                            <?php endwhile;
+                            gdrcd_query($result, 'free');
+                            ?>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="gdrcd-label" for="lc_q_pg">Mittente (opzionale)</label>
+                        <input class="gdrcd-input" type="text" id="lc_q_pg" name="mittente"
+                               placeholder="Nome PG" maxlength="50"/>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="gdrcd-label" for="lc_q_data_a">Da</label>
+                            <input class="gdrcd-input" type="date" id="lc_q_data_a" name="data_a"/>
+                        </div>
+                        <div>
+                            <label class="gdrcd-label" for="lc_q_data_b">A</label>
+                            <input class="gdrcd-input" type="date" id="lc_q_data_b" name="data_b"/>
+                        </div>
+                    </div>
+                    <button type="submit" class="gdrcd-btn-primary w-full sm:w-auto">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                        Cerca
                     </button>
                 </form>
             </div>
@@ -241,6 +286,144 @@ $render_table = function ($rows_iter, callable $sender_for_row) use ($page_label
                 </a>
             </div>
         </section>
+
+    <?php elseif ($op === 'search'):
+        $q          = trim((string)($_REQUEST['q'] ?? ''));
+        $luogo_q    = isset($_REQUEST['luogo']) && $_REQUEST['luogo'] !== '' ? (int)$_REQUEST['luogo'] : 0;
+        $mittente_q = trim((string)($_REQUEST['mittente'] ?? ''));
+        $data_a_q   = trim((string)($_REQUEST['data_a'] ?? ''));
+        $data_b_q   = trim((string)($_REQUEST['data_b'] ?? ''));
+
+        // Validazione min 3 chars (FULLTEXT richiede >= ft_min_word_len).
+        if (mb_strlen($q) < 3) {
+            echo '<div class="gdrcd-alert-warning">'
+               . '<svg class="w-5 h-5 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4c-.77-1.33-2.69-1.33-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3z"/></svg>'
+               . '<div>Inserisci almeno 3 caratteri.</div>'
+               . '</div>';
+        } else {
+            // Composizione WHERE con prepared params.
+            $where  = ["MATCH(chat.testo) AGAINST (? IN NATURAL LANGUAGE MODE)"];
+            $types  = 's';
+            $params = [$q];
+
+            if ($luogo_q > 0) {
+                $where[] = 'chat.stanza = ?';
+                $types  .= 'i';
+                $params[] = $luogo_q;
+            }
+            if ($mittente_q !== '') {
+                $where[] = 'chat.mittente = ?';
+                $types  .= 's';
+                $params[] = $mittente_q;
+            }
+            if ($data_a_q !== '') {
+                $where[] = 'chat.ora >= ?';
+                $types  .= 's';
+                $params[] = $data_a_q . ' 00:00:00';
+            }
+            if ($data_b_q !== '') {
+                $where[] = 'chat.ora <= ?';
+                $types  .= 's';
+                $params[] = $data_b_q . ' 23:59:59';
+            }
+
+            $whereSql = ' WHERE ' . implode(' AND ', $where);
+
+            $countRow = Db::preparedFetch(
+                "SELECT COUNT(*) AS c FROM chat" . $whereSql,
+                $types,
+                $params
+            );
+            $totaleresults = (int)($countRow['c'] ?? 0);
+
+            // Paginazione: appendo offset/limit ai params (inline ints, safe).
+            $limit  = (int)$per_page;
+            $start  = (int)$pagebegin;
+
+            $rows = Db::preparedFetchAll(
+                "SELECT chat.id, chat.mittente, chat.destinatario, chat.tipo,
+                        chat.ora, chat.testo, mappa.nome AS stanza_nome
+                 FROM chat LEFT JOIN mappa ON chat.stanza = mappa.id"
+                 . $whereSql .
+                 " ORDER BY chat.ora DESC
+                 LIMIT " . $start . ", " . $limit,
+                $types,
+                $params
+            );
+            $numresults = count($rows);
+        ?>
+            <section class="space-y-3">
+                <div class="flex flex-wrap items-baseline gap-2">
+                    <h3 class="gdrcd-h3">Ricerca testuale</h3>
+                    <span class="gdrcd-badge-accent"><?= htmlspecialchars($q) ?></span>
+                    <?php if ($luogo_q > 0): ?>
+                        <span class="gdrcd-badge-neutral text-[10px]">stanza #<?= (int)$luogo_q ?></span>
+                    <?php endif; ?>
+                    <?php if ($mittente_q !== ''): ?>
+                        <span class="gdrcd-badge-neutral text-[10px]">@<?= htmlspecialchars($mittente_q) ?></span>
+                    <?php endif; ?>
+                    <span class="gdrcd-muted text-xs ml-auto"><?= $totaleresults ?> risultati</span>
+                </div>
+
+                <?php if ($numresults > 0): ?>
+                    <div class="gdrcd-table-wrap">
+                        <table class="gdrcd-table">
+                            <thead>
+                                <tr>
+                                    <th>Mittente</th>
+                                    <th>Stanza</th>
+                                    <th class="whitespace-nowrap">Data</th>
+                                    <th>Testo</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($rows as $row): ?>
+                                    <tr>
+                                        <td class="font-medium text-gdrcd-text whitespace-nowrap">
+                                            <?= gdrcd_filter('out', (string)$row['mittente']) ?>
+                                        </td>
+                                        <td class="text-xs text-gdrcd-muted whitespace-nowrap">
+                                            <?= gdrcd_filter('out', (string)($row['stanza_nome'] ?? '?')) ?>
+                                        </td>
+                                        <td class="text-gdrcd-muted whitespace-nowrap">
+                                            <?= gdrcd_format_datetime($row['ora']) ?>
+                                        </td>
+                                        <td>
+                                            <?php if (!empty($row['destinatario'])): ?>
+                                                <span class="gdrcd-badge-accent text-[10px] mr-1">→ <?= gdrcd_filter('out', $row['destinatario']) ?></span>
+                                            <?php endif; ?>
+                                            <?= gdrcd_filter('out', (string)$row['testo']) ?>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <?= $render_pager($totaleresults, $offset, [
+                            'page' => 'log_chat',
+                            'op'   => 'search',
+                            'q'    => $q,
+                            'luogo'    => $luogo_q > 0 ? $luogo_q : '',
+                            'mittente' => $mittente_q,
+                            'data_a'   => $data_a_q,
+                            'data_b'   => $data_b_q,
+                        ]) ?>
+                <?php else: ?>
+                    <div class="gdrcd-alert-info">
+                        <svg class="w-5 h-5 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        <div>Nessun risultato.</div>
+                    </div>
+                <?php endif; ?>
+            </section>
+        <?php } ?>
+
+        <div>
+            <a href="main.php?page=log_chat" class="gdrcd-btn-ghost">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                <?= gdrcd_filter('out', $MESSAGE['interface']['administration']['log']['messages']['link']['back']) ?>
+            </a>
+        </div>
     <?php endif; ?>
 
 </div>

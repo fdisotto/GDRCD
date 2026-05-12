@@ -180,7 +180,8 @@ CREATE TABLE IF NOT EXISTS `chat` (
   `testo` text,
   PRIMARY KEY (`id`),
   KEY `Stanza` (`stanza`),
-  KEY `idx_chat_stanza_ora` (`stanza`,`ora`)
+  KEY `idx_chat_stanza_ora` (`stanza`,`ora`),
+  FULLTEXT KEY `ft_chat_testo` (`testo`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
@@ -923,7 +924,8 @@ INSERT INTO _gdrcd_db_versions (migration_id,applied_on) VALUES
   ('2026051117', NOW()),
   ('2026051118', NOW()),
   ('2026051119', NOW()),
-  ('2026051120', NOW());
+  ('2026051120', NOW()),
+  ('2026051200', NOW());
 
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
