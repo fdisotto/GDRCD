@@ -259,46 +259,57 @@ $load_assignees = function (int $id_quest): array {
         <a href="#new-quest-form"
            class="gdrcd-btn-primary inline-flex items-center gap-2"
            onclick="var d=document.getElementById('new-quest-form'); if(d){d.open=true;}">
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+            <?= gdrcd_icon('plus', 'w-4 h-4') ?>
             Nuova quest
         </a>
     </div>
 
     <details id="new-quest-form" class="gdrcd-card" <?= $expand_new ? 'open' : '' ?>>
         <summary class="cursor-pointer px-4 py-3 font-semibold text-gdrcd-text flex items-center gap-2 border-b border-gdrcd-border bg-gdrcd-panel-alt/40">
-            <svg class="w-4 h-4 text-gdrcd-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+            <?= gdrcd_icon('plus', 'w-4 h-4 text-gdrcd-accent') ?>
             Crea nuova quest
         </summary>
         <div class="p-4 sm:p-6">
-            <form action="main.php?page=gestione/quests" method="post" class="space-y-4 max-w-3xl">
-                <?= gdrcd_csrf_field() ?>
-                <input type="hidden" name="op" value="create">
-                <div>
-                    <label class="gdrcd-label" for="new_titolo">Titolo</label>
-                    <input class="gdrcd-input w-full" type="text" id="new_titolo" name="titolo"
-                           maxlength="255" required>
-                </div>
-                <div>
-                    <label class="gdrcd-label" for="new_descrizione">Descrizione</label>
-                    <textarea class="gdrcd-textarea w-full" id="new_descrizione" name="descrizione"
-                              rows="5" required data-bbcode></textarea>
-                    <p class="gdrcd-help"><?= gdrcd_filter('out', $MESSAGE['interface']['help']['bbcode'] ?? 'BBCode supportato.') ?></p>
-                </div>
-                <div>
-                    <label class="gdrcd-label" for="new_obiettivo">Obiettivo (opzionale)</label>
-                    <textarea class="gdrcd-textarea w-full" id="new_obiettivo" name="obiettivo" rows="3" data-bbcode></textarea>
-                </div>
-                <div>
-                    <label class="gdrcd-label" for="new_ricompensa">Ricompensa (opzionale)</label>
-                    <textarea class="gdrcd-textarea w-full" id="new_ricompensa" name="ricompensa" rows="3" data-bbcode></textarea>
-                </div>
-                <div class="flex justify-end">
-                    <button type="submit" class="gdrcd-btn-primary">
-                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                        Crea quest
-                    </button>
-                </div>
-            </form>
+            <?= gdrcd_form_open(['action' => 'main.php?page=gestione/quests', 'extra_cls' => 'max-w-3xl']) ?>
+            <?= gdrcd_field_hidden('op', 'create') ?>
+            <?= gdrcd_field_text([
+                'name'      => 'titolo',
+                'id'        => 'new_titolo',
+                'label'     => 'Titolo',
+                'maxlength' => 255,
+                'required'  => true,
+                'extra_cls' => 'w-full',
+            ]) ?>
+            <?= gdrcd_field_textarea([
+                'name'      => 'descrizione',
+                'id'        => 'new_descrizione',
+                'label'     => 'Descrizione',
+                'rows'      => 5,
+                'required'  => true,
+                'bbcode'    => true,
+                'extra_cls' => 'w-full',
+                'help'      => gdrcd_filter('out', $MESSAGE['interface']['help']['bbcode'] ?? 'BBCode supportato.'),
+            ]) ?>
+            <?= gdrcd_field_textarea([
+                'name'      => 'obiettivo',
+                'id'        => 'new_obiettivo',
+                'label'     => 'Obiettivo (opzionale)',
+                'rows'      => 3,
+                'bbcode'    => true,
+                'extra_cls' => 'w-full',
+            ]) ?>
+            <?= gdrcd_field_textarea([
+                'name'      => 'ricompensa',
+                'id'        => 'new_ricompensa',
+                'label'     => 'Ricompensa (opzionale)',
+                'rows'      => 3,
+                'bbcode'    => true,
+                'extra_cls' => 'w-full',
+            ]) ?>
+            <?= gdrcd_form_actions([
+                gdrcd_view_button('Crea quest', ['icon' => 'check', 'variant' => 'primary']),
+            ], ['cls' => 'flex justify-end']) ?>
+            <?= gdrcd_form_close() ?>
         </div>
     </details>
 

@@ -67,13 +67,73 @@ toccate continuano a funzionare (helper additivi, non breaking).
 - `pages/scheda_quest.inc.php` (alert PG inesistente)
 - `pages/scheda_print.inc.php` (icona stampante + alert errori)
 
+## Card / header / badge
+
+```php
+echo gdrcd_view_page_header('Gestione quest', 'Crea, modifica, assegna.', [
+    'icon' => 'journal',
+]);
+
+echo gdrcd_view_card('Quest attive', function () use ($items) {
+    foreach ($items as $i) echo render_item($i);
+}, [
+    'icon'         => 'flag',
+    'header_extra' => gdrcd_view_badge((string)count($items), 'accent'),
+]);
+
+echo gdrcd_view_badge('Attiva', 'success');
+```
+
+## Form fields
+
+```php
+echo gdrcd_form_open(['action' => 'main.php?page=...', 'extra_cls' => 'max-w-3xl']);
+echo gdrcd_field_hidden('op', 'create');
+
+echo gdrcd_field_text([
+    'name'      => 'titolo',
+    'label'     => 'Titolo',
+    'maxlength' => 255,
+    'required'  => true,
+    'extra_cls' => 'w-full',
+]);
+
+echo gdrcd_field_textarea([
+    'name'   => 'descrizione',
+    'label'  => 'Descrizione',
+    'rows'   => 5,
+    'bbcode' => true,        // abilita data-bbcode + editor anteprima
+    'help'   => 'BBCode supportato.',
+]);
+
+echo gdrcd_field_select([
+    'name'     => 'tipo',
+    'label'    => 'Tipo',
+    'options'  => ['priv' => 'Privato', 'pub' => 'Pubblico'],
+    'selected' => $current,
+    'required' => true,
+]);
+
+echo gdrcd_field_checkbox([
+    'name'    => 'visible',
+    'label'   => 'Visibile',
+    'value'   => '1',
+    'checked' => $loaded['visibile'] === 1,
+]);
+
+echo gdrcd_form_actions([
+    gdrcd_view_link('Annulla', $back_url, ['variant' => 'ghost', 'icon' => 'arrow-left']),
+    gdrcd_view_button('Salva',  ['variant' => 'primary', 'icon' => 'check']),
+]);
+
+echo gdrcd_form_close();
+```
+
+`gdrcd_form_open` injetta automaticamente `gdrcd_csrf_field()` su POST.
+
 ## Roadmap successiva
 
-1. `gdrcd_view_card($title, $body_callable, $opts)` — wrapper card riusabile.
-2. `gdrcd_field_text/_select/_textarea` — form fields con label/help/error.
-3. `gdrcd_form_open/_close` — CSRF auto-inject.
-4. `gdrcd_button/_link` — varianti normalizzate.
-5. `gdrcd_render($view, $vars)` — view loader con override theme.
-6. Model layer `src/Models/<X>.php` — niente piu' SQL nelle view.
+1. `gdrcd_render($view, $vars)` — view loader con override theme.
+2. Model layer `src/Models/<X>.php` — niente piu' SQL nelle view.
 
 Vedi brainstorm completo in conversazione del 12/05/2026.
