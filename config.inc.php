@@ -54,6 +54,19 @@ $PARAMETERS['info']['dbadmin_name'] = 'Admin DB'; //nome del responsabile del da
 /* HELP: I parametri di questa voce compaiono come informazioni sulla homepage. */
 
 
+/* AUTENTICAZIONE API JWT
+ * Parametri usati dagli endpoint /api/auth/* per emettere e verificare i
+ * token JWT (HS256) destinati ai client mobile / integrazioni esterne.
+ * Lasciare 'secret' vuoto: alla prima richiesta il sistema genera una
+ * chiave random e la salva in config_settings (chiave: jwt_secret).
+ * In alternativa, valorizzare 'secret' qui per ambienti senza DB writable
+ * (es. CI/test). exp_seconds = durata token in secondi (default 24h).
+ */
+$PARAMETERS['jwt']['secret']      = '';
+$PARAMETERS['jwt']['issuer']      = 'gdrcd';
+$PARAMETERS['jwt']['exp_seconds'] = 86400;
+
+
 /* SCELTA DELLA LINGUA */
 $PARAMETERS['languages']['set'] = 'IT-it'; //lingua italiana
 /* HELP: Per definire un diverso vocabolario creare una copia del file /vocabulary/IT-it.vocabulary.php nella cartella vocabulary. Il nome del file deve essere [nome].vocabulary.php, dove la stringa [nome] può essere scelta e deve essere il valore specificato in $PARAMETER['languages']['set']. */
@@ -508,6 +521,31 @@ $PARAMETERS['mode']['chatsave_download'] = 'OFF';
 /* HELP: Le voci di questa categoria abilitano o disabilitano funzioni presenti nel gioco. Ad esempio, se non si desidera che il personaggio si riconnetta nello stesso luogo di gioco in cui si è disconnesso, bensi' nella mappa, occorre impostare in OFF la relativa voce */
 
 
+/**
+ * INTEGRAZIONI ESTERNE
+ *
+ * Discord bridge: relay dei messaggi chat verso un canale Discord (webhook)
+ * e ricezione di messaggi Discord nel game chat tramite endpoint inbound.
+ *
+ * I valori qui sotto sono DEFAULT a livello codice: la UI admin
+ * (main.php?page=gestione/discord) puo' sovrascriverli runtime salvandoli
+ * nella tabella config_settings (chiavi `discord_*`).
+ *
+ * Lasciare 'enabled' = false di default: il bridge va attivato esplicitamente
+ * dall'amministratore dopo aver configurato webhook + token bot.
+ *
+ * @see includes/discord.inc.php
+ * @see api/discord-inbound.inc.php
+ * @see pages/gestione/discord.inc.php
+ */
+$PARAMETERS['integrations']['discord']['enabled']        = false;        // Bridge ON/OFF.
+$PARAMETERS['integrations']['discord']['webhook_url']    = '';           // URL completo del webhook Discord per outgoing.
+$PARAMETERS['integrations']['discord']['incoming_token'] = '';           // Token segreto inviato dal bot in header X-Discord-Token.
+$PARAMETERS['integrations']['discord']['bridge_room_id'] = 0;            // mappa.id in cui inserire i messaggi ricevuti da Discord.
+$PARAMETERS['integrations']['discord']['bot_name']       = 'Discord';    // Nome PG di sistema mostrato per i messaggi inbound.
+$PARAMETERS['integrations']['discord']['relay_types']    = array('P', 'A', 'M'); // Tipi chat da relayare verso Discord.
+
+
 /* CLASSIFICAZIONE PEGI */
 /* HELP:
         Per visualizzare le icone stile pegi in homepage rimuovere i commenti davanti alle voci ( il  // )
@@ -804,6 +842,9 @@ $PARAMETERS['administration']['moderation']['access_level'] = MODERATOR;
 $PARAMETERS['administration']['quests']['text'] = 'Gestione quest';
 $PARAMETERS['administration']['quests']['url'] = 'main.php?page=gestione/quests';
 $PARAMETERS['administration']['quests']['access_level'] = GAMEMASTER;
+$PARAMETERS['administration']['discord']['text'] = 'Discord bridge';
+$PARAMETERS['administration']['discord']['url'] = 'main.php?page=gestione/discord';
+$PARAMETERS['administration']['discord']['access_level'] = SUPERUSER;
 
 
 /* HELP: Elenco delle voci dei menu' dei servizi e di gestione. E' sconsigliato operare modifiche. Le opzioni sono disponibili solo agli account con il livello d'accesso specificato o superiore.

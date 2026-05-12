@@ -4,6 +4,7 @@
 <script type="text/javascript" src="/includes/toast.js"></script>
 <script type="text/javascript" src="/includes/theme-toggle.js" defer></script>
 <script type="text/javascript" src="/includes/cookie-consent.js" defer></script>
+<script type="text/javascript" src="/includes/pwa.js" defer></script>
 <?php
 /**
  * Notifiche desktop (PM + segnalazioni GM).

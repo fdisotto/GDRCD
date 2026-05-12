@@ -68,6 +68,11 @@ if(($PARAMETERS['mode']['user_bbcode'] == 'ON' && $PARAMETERS['settings']['user_
     <link rel="shortcut icon" href="imgs/favicon.ico" type="image/png" />
     <link rel="stylesheet" href="/themes/tailwind/output.css" type="text/css" />
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="theme-color" content="#a47e3b">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="GDRCD">
     <title><?= htmlspecialchars($PARAMETERS['info']['site_name']) ?></title>
 </head>
 <body class="bg-gdrcd-bg text-gdrcd-text font-sans min-h-screen flex flex-col dark:bg-gdrcd-dark-bg dark:text-gdrcd-dark-text">

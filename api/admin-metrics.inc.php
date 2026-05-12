@@ -34,23 +34,24 @@ header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store, no-cache, must-revalidate');
 header('Pragma: no-cache');
 
+$handleDBConnection = gdrcd_connect();
+
 // --- Auth check ---------------------------------------------------------
-// Richiediamo sessione valida e permessi >= MODERATOR. Stesso livello di
-// accesso della pagina dashboard.inc.php.
-if (empty($_SESSION['login'])) {
+// Richiediamo identità valida (sessione PHP o JWT) e permessi >= MODERATOR.
+// Stesso livello di accesso della pagina dashboard.inc.php.
+$auth = gdrcd_api_authenticate();
+if ($auth === null) {
     http_response_code(401);
     echo json_encode(['error' => 'unauthenticated'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     exit;
 }
 
-$permessi = (int)($_SESSION['permessi'] ?? 0);
+$permessi = (int)$auth['permessi'];
 if ($permessi < MODERATOR) {
     http_response_code(403);
     echo json_encode(['error' => 'forbidden'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     exit;
 }
-
-$handleDBConnection = gdrcd_connect();
 
 // --- Card metriche ------------------------------------------------------
 

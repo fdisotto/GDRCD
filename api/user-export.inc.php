@@ -23,13 +23,6 @@
 
 require_once __DIR__ . '/../includes/required.php';
 
-if (empty($_SESSION['login'])) {
-    http_response_code(401);
-    header('Content-Type: application/json; charset=utf-8');
-    echo json_encode(['error' => 'Non autenticato'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-    exit;
-}
-
 if (!class_exists('ZipArchive')) {
     http_response_code(500);
     header('Content-Type: application/json; charset=utf-8');
@@ -39,7 +32,15 @@ if (!class_exists('ZipArchive')) {
 
 $handleDBConnection = gdrcd_connect();
 
-$user      = (string)$_SESSION['login'];
+$auth = gdrcd_api_authenticate();
+if ($auth === null) {
+    http_response_code(401);
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode(['error' => 'unauthenticated'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
+}
+
+$user      = (string)$auth['login'];
 $user_safe = gdrcd_filter('in', $user);
 
 /**

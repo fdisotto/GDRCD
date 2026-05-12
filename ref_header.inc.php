@@ -248,6 +248,21 @@ if((gdrcd_filter_get($_REQUEST['chat']) == 'yes') && (empty($_SESSION['login']) 
                     gdrcd_query("INSERT INTO chat ( stanza, imgs, mittente, destinatario, ora, tipo, testo ) VALUES (".$_SESSION['luogo'].", '".$_SESSION['sesso'].";".$_SESSION['img_razza']."', '".$_SESSION['login']."', '".gdrcd_capital_letter(gdrcd_filter('in', $tag_n_beyond))."', NOW(), 'M', 'Chat scaduta')");
                 } else {
                     gdrcd_query("INSERT INTO chat ( stanza, imgs, mittente, destinatario, ora, tipo, testo ) VALUES (".$_SESSION['luogo'].", '".$_SESSION['sesso'].";".$_SESSION['img_razza']."', '".$_SESSION['login']."', '".gdrcd_capital_letter(gdrcd_filter('in', $tag_n_beyond))."', NOW(), '".$m_type."', '".$chat_message."')");
+
+                    /* Discord bridge outgoing: rilancia il messaggio sul webhook
+                     * configurato (solo se l'integrazione e' enabled e il tipo
+                     * rientra nei relay_types). Non blocca il flusso chat: gli
+                     * errori sono inghiottiti dentro al relay helper. Skippiamo
+                     * le stanze private per evitare leak di sessioni 1:1. */
+                    if (function_exists('gdrcd_discord_relay') && (int)($mappa['privata'] ?? 0) === 0) {
+                        $stanza_nome = isset($mappa['nome']) ? (string)$mappa['nome'] : ('Stanza ' . (int)$_SESSION['luogo']);
+                        @gdrcd_discord_relay(
+                            (string)$m_type,
+                            (string)$_SESSION['login'],
+                            (string)$chat_message,
+                            $stanza_nome
+                        );
+                    }
                 }
 
                 // Assegnazione esperienza per i messaggi in chat

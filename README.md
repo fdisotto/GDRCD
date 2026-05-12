@@ -341,6 +341,76 @@ e `gdrcd_stmt_all` (vedi `CONTRIBUTING.md`).
 
 ---
 
+## API authentication (JWT)
+
+Tutti gli endpoint `/api/*.inc.php` accettano due meccanismi di
+autenticazione **in parallelo**:
+
+1. **Sessione PHP** (`$_SESSION['login']`) — usata dal client web
+   esistente, nessun cambiamento richiesto.
+2. **JWT Bearer** (header `Authorization: Bearer <token>`) — destinata
+   a client mobile, app native e integrazioni esterne stateless.
+
+Il middleware `gdrcd_api_authenticate()` (in `includes/api-auth.inc.php`)
+prova prima la sessione, poi il Bearer header. La libreria JWT è una
+implementazione self-contained HS256 in `includes/jwt.inc.php`, **senza
+dipendenze Composer**.
+
+### Configurazione
+
+In `config.inc.php`:
+
+```php
+$PARAMETERS['jwt']['secret']      = '';      // vuoto: auto-generata e salvata in config_settings
+$PARAMETERS['jwt']['issuer']      = 'gdrcd';
+$PARAMETERS['jwt']['exp_seconds'] = 86400;   // 24h
+```
+
+Lasciando `secret` vuoto, alla prima richiesta verso `/api/auth/login`
+il sistema genera una chiave random a 64 byte (hex) e la persiste in
+`config_settings.jwt_secret`. Per ambienti senza DB writable in
+runtime (CI, immagini immutable) valorizzare `secret` esplicitamente.
+
+### Endpoint
+
+- `POST /api/auth/login.inc.php` — emette un nuovo token a partire
+  da `{"login", "password"}`. Rispetta lo stesso rate-limit del web
+  login (5 fallimenti / 5 min per IP, status 429).
+- `POST /api/auth/refresh.inc.php` — accetta un token ancora valido
+  (body `{"token": "..."}` o header `Authorization: Bearer`) e ne
+  emette uno nuovo con TTL resettato. Token scaduti danno 401.
+
+### Esempio (curl)
+
+```bash
+# 1. Login: ottieni token
+curl -s -X POST http://gdrcd.test/api/auth/login.inc.php \
+  -H 'Content-Type: application/json' \
+  -d '{"login":"Alice","password":"segreta"}'
+# => {"token":"eyJhbG...","token_type":"Bearer","expires_in":86400,"user":{"login":"Alice","permessi":1}}
+
+# 2. Chiamata autenticata
+curl -s http://gdrcd.test/api/presenti.inc.php \
+  -H 'Authorization: Bearer eyJhbG...'
+
+# 3. Refresh token prima della scadenza
+curl -s -X POST http://gdrcd.test/api/auth/refresh.inc.php \
+  -H 'Authorization: Bearer eyJhbG...'
+```
+
+### Note di sicurezza
+
+- Algoritmo unico **HS256**. L'header `alg` viene verificato in
+  decode: token con `alg: none` o asimmetrici vengono rifiutati.
+- Firma verificata in tempo costante (`hash_equals`) per evitare
+  timing attack.
+- Claim `exp` obbligatorio: token senza scadenza vengono rifiutati.
+- I permessi vengono **riletti dal DB** ad ogni richiesta autenticata
+  via JWT: modifiche ai permessi del PG hanno effetto immediato senza
+  attendere la scadenza del token.
+
+---
+
 ## Migrazione database
 
 Lo schema iniziale è in `gdrcd_db.sql` e viene caricato solo per
@@ -470,6 +540,85 @@ via `GDRCD_BACKUP_RETENTION`). Esempio di crontab:
 - Il restore sovrascrive immagini con lo stesso path; eventuali file
   presenti solo sull'istanza live e non nel backup vengono **preservati**
   (nessuna pulizia distruttiva).
+
+---
+
+## PWA / Service Worker
+
+GDRCD include un **Service Worker** vanilla JS e un **Web App Manifest** che
+permettono di installare l'app su mobile (Android: "Aggiungi alla schermata
+Home"; iOS Safari 16.4+: "Aggiungi a Home") e di mostrare una pagina di
+fallback quando l'utente è offline. Non è una vera modalità "full offline":
+i contenuti di gioco restano server-driven, ma la app shell (CSS, JS, icone)
+viene servita dalla cache anche su rete instabile.
+
+### File coinvolti
+
+| Path                                | Ruolo                                                       |
+|-------------------------------------|-------------------------------------------------------------|
+| `manifest.webmanifest`              | Nome app, icone, `theme_color`, `start_url=/main.php`       |
+| `service-worker.js`                 | Cache strategy (vedi sotto), versione `gdrcd-v1`            |
+| `offline.html`                      | Pagina di fallback statica con stile inline                 |
+| `includes/pwa.js`                   | Registrazione SW, install prompt, notifica updates          |
+
+I `<link rel="manifest">` e i meta `theme-color` / `apple-mobile-web-app-*`
+sono iniettati in `header.inc.php`, `index.php`, `login.php` e `logout.php`.
+
+### Cache strategy
+
+- **Navigazioni HTML** → *network-first* con fallback a `/offline.html`
+  quando la rete fallisce.
+- **Asset statici** (CSS, JS in `includes/*.js`, immagini, font, manifest)
+  → *stale-while-revalidate* su una runtime cache.
+- **Pre-cache** all'install: `output.css`, `favicon.ico`, i principali
+  script in `includes/` e la pagina offline.
+- **/api/*** e qualsiasi `*.php` non-navigation → **non intercettati**
+  (rimangono request server-side, dipendono dalla sessione).
+
+### Browser supportati
+
+Service Worker è supportato da Chrome/Edge 40+, Firefox 44+, Safari 11.1+,
+Opera 27+. Il codice degrada silenziosamente sui browser legacy
+(controllo `'serviceWorker' in navigator`).
+
+### Come testare
+
+1. Apri il sito su Chrome/Firefox via **HTTPS o `http://localhost`**
+   (i SW non funzionano su HTTP non locale).
+2. DevTools → **Application** → *Manifest*: verifica icone, `start_url`,
+   `theme_color`.
+3. DevTools → **Application** → *Service Workers*: verifica che
+   `service-worker.js` sia "activated and running".
+4. DevTools → **Network** → spunta *Offline*, ricarica la pagina:
+   dovrebbe apparire `offline.html`.
+5. DevTools → **Application** → *Cache Storage*: dovresti vedere
+   `gdrcd-v1-precache` e `gdrcd-v1-runtime`.
+
+### Invalidare la cache
+
+Per forzare il rinnovo degli asset modificare `CACHE_VERSION` in
+`service-worker.js` (es. da `gdrcd-v1` a `gdrcd-v2`). Al prossimo caricamento
+il nuovo SW entrerà in fase di waiting, eliminerà le cache versionate
+precedenti e l'utente vedrà il banner "Nuova versione disponibile".
+
+### TODO icone
+
+Il manifest dichiara `icon-192.png` e `icon-512.png` in `imgs/`, ma per
+ora **non sono presenti**: il browser ricade su `favicon.ico` (valido come
+icona generica). Per ottenere il badge installabile completo su tutti i
+device generare due PNG (192x192 e 512x512, sfondo `#a47e3b` con simbolo
+GDRCD) e collocarli in `imgs/icon-192.png` e `imgs/icon-512.png`.
+
+### Apache headers (opzionale)
+
+Per evitare che proxy/browser cachino aggressivamente il SW conviene
+aggiungere in `.htaccess` (se introdotto in futuro):
+
+```apache
+<FilesMatch "^service-worker\.js$">
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+</FilesMatch>
+```
 
 ---
 

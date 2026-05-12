@@ -21,27 +21,35 @@ header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store, no-cache, must-revalidate');
 header('Pragma: no-cache');
 
-if (empty($_SESSION['login'])) {
+$handleDBConnection = gdrcd_connect();
+
+$auth = gdrcd_api_authenticate();
+if ($auth === null) {
     http_response_code(401);
-    echo json_encode(['error' => 'Non autenticato'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    echo json_encode(['error' => 'unauthenticated'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     exit;
 }
 
-if (!isset($_SESSION['luogo']) || $_SESSION['luogo'] === '') {
+// Luogo: per sessioni web arriva da $_SESSION; per i client JWT può essere
+// passato esplicitamente come query string ?luogo=<id>. Senza luogo non
+// abbiamo una "stanza" da pollare e restituiamo lista vuota.
+$luogo_src = $_SESSION['luogo'] ?? ($_GET['luogo'] ?? '');
+if ($luogo_src === '' || !is_numeric($luogo_src)) {
     echo json_encode([
         'messages' => [],
         'last_id'  => (int)($_REQUEST['after'] ?? 0),
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    if (isset($handleDBConnection)) {
+        gdrcd_close_connection($handleDBConnection);
+    }
     exit;
 }
-
-$handleDBConnection = gdrcd_connect();
 
 $after  = isset($_GET['after']) ? (int)$_GET['after'] : 0;
 if ($after < 0) {
     $after = 0;
 }
-$luogo  = (int)$_SESSION['luogo'];
+$luogo  = (int)$luogo_src;
 
 $query = gdrcd_query(
     "SELECT chat.id, chat.imgs, chat.mittente, chat.destinatario, chat.tipo,

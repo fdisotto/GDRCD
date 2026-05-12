@@ -30,6 +30,8 @@ require_once(dirname(__FILE__) . '/logger.inc.php');
 require_once(dirname(__FILE__) . '/csrf.inc.php');
 require_once(dirname(__FILE__) . '/icons.inc.php');
 require_once(dirname(__FILE__) . '/uploads.inc.php');
+require_once(dirname(__FILE__) . '/discord.inc.php');
+require_once(dirname(__FILE__) . '/api-auth.inc.php');
 
 /** Gestione dei Suoni */
 require_once(dirname(__FILE__) . '/AudioController.class.php');

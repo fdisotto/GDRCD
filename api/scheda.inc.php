@@ -19,15 +19,16 @@ header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store, no-cache, must-revalidate');
 header('Pragma: no-cache');
 
-if (empty($_SESSION['login'])) {
+$handleDBConnection = gdrcd_connect();
+
+$auth = gdrcd_api_authenticate();
+if ($auth === null) {
     http_response_code(401);
-    echo json_encode(['error' => 'Non autenticato'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    echo json_encode(['error' => 'unauthenticated'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     exit;
 }
 
-$handleDBConnection = gdrcd_connect();
-
-$me_login = (string)$_SESSION['login'];
+$me_login = (string)$auth['login'];
 $pg_param = isset($_GET['pg']) ? (string)$_GET['pg'] : $me_login;
 if ($pg_param === '') {
     $pg_param = $me_login;

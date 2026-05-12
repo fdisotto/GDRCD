@@ -36,8 +36,11 @@ header('Content-Type: application/json; charset=UTF-8');
 header('Cache-Control: no-store, no-cache, must-revalidate');
 header('Pragma: no-cache');
 
+$handleDBConnection = gdrcd_connect();
+
 // --- Auth check ---------------------------------------------------------
-if (empty($_SESSION['login'])) {
+$auth = gdrcd_api_authenticate();
+if ($auth === null) {
     http_response_code(401);
     echo json_encode(
         ['error' => 'unauthenticated'],
@@ -45,8 +48,6 @@ if (empty($_SESSION['login'])) {
     );
     exit;
 }
-
-$handleDBConnection = gdrcd_connect();
 
 $qRaw = isset($_GET['q']) ? (string)$_GET['q'] : '';
 $qTrim = trim($qRaw);

@@ -18,17 +18,19 @@ header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store, no-cache, must-revalidate');
 header('Pragma: no-cache');
 
-if (empty($_SESSION['login'])) {
+$handleDBConnection = gdrcd_connect();
+
+// Auth: sessione PHP o JWT Bearer.
+$auth = gdrcd_api_authenticate();
+if ($auth === null) {
     http_response_code(401);
-    echo json_encode(['error' => 'Non autenticato'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    echo json_encode(['error' => 'unauthenticated'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     exit;
 }
 
-$handleDBConnection = gdrcd_connect();
-
 $show_state = ($PARAMETERS['mode']['user_online_state'] ?? 'OFF') === 'ON';
 $mapwise    = ($PARAMETERS['mode']['mapwise_links'] ?? 'OFF') !== 'OFF';
-$me_login   = (string)$_SESSION['login'];
+$me_login   = (string)$auth['login'];
 
 $result = gdrcd_query(
     "SELECT personaggio.nome, personaggio.cognome, personaggio.permessi, personaggio.sesso,

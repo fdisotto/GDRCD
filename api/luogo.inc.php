@@ -17,9 +17,12 @@ header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store, no-cache, must-revalidate');
 header('Pragma: no-cache');
 
-if (empty($_SESSION['login'])) {
+$handleDBConnection = gdrcd_connect();
+
+$auth = gdrcd_api_authenticate();
+if ($auth === null) {
     http_response_code(401);
-    echo json_encode(['error' => 'Non autenticato'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    echo json_encode(['error' => 'unauthenticated'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     exit;
 }
 
@@ -46,9 +49,9 @@ if (!function_exists('gdrcd_api_lunar_phase')) {
     }
 }
 
-$handleDBConnection = gdrcd_connect();
-
-$luogo_id = (int)($_SESSION['luogo'] ?? 0);
+// Sessione: $_SESSION['luogo']; JWT: query ?luogo=<id>&mappa=<id>
+$luogo_id = (int)($_SESSION['luogo'] ?? ($_GET['luogo'] ?? 0));
+$mappa_id = (int)($_SESSION['mappa'] ?? ($_GET['mappa'] ?? 0));
 
 $result = gdrcd_query(
     "SELECT mappa.nome, mappa.descrizione, mappa.stato, mappa.immagine,
@@ -63,7 +66,7 @@ gdrcd_query($result, 'free');
 
 if (empty($record['nome'])) {
     $nome_mappa = gdrcd_query(
-        "SELECT nome FROM mappa_click WHERE id_click = " . (int)($_SESSION['mappa'] ?? 0)
+        "SELECT nome FROM mappa_click WHERE id_click = " . $mappa_id
     );
     $nome_luogo = $nome_mappa['nome'] ?? '';
 } else {

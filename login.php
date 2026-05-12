@@ -46,6 +46,11 @@ $render_error = function (string $title, string $details = '', array $extra_line
     <link rel="stylesheet" href="themes/<?= $theme ?>/main.css" type="text/css">
     <link rel="stylesheet" href="themes/tailwind/output.css" type="text/css">
     <link rel="shortcut icon" href="imgs/favicon.ico">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="theme-color" content="#a47e3b">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="GDRCD">
 </head>
 <body class="min-h-screen bg-gdrcd-bg flex items-center justify-center px-4 py-10 dark:bg-gdrcd-dark-bg dark:text-gdrcd-dark-text">
     <main class="gdrcd-card max-w-md w-full text-center space-y-4 p-8 border-red-300">
@@ -70,6 +75,7 @@ $render_error = function (string $title, string $details = '', array $extra_line
             </a>
         </div>
     </main>
+    <script src="/includes/pwa.js" defer></script>
 </body>
 </html><?php
     if (isset($GLOBALS['handleDBConnection'])) {

@@ -24,18 +24,20 @@ header('Content-Type: application/json; charset=UTF-8');
 header('Cache-Control: no-store, no-cache, must-revalidate');
 header('Pragma: no-cache');
 
+// Connetti al DB (lo fanno tutte le pagine via header.inc.php, ma qui siamo
+// fuori dal flusso normale: gdrcd_query() richiede una connessione attiva).
+$handleDBConnection = gdrcd_connect();
+
 // --- Auth check ---------------------------------------------------------
-if (empty($_SESSION['login'])) {
+// Sessione PHP (flusso web) o JWT Bearer (mobile / API esterna).
+$auth = gdrcd_api_authenticate();
+if ($auth === null) {
     http_response_code(401);
     echo json_encode(['error' => 'unauthenticated']);
     exit;
 }
 
-// Connetti al DB (lo fanno tutte le pagine via header.inc.php, ma qui siamo
-// fuori dal flusso normale: gdrcd_query() richiede una connessione attiva).
-$handleDBConnection = gdrcd_connect();
-
-$me = gdrcd_filter('in', $_SESSION['login']);
+$me = gdrcd_filter('in', $auth['login']);
 
 // --- PM non letti -------------------------------------------------------
 $unreadPm = 0;
@@ -77,7 +79,7 @@ if (($PARAMETERS['mode']['check_messages'] ?? 'OFF') === 'ON') {
 // Conta gli esiti non letti dal master quando l'utente ha i permessi GM
 // (stessa logica di pages/gestione/segnalazioni/esiti_master.php).
 $unreadSegnalazioni = 0;
-$permessi = (int)($_SESSION['permessi'] ?? 0);
+$permessi = (int)($auth['permessi'] ?? 0);
 
 if (ESITI && $permessi >= ESITI_PERM) {
     if ($permessi >= FULL_PERM) {
