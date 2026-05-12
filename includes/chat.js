@@ -85,6 +85,28 @@
         // polling: il flow esistente resta come fallback senza modifiche.
         var wsUrl    = container.getAttribute('data-ws-url') || '';
         var wsRoom   = parseInt(container.getAttribute('data-ws-room'), 10) || 0;
+        // Fallback: se data-ws-url e' vuoto o usa un host non risolvibile dal
+        // browser (es. nome docker network 'gdrcd-web'), riscrivi usando
+        // location.hostname con porta 8082.
+        if (wsRoom > 0 && typeof window !== 'undefined' && window.location) {
+            var loc = window.location;
+            var browserHost = loc.hostname;
+            var wsScheme = (loc.protocol === 'https:') ? 'wss' : 'ws';
+            var needsRewrite = !wsUrl;
+            if (wsUrl) {
+                try {
+                    var parsed = new URL(wsUrl);
+                    if (parsed.hostname !== browserHost && parsed.hostname.indexOf('.') === -1) {
+                        needsRewrite = true;
+                    }
+                } catch (e) {
+                    needsRewrite = true;
+                }
+            }
+            if (needsRewrite) {
+                wsUrl = wsScheme + '://' + browserHost + ':8082';
+            }
+        }
         var ws       = null;
         var wsActive = false;
         var wsBackoff = 1000;          // ms, raddoppia fino a 30s.
