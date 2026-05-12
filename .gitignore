@@ -194,4 +194,4 @@ backups/
 
 # Composer
 vendor/
-composer.phar
+composer.pharsessions/

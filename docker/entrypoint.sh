@@ -22,12 +22,18 @@ PHP
 chown www-data:www-data "$OVERRIDE_FILE" 2>/dev/null || true
 
 # Directory richieste runtime
-mkdir -p /var/www/html/giocate /var/www/html/logs /var/www/html/backups
+mkdir -p /var/www/html/giocate /var/www/html/logs /var/www/html/backups /var/www/html/sessions
 chown -R www-data:www-data \
     /var/www/html/giocate \
     /var/www/html/logs \
     /var/www/html/backups \
+    /var/www/html/sessions \
     /var/www/html/imgs 2>/dev/null || true
+
+# Session save path condiviso fra container web e ws (necessario per
+# autenticare la WS dalla PHPSESSID emessa dal web). Bind-mount in compose.
+chmod 0777 /var/www/html/sessions 2>/dev/null || true
+echo 'session.save_path=/var/www/html/sessions' > /usr/local/etc/php/conf.d/gdrcd-session.ini
 
 # Composer install: se vendor/ assente in dev (bind-mount), reinstalla
 if [ -f /var/www/html/composer.json ] && [ ! -f /var/www/html/vendor/autoload.php ]; then
