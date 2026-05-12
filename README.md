@@ -543,6 +543,105 @@ via `GDRCD_BACKUP_RETENTION`). Esempio di crontab:
 
 ---
 
+## WebSocket chat real-time
+
+GDRCD include un server WebSocket basato su **Ratchet** che sostituisce il
+polling HTTP a 4s di `/api/chat.inc.php` con push real-time (latenza ~1s).
+Il sistema è opt-in (`$PARAMETERS['websocket']['enabled'] = false` di default)
+e degrada graziosamente al polling se la WS non è disponibile.
+
+### Architettura
+
+Polling **server-side**: il processo WS interroga il DB ogni 1s e fa
+broadcast dei nuovi messaggi `chat.id > lastSeen` ai client iscritti alla
+stessa stanza. Nessun IPC tra PHP-FPM (che gestisce le INSERT) e il WS
+server: il flow di scrittura (`ref_header.inc.php`, `pages/chat.inc.php`)
+resta **inalterato**; il server WS legge soltanto.
+
+| File                             | Ruolo                                                      |
+|----------------------------------|------------------------------------------------------------|
+| `bin/gdrcd-ws-server.php`        | Bootstrap del server (porta 8082, env-configurabile)       |
+| `src/WebSocket/ChatHandler.php`  | Handler Ratchet: rooms, lastIds, poll & broadcast          |
+| `docker/Dockerfile.ws`           | Immagine `php:8.2-cli` + `mysqli` + composer               |
+| `includes/chat.js`               | Client: WS → fallback polling automatico                   |
+| `pages/frame_chat.inc.php`       | Espone `data-ws-url` / `data-ws-room` al container chat    |
+
+### Configurazione
+
+In `config.inc.php`:
+
+```php
+$PARAMETERS['websocket']['enabled'] = true;            // ON lato client
+$PARAMETERS['websocket']['url']     = 'wss://gioco.example/ws'; // opzionale
+```
+
+Se `url` è vuoto, il client costruisce l'URL come `ws(s)://<host>:8082`
+(scheme allineato al protocollo della pagina).
+
+### Avvio del server
+
+**Docker (raccomandato in dev):**
+
+```sh
+docker compose build gdrcd-ws
+docker compose up -d gdrcd-ws
+docker compose logs -f gdrcd-ws
+```
+
+Il servizio è dichiarato in `docker-compose.override.yml`, espone la porta
+`8082`, bind-mounta il source ed entra in dipendenza da `db`.
+
+**Standalone (senza Docker):**
+
+```sh
+composer install                        # installa cboden/ratchet
+php bin/gdrcd-ws-server.php             # ascolta su 0.0.0.0:8082
+```
+
+Override via env: `GDRCD_WS_HOST`, `GDRCD_WS_PORT`, `GDRCD_WS_TICK`
+(intervallo poll DB, default `1.0`s).
+
+### Reverse proxy (produzione)
+
+Per servire `wss://` sul dominio pubblico, va aggiunto un upgrade
+WebSocket sul proxy. Esempio nginx:
+
+```nginx
+location /ws {
+    proxy_pass http://127.0.0.1:8082;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_set_header Host $host;
+    proxy_read_timeout 3600s;
+}
+```
+
+Apache: `mod_proxy_wstunnel` con `ProxyPass /ws ws://127.0.0.1:8082/`.
+
+### Fallback polling
+
+Se la WS non si connette o cade, il client (`includes/chat.js`):
+
+1. Continua a ricevere via polling HTTP `/api/chat.inc.php?after=<id>`.
+2. Tenta reconnect con backoff esponenziale fino a 30s.
+3. Quando la WS torna up, il polling viene disabilitato in automatico.
+
+Questo significa che il sistema è funzionante **anche senza** il processo
+`gdrcd-ws` attivo: il push è un'ottimizzazione di latenza, non un
+requisito di runtime.
+
+### Note su sessione
+
+Il server Ratchet legge il cookie `PHPSESSID` dall'handshake HTTP e usa
+`session_id() + session_start()` (save handler `files`, default php.ini)
+per leggere `$_SESSION['login']` e `$_SESSION['luogo']`. Non sono richiesti
+adapter custom: basta che il container WS condivida il volume con i file
+di sessione (se PHP-FPM e WS girano su host diversi, configurare
+`session.save_handler` su un backend condiviso come redis/memcached).
+
+---
+
 ## PWA / Service Worker
 
 GDRCD include un **Service Worker** vanilla JS e un **Web App Manifest** che

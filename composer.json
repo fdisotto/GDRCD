@@ -4,7 +4,8 @@
     "type": "project",
     "license": "CC-BY-SA-3.0",
     "require": {
-        "php": "^8.0"
+        "php": "^8.0",
+        "cboden/ratchet": "^0.4.4"
     },
     "autoload": {
         "psr-4": {

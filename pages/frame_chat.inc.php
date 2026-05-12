@@ -58,12 +58,38 @@ $is_gm = ((int)$_SESSION['permessi'] >= GAMEMASTER);
             <iframe src="about:blank" id="chat_frame" name="chat_frame" title="Target invio form chat" frameborder="0"></iframe>
         </div>
 
-        <!-- Chat output (popolato da includes/chat.js via fetch /api/chat.inc.php) -->
+        <!-- Chat output (popolato da includes/chat.js via WebSocket o fetch /api/chat.inc.php). -->
+        <?php
+            // WebSocket: se abilitato in config, calcolo URL ws(s):// da
+            // passare al client. Vuoto = WS disabilitato, client va in
+            // polling-only.
+            $ws_enabled = !empty($PARAMETERS['websocket']['enabled']);
+            $ws_url     = '';
+            if ($ws_enabled) {
+                $configured = isset($PARAMETERS['websocket']['url'])
+                    ? (string)$PARAMETERS['websocket']['url']
+                    : '';
+                if ($configured !== '') {
+                    $ws_url = $configured;
+                } else {
+                    // Fallback: stesso host della pagina + porta 8082, scheme
+                    // wss:// se siamo su https, altrimenti ws://.
+                    $scheme = (
+                        (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+                        || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https')
+                    ) ? 'wss' : 'ws';
+                    $host   = preg_replace('/:.*/', '', (string)($_SERVER['HTTP_HOST'] ?? 'localhost'));
+                    $ws_url = $scheme . '://' . $host . ':8082';
+                }
+            }
+        ?>
         <section class="gdrcd-card">
             <div id="pagina_chat"
                  class="chat_box p-2 sm:p-4 h-[65vh] overflow-y-auto overflow-x-hidden"
                  data-poll-url="/api/chat.inc.php"
                  data-poll-interval="4000"
+                 data-ws-url="<?= htmlspecialchars($ws_url, ENT_QUOTES) ?>"
+                 data-ws-room="<?= (int)$_SESSION['luogo'] ?>"
                  data-from-bottom="<?= (($PARAMETERS['mode']['chat_from_bottom'] ?? 'OFF') === 'ON') ? '1' : '0' ?>"
                  data-login="<?= htmlspecialchars($_SESSION['login'] ?? '', ENT_QUOTES) ?>"
                  data-permessi="<?= (int)($_SESSION['permessi'] ?? 0) ?>"

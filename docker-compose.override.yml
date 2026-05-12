@@ -46,3 +46,30 @@ services:
       - web
       - tailwind
     restart: unless-stopped
+
+  # WebSocket chat server (Ratchet). Polla il DB ogni ~1s e pusha i nuovi
+  # messaggi chat ai client connessi. Sostituisce il polling HTTP di
+  # /api/chat.inc.php. Fallback automatico al polling lato client se il
+  # servizio non e' raggiungibile (vedi includes/chat.js).
+  gdrcd-ws:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.ws
+    image: gdrcd-ws:latest
+    container_name: gdrcd-ws
+    working_dir: /var/www/html
+    volumes:
+      - ./:/var/www/html
+    environment:
+      GDRCD_DB_HOST: db
+      GDRCD_DB_NAME: gdrcd
+      GDRCD_DB_USER: gdrcd
+      GDRCD_DB_PASSWORD: gdrcd
+      GDRCD_WS_HOST: 0.0.0.0
+      GDRCD_WS_PORT: 8082
+      GDRCD_WS_TICK: 1.0
+    ports:
+      - "8082:8082"
+    depends_on:
+      - db
+    restart: unless-stopped

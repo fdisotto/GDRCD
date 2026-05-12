@@ -102,6 +102,18 @@ $PARAMETERS['mode']['check_forum'] = 'ON';
 $PARAMETERS['text']['check_forum']['new'] = '(Nuovo)'; // Mettendo FALSE o lasciandolo vuoto, non si vedrà il messaggio
 $PARAMETERS['mode']['check_messages'] = 'ON';
 
+/* WebSocket chat real-time (Ratchet).
+ * Quando enabled=true, il client (includes/chat.js) tenta una WS verso
+ * `url` (oppure verso ws(s)://<host>:8082 se url e' vuoto) per ricevere
+ * push real-time dei messaggi chat. Se la connessione fallisce o cade,
+ * il client torna automaticamente al polling HTTP di /api/chat.inc.php.
+ * Lasciare enabled=false disattiva del tutto il blocco WS (polling-only).
+ *
+ * Server: bin/gdrcd-ws-server.php (o `docker compose up -d gdrcd-ws`).
+ * @see src/WebSocket/ChatHandler.php */
+$PARAMETERS['websocket']['enabled'] = false; // true per attivare lato client
+$PARAMETERS['websocket']['url']     = '';    // es. wss://example.com/ws (vuoto = autodetect ws(s)://host:8082)
+
 /* Web Push (notifiche del browser anche a tab chiusa, via Service Worker).
  * Le chiavi VAPID identificano il server presso il push service del browser.
  * Per generarle (una sola volta, da committare SOLO la pubblica):
