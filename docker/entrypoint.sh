@@ -1,4 +1,6 @@
 #!/bin/bash
+# GDRCD entrypoint: scrive override config, attende DB, installa deps Composer
+# (se mancanti), applica migrations, poi cede il controllo a Apache/WS server.
 set -e
 
 : "${GDRCD_DB_HOST:=db}"
@@ -17,22 +19,74 @@ cat > "$OVERRIDE_FILE" <<PHP
 \$PARAMETERS['database']['database_name'] = getenv('GDRCD_DB_NAME')     ?: '${GDRCD_DB_NAME}';
 PHP
 
-chown www-data:www-data "$OVERRIDE_FILE"
+chown www-data:www-data "$OVERRIDE_FILE" 2>/dev/null || true
 
-if [ ! -d /var/www/html/giocate ]; then
-    mkdir -p /var/www/html/giocate
+# Directory richieste runtime
+mkdir -p /var/www/html/giocate /var/www/html/logs /var/www/html/backups
+chown -R www-data:www-data \
+    /var/www/html/giocate \
+    /var/www/html/logs \
+    /var/www/html/backups \
+    /var/www/html/imgs 2>/dev/null || true
+
+# Composer install: se vendor/ assente in dev (bind-mount), reinstalla
+if [ -f /var/www/html/composer.json ] && [ ! -f /var/www/html/vendor/autoload.php ]; then
+    if command -v composer >/dev/null 2>&1; then
+        echo "[gdrcd] composer install (vendor/ mancante)..."
+        cd /var/www/html && composer install --no-dev --optimize-autoloader \
+            --no-interaction --no-progress --no-scripts \
+            || echo "[gdrcd] composer install fallito (offline?). Procedo comunque."
+        chown -R www-data:www-data /var/www/html/vendor 2>/dev/null || true
+    fi
 fi
-chown -R www-data:www-data /var/www/html/giocate /var/www/html/imgs
 
+# Attesa DB raggiungibile
 if [ -n "${GDRCD_DB_HOST}" ]; then
-    echo "Waiting for database at ${GDRCD_DB_HOST}:3306..."
+    echo "[gdrcd] attendo database ${GDRCD_DB_HOST}:3306..."
     for i in $(seq 1 60); do
         if php -r "exit(@(new mysqli(getenv('GDRCD_DB_HOST'), getenv('GDRCD_DB_USER'), getenv('GDRCD_DB_PASSWORD'), getenv('GDRCD_DB_NAME')))->connect_errno ? 1 : 0);" 2>/dev/null; then
-            echo "Database is up."
+            echo "[gdrcd] database raggiungibile."
             break
         fi
         sleep 2
     done
+fi
+
+# Bootstrap DB se schema mancante: applica baseline gdrcd_db.sql
+TABLE_COUNT=$(php -r "
+\$db=@new mysqli(getenv('GDRCD_DB_HOST'),getenv('GDRCD_DB_USER'),getenv('GDRCD_DB_PASSWORD'),getenv('GDRCD_DB_NAME'));
+if(\$db->connect_errno){echo 0;exit;}
+\$r=\$db->query(\"SELECT COUNT(*) AS n FROM information_schema.tables WHERE table_schema=DATABASE()\");
+\$row=\$r->fetch_assoc();
+echo (int)\$row['n'];
+" 2>/dev/null || echo 0)
+
+if [ "${TABLE_COUNT}" = "0" ] && [ -f /var/www/html/gdrcd_db.sql ]; then
+    echo "[gdrcd] DB vuoto: importo baseline gdrcd_db.sql..."
+    if command -v mariadb >/dev/null 2>&1; then MYSQL_BIN=mariadb; else MYSQL_BIN=mysql; fi
+    if command -v "$MYSQL_BIN" >/dev/null 2>&1; then
+        "$MYSQL_BIN" -h "${GDRCD_DB_HOST}" -u "${GDRCD_DB_USER}" -p"${GDRCD_DB_PASSWORD}" \
+            "${GDRCD_DB_NAME}" < /var/www/html/gdrcd_db.sql && \
+            echo "[gdrcd] baseline applicato." || \
+            echo "[gdrcd] import baseline fallito."
+    else
+        # Fallback PHP per ambienti senza client mysql installato
+        php -r "
+            \$sql=file_get_contents('/var/www/html/gdrcd_db.sql');
+            \$db=new mysqli(getenv('GDRCD_DB_HOST'),getenv('GDRCD_DB_USER'),getenv('GDRCD_DB_PASSWORD'),getenv('GDRCD_DB_NAME'));
+            if(\$db->multi_query(\$sql)){
+                do { if(\$res=\$db->store_result()) \$res->free(); } while(\$db->next_result());
+            }
+            echo \$db->error?:'ok';
+        " || echo "[gdrcd] import baseline fallito (PHP fallback)."
+    fi
+fi
+
+# Applicazione automatica migrations pending (idempotente, fail-safe)
+if [ -f /var/www/html/bin/gdrcd-migrate-runner.php ]; then
+    echo "[gdrcd] applico migrations pending..."
+    php /var/www/html/bin/gdrcd-migrate-runner.php --up 2>&1 || \
+        echo "[gdrcd] migration runner ha segnalato errori."
 fi
 
 exec "$@"

@@ -72,4 +72,5 @@ services:
       - "8082:8082"
     depends_on:
       - db
+      - web
     restart: unless-stopped

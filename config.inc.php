@@ -111,7 +111,7 @@ $PARAMETERS['mode']['check_messages'] = 'ON';
  *
  * Server: bin/gdrcd-ws-server.php (o `docker compose up -d gdrcd-ws`).
  * @see src/WebSocket/ChatHandler.php */
-$PARAMETERS['websocket']['enabled'] = false; // true per attivare lato client
+$PARAMETERS['websocket']['enabled'] = true; // chat real-time via Ratchet (porta 8082, fallback polling auto)
 $PARAMETERS['websocket']['url']     = '';    // es. wss://example.com/ws (vuoto = autodetect ws(s)://host:8082)
 
 /* Web Push (notifiche del browser anche a tab chiusa, via Service Worker).

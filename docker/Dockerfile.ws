@@ -13,7 +13,9 @@ RUN set -eux; \
     apt-get install -y --no-install-recommends \
         libzip-dev \
         unzip \
-        git; \
+        git \
+        bash \
+        default-mysql-client; \
     docker-php-ext-install -j"$(nproc)" \
         mysqli \
         pdo_mysql \
@@ -24,10 +26,15 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
-# Il source viene bind-mountato dal compose (vedi docker-compose.override.yml)
-# quindi non copiamo dentro l'immagine: il container si avvia leggendo i
-# file dal volume host, identico al servizio `web` in dev.
+# Riusa l'entrypoint principale: scrive config-overrides, attende DB,
+# installa Composer deps (vendor/), applica migrations e poi avvia
+# il server Ratchet (CMD sotto).
+COPY docker/entrypoint.sh /usr/local/bin/gdrcd-entrypoint
+RUN chmod +x /usr/local/bin/gdrcd-entrypoint
+
+# Il source viene bind-mountato dal compose; non copiamo dentro l'immagine.
 
 EXPOSE 8082
 
+ENTRYPOINT ["gdrcd-entrypoint"]
 CMD ["php", "bin/gdrcd-ws-server.php"]

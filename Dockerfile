@@ -38,7 +38,8 @@ RUN set -eux; \
         libfreetype6-dev \
         libonig-dev \
         libzip-dev \
-        unzip; \
+        unzip \
+        default-mysql-client; \
     docker-php-ext-configure gd --with-freetype --with-jpeg; \
     docker-php-ext-install -j"$(nproc)" \
         mysqli \
@@ -58,11 +59,20 @@ RUN { \
         echo 'session.cookie_httponly=1'; \
     } > /usr/local/etc/php/conf.d/gdrcd.ini
 
+# Composer per autoloader PSR-4 + dipendenze runtime (Ratchet ecc.)
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
 WORKDIR /var/www/html
 
 COPY . /var/www/html/
 
 COPY --from=tailwind-builder /build/themes/tailwind/output.css /var/www/html/themes/tailwind/output.css
+
+# Installa dipendenze Composer (best-effort: se manca rete cade silenziosamente)
+RUN if [ -f composer.json ]; then \
+        composer install --no-dev --optimize-autoloader --no-interaction --no-progress --no-scripts || \
+        echo "[gdrcd] composer install fallito al build; sara' ritentato all'entrypoint"; \
+    fi
 
 COPY docker/entrypoint.sh /usr/local/bin/gdrcd-entrypoint
 RUN chmod +x /usr/local/bin/gdrcd-entrypoint
