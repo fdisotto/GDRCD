@@ -81,6 +81,27 @@ if(($PARAMETERS['mode']['user_bbcode'] == 'ON' && $PARAMETERS['settings']['user_
     ?>
     <meta name="gdrcd-vapid-public" content="<?= htmlspecialchars($__gdrcd_vapid_pub, ENT_QUOTES, 'UTF-8') ?>">
     <?php endif; ?>
+    <?php
+    // WebSocket URL globale per i canali chat/notifications/presenti.
+    // Vuoto -> client resta in polling-only.
+    $__gdrcd_ws_url = '';
+    if (!empty($PARAMETERS['websocket']['enabled'])) {
+        $__gdrcd_ws_url = isset($PARAMETERS['websocket']['url'])
+            ? (string)$PARAMETERS['websocket']['url']
+            : '';
+        if ($__gdrcd_ws_url === '') {
+            $__gdrcd_scheme = (
+                (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+                || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https')
+            ) ? 'wss' : 'ws';
+            $__gdrcd_host = preg_replace('/:.*/', '', (string)($_SERVER['HTTP_HOST'] ?? 'localhost'));
+            $__gdrcd_ws_url = $__gdrcd_scheme . '://' . $__gdrcd_host . ':8082';
+        }
+    }
+    if ($__gdrcd_ws_url !== ''):
+    ?>
+    <meta name="gdrcd-ws-url" content="<?= htmlspecialchars($__gdrcd_ws_url, ENT_QUOTES, 'UTF-8') ?>">
+    <?php endif; ?>
     <title><?= htmlspecialchars($PARAMETERS['info']['site_name']) ?></title>
 </head>
 <body class="bg-gdrcd-bg text-gdrcd-text font-sans min-h-screen flex flex-col dark:bg-gdrcd-dark-bg dark:text-gdrcd-dark-text">

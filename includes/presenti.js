@@ -240,10 +240,28 @@
         container.appendChild(next);
     }
 
+    // --- is_me normalization -------------------------------------------
+    // Il payload WS non setta is_me (calcolato qui dal data-me del container);
+    // l'endpoint HTTP fallback lo setta lato server. Allineiamo sempre.
+    function applyIsMe(container, data) {
+        var me = container.getAttribute('data-me') || '';
+        if (!me || !data || !Array.isArray(data.groups)) return data;
+        for (var i = 0; i < data.groups.length; i++) {
+            var pgs = data.groups[i].pgs || [];
+            for (var j = 0; j < pgs.length; j++) {
+                pgs[j].is_me = (pgs[j].nome === me);
+            }
+        }
+        return data;
+    }
+
     // --- Polling -------------------------------------------------------
     var firstLoadDone = false;
+    var pollTimer = null;
+    var wsActive = false;
 
     function fetchAndRender(container) {
+        if (wsActive) return;
         var url = container.getAttribute('data-poll-url');
         if (!url) return;
 
@@ -254,27 +272,57 @@
             cache: 'no-store'
         }).then(function (res) {
             if (res.status === 401) {
-                // Sessione scaduta: redirect a login.
                 var loginUrl = container.getAttribute('data-login-url') || 'index.php';
                 window.location.href = loginUrl;
                 return null;
             }
-            if (!res.ok) {
-                return null;
-            }
+            if (!res.ok) return null;
             return res.json();
         }).then(function (data) {
-            if (!data) {
-                // Errore non fatale: lascia visibile lo snapshot precedente
-                // (o il placeholder iniziale al primo giro fallito).
+            if (!data) return;
+            render(container, applyIsMe(container, data));
+            firstLoadDone = true;
+        }).catch(function () { /* retry next tick */ });
+    }
+
+    function startPolling(container) {
+        if (pollTimer !== null) return;
+        fetchAndRender(container);
+        pollTimer = setInterval(function () { fetchAndRender(container); }, POLL_INTERVAL_MS);
+    }
+
+    function stopPolling() {
+        if (pollTimer !== null) {
+            clearInterval(pollTimer);
+            pollTimer = null;
+        }
+    }
+
+    // --- WebSocket via singleton ---------------------------------------
+    function subscribeWs(container) {
+        if (!window.GDRCDSocket) return false;
+        window.GDRCDSocket.subscribe('presenti', {}, function (payload) {
+            if (payload.type === 'error' && payload.error === 'unauthenticated') {
+                wsActive = false;
+                startPolling(container);
                 return;
             }
-            render(container, data);
+            if (payload.type !== 'presenti') return;
+            wsActive = true;
+            stopPolling();
+            render(container, applyIsMe(container, payload));
             firstLoadDone = true;
-        }).catch(function () {
-            // Errore di rete: niente di che, riprovo al prossimo tick.
-            // Non blanking del contenuto: l'utente vede l'ultimo stato buono.
         });
+        window.GDRCDSocket.onStateChange(function (state) {
+            if (state === 'open') {
+                wsActive = true;
+                stopPolling();
+            } else if (state === 'close' || state === 'auth-fail') {
+                wsActive = false;
+                startPolling(container);
+            }
+        });
+        return true;
     }
 
     // --- Bootstrap -----------------------------------------------------
@@ -282,12 +330,16 @@
         var container = document.getElementById(CONTAINER_ID);
         if (!container) return;
 
-        fetchAndRender(container);
-        setInterval(function () { fetchAndRender(container); }, POLL_INTERVAL_MS);
+        if (!subscribeWs(container)) {
+            startPolling(container);
+        } else {
+            setTimeout(function () {
+                if (!wsActive) startPolling(container);
+            }, 3000);
+        }
 
-        // Refresh opportunistico al ritorno in foreground.
         document.addEventListener('visibilitychange', function () {
-            if (document.visibilityState === 'visible' && firstLoadDone) {
+            if (document.visibilityState === 'visible' && firstLoadDone && !wsActive) {
                 fetchAndRender(container);
             }
         });

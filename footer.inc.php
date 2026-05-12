@@ -14,6 +14,7 @@
  * @see includes/notifications.js
  */
 if (!empty($_SESSION['login'])) { ?>
+    <script type="text/javascript" src="/includes/gdrcd-ws.js" defer></script>
     <script type="text/javascript" src="/includes/notifications.js" defer></script>
     <script type="text/javascript" src="/includes/presenti.js" defer></script>
     <script type="text/javascript" src="/includes/favorites.js" defer></script>

@@ -338,8 +338,13 @@
         lsSet(LS_KEYS.lastSeg, unreadSeg);
     }
 
+    // --- WS state ------------------------------------------------------
+    var wsActive = false;
+    var pollTimer = null;
+
     function poll() {
         if (!isEnabled()) return;
+        if (wsActive) return;
         try {
             fetch(ENDPOINT, {
                 method: 'GET',
@@ -353,6 +358,49 @@
                 if (data) diffAndNotify(data);
             }).catch(function () { /* errori di rete: ritenta al prossimo giro */ });
         } catch (e) { /* no-op */ }
+    }
+
+    function startPolling() {
+        if (pollTimer !== null) return;
+        setTimeout(poll, 2000);
+        pollTimer = setInterval(poll, POLL_INTERVAL_MS);
+    }
+
+    function stopPolling() {
+        if (pollTimer !== null) {
+            clearInterval(pollTimer);
+            pollTimer = null;
+        }
+    }
+
+    // --- WebSocket via singleton ---------------------------------------
+    function subscribeWs() {
+        if (!window.GDRCDSocket) return false;
+        window.GDRCDSocket.subscribe('notifications', {}, function (payload) {
+            if (payload.type === 'error' && payload.error === 'unauthenticated') {
+                wsActive = false;
+                startPolling();
+                return;
+            }
+            if (payload.type !== 'notifications') return;
+            wsActive = true;
+            stopPolling();
+            diffAndNotify({
+                unread_pm:           payload.unread_pm,
+                unread_segnalazioni: payload.unread_segnalazioni,
+                latest_pm:           payload.latest_pm
+            });
+        });
+        window.GDRCDSocket.onStateChange(function (state) {
+            if (state === 'open') {
+                wsActive = true;
+                stopPolling();
+            } else if (state === 'close' || state === 'auth-fail') {
+                wsActive = false;
+                startPolling();
+            }
+        });
+        return true;
     }
 
     // --- Bootstrap -----------------------------------------------------
@@ -371,10 +419,15 @@
         window.addEventListener('keydown', arm, true);
         window.addEventListener('touchstart', arm, true);
 
-        // Primo polling a stretto giro (ma fuori dal critical path) per
-        // inizializzare lo snapshot; poi a intervalli regolari.
-        setTimeout(poll, 2000);
-        setInterval(poll, POLL_INTERVAL_MS);
+        // WebSocket via singleton. Polling HTTP fallback se assente o non
+        // attivo entro 3s.
+        if (!subscribeWs()) {
+            startPolling();
+        } else {
+            setTimeout(function () {
+                if (!wsActive) startPolling();
+            }, 3000);
+        }
 
         // Web Push: se l'utente ha gia' concesso permessi e c'e' un SW
         // attivo, registra (o riusa) la subscription. Idempotente.

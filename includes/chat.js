@@ -78,40 +78,12 @@
         var inFlight = false;
         var paused  = false;
 
-        // --- WebSocket state (push real-time). ----------------------------
-        // Se data-ws-url e' settato e la connessione regge, smettiamo di
-        // pollare HTTP. In ogni altro caso (URL vuoto, errore di handshake,
-        // close anomala, browser senza supporto WebSocket) torniamo al
-        // polling: il flow esistente resta come fallback senza modifiche.
-        var wsUrl    = container.getAttribute('data-ws-url') || '';
-        var wsRoom   = parseInt(container.getAttribute('data-ws-room'), 10) || 0;
-        // Fallback: se data-ws-url e' vuoto o usa un host non risolvibile dal
-        // browser (es. nome docker network 'gdrcd-web'), riscrivi usando
-        // location.hostname con porta 8082.
-        if (wsRoom > 0 && typeof window !== 'undefined' && window.location) {
-            var loc = window.location;
-            var browserHost = loc.hostname;
-            var wsScheme = (loc.protocol === 'https:') ? 'wss' : 'ws';
-            var needsRewrite = !wsUrl;
-            if (wsUrl) {
-                try {
-                    var parsed = new URL(wsUrl);
-                    if (parsed.hostname !== browserHost && parsed.hostname.indexOf('.') === -1) {
-                        needsRewrite = true;
-                    }
-                } catch (e) {
-                    needsRewrite = true;
-                }
-            }
-            if (needsRewrite) {
-                wsUrl = wsScheme + '://' + browserHost + ':8082';
-            }
-        }
-        var ws       = null;
-        var wsActive = false;
-        var wsBackoff = 1000;          // ms, raddoppia fino a 30s.
-        var wsReconnectTimer = null;
-        var wsClosedByUs = false;
+        // WS via singleton GDRCDSocket (vedi includes/gdrcd-ws.js). Polling
+        // HTTP resta fallback se singleton assente, URL non configurato o
+        // close anomala.
+        var wsRoom         = parseInt(container.getAttribute('data-ws-room'), 10) || 0;
+        var wsActive       = false;
+        var wsUnsubscribe  = null;
 
         function setEl(tag, cls) {
             var el = document.createElement(tag);
@@ -379,82 +351,34 @@
             }
         }
 
-        // ------------------------------------------------------------------
-        // WebSocket: push real-time. Fallback automatico a polling se
-        // l'handshake fallisce, la conn cade o il browser non supporta WS.
-        // ------------------------------------------------------------------
-        function wsConnect() {
-            if (!wsUrl || typeof window.WebSocket === 'undefined') {
-                return false;
-            }
-            try {
-                ws = new window.WebSocket(wsUrl);
-            } catch (e) {
-                ws = null;
-                return false;
-            }
-
-            ws.addEventListener('open', function () {
-                wsActive  = true;
-                wsBackoff = 1000;
-                // Disabilita il polling HTTP: pusha solo dal server WS.
-                stop();
-                if (wsRoom > 0) {
-                    try {
-                        ws.send(JSON.stringify({ action: 'subscribe', room: wsRoom }));
-                    } catch (e) { /* connessione gia' chiusa */ }
-                }
-            });
-
-            ws.addEventListener('message', function (ev) {
-                var payload;
-                try {
-                    payload = JSON.parse(ev.data);
-                } catch (e) {
+        function wsSubscribe() {
+            if (!window.GDRCDSocket || wsRoom <= 0) return false;
+            wsUnsubscribe = window.GDRCDSocket.subscribe('chat', { room: wsRoom }, function (payload) {
+                if (payload.type === 'error' && payload.error === 'unauthenticated') {
+                    wsActive = false;
+                    fallbackToPolling();
                     return;
                 }
-                if (!payload || !payload.type) return;
-
-                if (payload.type === 'bootstrap' || payload.type === 'messages') {
-                    if (Array.isArray(payload.messages)) {
-                        appendMessages(payload.messages);
-                    }
-                    if (typeof payload.last_id === 'number'
-                        && payload.last_id > window.gdrcdChatLastId) {
-                        window.gdrcdChatLastId = payload.last_id;
-                    }
-                } else if (payload.type === 'error' && payload.error === 'unauthenticated') {
-                    // Sessione non valida lato server: torna al polling
-                    // (che gestira' il 401 redirect a index.php).
-                    wsClosedByUs = true;
-                    if (ws) ws.close();
+                wsActive = true;
+                stop();
+                if ((payload.type === 'bootstrap' || payload.type === 'messages')
+                    && Array.isArray(payload.messages)) {
+                    appendMessages(payload.messages);
+                }
+                if (typeof payload.last_id === 'number'
+                    && payload.last_id > window.gdrcdChatLastId) {
+                    window.gdrcdChatLastId = payload.last_id;
+                }
+            });
+            window.GDRCDSocket.onStateChange(function (state) {
+                if (state === 'open') {
+                    wsActive = true;
+                    stop();
+                } else if (state === 'close' || state === 'auth-fail') {
+                    wsActive = false;
                     fallbackToPolling();
                 }
             });
-
-            ws.addEventListener('close', function () {
-                wsActive = false;
-                if (wsClosedByUs) return;
-                // Tentativo di reconnect con backoff esponenziale; nel
-                // frattempo riattiviamo il polling per non perdere messaggi.
-                fallbackToPolling();
-                if (wsReconnectTimer === null) {
-                    wsReconnectTimer = window.setTimeout(function () {
-                        wsReconnectTimer = null;
-                        if (!wsActive) wsConnect();
-                    }, wsBackoff);
-                    wsBackoff = Math.min(wsBackoff * 2, 30000);
-                }
-            });
-
-            ws.addEventListener('error', function () {
-                // 'error' precede di solito 'close'; lascia che il close
-                // gestisca il fallback per evitare doppi setTimeout.
-                if (typeof console !== 'undefined' && console.warn) {
-                    console.warn('[gdrcd-ws] connection error, falling back to polling');
-                }
-            });
-
             return true;
         }
 
@@ -485,10 +409,9 @@
             wsActive: function () { return wsActive; }
         };
 
-        // Avvio: prima tenta WS (push). Se l'handshake non e' completato
-        // entro 3s, attiva polling come fallback. Se WS non disponibile
-        // del tutto (no support / no URL), avvia subito il polling.
-        if (!wsConnect()) {
+        // Avvio: subscribe via singleton WS. Se assente o non attivo entro
+        // 3s -> polling HTTP.
+        if (!wsSubscribe()) {
             start();
         } else {
             window.setTimeout(function () {

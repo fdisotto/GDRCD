@@ -80,9 +80,9 @@ $page_label = $PARAMETERS['names']['private_message']['plur'];
     <?php else: ?>
 
         <form id="multiple_delete" method="post"
-              action="main.php?page=messages_center<?= $base_query ?>
-            <?= gdrcd_csrf_field() ?>"
+              action="main.php?page=messages_center<?= $base_query ?>"
               onsubmit="return gdrcd_msg_checked_delete();">
+            <?= gdrcd_csrf_field() ?>
             <input type="hidden" name="op" value="erase_checked"/>
             <input type="hidden" name="type" value="<?= $delType ?>"/>
 

@@ -17,7 +17,7 @@
 
 'use strict';
 
-var CACHE_VERSION   = 'gdrcd-v1';
+var CACHE_VERSION   = 'gdrcd-v3';
 var PRECACHE_NAME   = CACHE_VERSION + '-precache';
 var RUNTIME_NAME    = CACHE_VERSION + '-runtime';
 var OFFLINE_URL     = '/offline.html';
@@ -34,6 +34,7 @@ var PRECACHE_URLS = [
     '/includes/toast.js',
     '/includes/theme-toggle.js',
     '/includes/cookie-consent.js',
+    '/includes/gdrcd-ws.js',
     '/includes/notifications.js',
     '/includes/presenti.js',
     '/includes/chat.js'

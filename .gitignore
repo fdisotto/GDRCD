@@ -194,4 +194,7 @@ backups/
 
 # Composer
 vendor/
-composer.pharsessions/
+composer.phar
+
+# Sessioni PHP (bind-mount runtime per condivisione web/ws container)
+sessions/
