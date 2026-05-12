@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 /**
  * GDRCD - Logger applicativo strutturato.
  *
@@ -34,7 +36,7 @@ if (!defined('GDRCD_LOG_DEBUG')) {
  *
  * @return array<string,int>
  */
-function gdrcd_log_levels()
+function gdrcd_log_levels(): array
 {
     return array(
         'debug'     => 100,
@@ -53,7 +55,7 @@ function gdrcd_log_levels()
  *
  * @return array{path:string,min_level:string,max_size:int,max_files:int,enabled:bool}
  */
-function gdrcd_log_config()
+function gdrcd_log_config(): array
 {
     static $cfg = null;
     if ($cfg !== null) {
@@ -102,7 +104,7 @@ function gdrcd_log_config()
  * @param int    $maxFiles
  * @return void
  */
-function gdrcd_log_rotate_if_needed($path, $maxSize, $maxFiles)
+function gdrcd_log_rotate_if_needed(string $path, int $maxSize, int $maxFiles): void
 {
     if (!file_exists($path)) {
         return;
@@ -136,7 +138,7 @@ function gdrcd_log_rotate_if_needed($path, $maxSize, $maxFiles)
  * @param array $context
  * @return string
  */
-function gdrcd_log_encode_context(array $context)
+function gdrcd_log_encode_context(array $context): string
 {
     if (empty($context)) {
         return '';
@@ -159,7 +161,7 @@ function gdrcd_log_encode_context(array $context)
  * @param array  $context dati strutturati opzionali (saranno JSON-encoded)
  * @return void
  */
-function gdrcd_log($level, $message, array $context = array())
+function gdrcd_log(string $level, string $message, array $context = array()): void
 {
     $cfg = gdrcd_log_config();
     if (!$cfg['enabled']) {
@@ -223,32 +225,32 @@ function gdrcd_log($level, $message, array $context = array())
 /**
  * Helper di convenienza per i singoli livelli.
  */
-function gdrcd_log_debug($message, array $context = array())
+function gdrcd_log_debug(string $message, array $context = array()): void
 {
     gdrcd_log('debug', $message, $context);
 }
 
-function gdrcd_log_info($message, array $context = array())
+function gdrcd_log_info(string $message, array $context = array()): void
 {
     gdrcd_log('info', $message, $context);
 }
 
-function gdrcd_log_notice($message, array $context = array())
+function gdrcd_log_notice(string $message, array $context = array()): void
 {
     gdrcd_log('notice', $message, $context);
 }
 
-function gdrcd_log_warning($message, array $context = array())
+function gdrcd_log_warning(string $message, array $context = array()): void
 {
     gdrcd_log('warning', $message, $context);
 }
 
-function gdrcd_log_error($message, array $context = array())
+function gdrcd_log_error(string $message, array $context = array()): void
 {
     gdrcd_log('error', $message, $context);
 }
 
-function gdrcd_log_critical($message, array $context = array())
+function gdrcd_log_critical(string $message, array $context = array()): void
 {
     gdrcd_log('critical', $message, $context);
 }

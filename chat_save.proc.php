@@ -26,20 +26,29 @@ $typeOrder = ($PARAMETERS['mode']['chat_from_bottom'] == 'ON') ? 'DESC' : 'ASC';
 
 /*Query per caricamento dati dalla chat corrente, carica le azioni degli ultimi 240 min - 4 ore !! NON SALVA LE CHAT PRIVATE !!*/
 
+$luogo_id   = (int)$_SESSION['luogo'];
+$orderSql   = ($typeOrder === 'DESC') ? 'DESC' : 'ASC';
+
 if ($PARAMETERS['mode']['chatsavepvt'] == 'ON') {
-    $query = gdrcd_query("	SELECT chat.id, chat.imgs, chat.mittente, chat.destinatario, chat.tipo, chat.ora, chat.testo, personaggio.url_img_chat, mappa.ora_prenotazione, mappa.privata
+    $query = Db::prepared(
+        "SELECT chat.id, chat.imgs, chat.mittente, chat.destinatario, chat.tipo, chat.ora, chat.testo, personaggio.url_img_chat, mappa.ora_prenotazione, mappa.privata
         FROM chat
         INNER JOIN mappa ON mappa.id = chat.stanza
         LEFT JOIN personaggio ON personaggio.nome = chat.mittente
-        WHERE stanza = " . $_SESSION['luogo'] . " AND DATE_SUB(NOW(), INTERVAL 240 MINUTE) < ora ORDER BY id " . $typeOrder,
-        'result');
+        WHERE stanza = ? AND DATE_SUB(NOW(), INTERVAL 240 MINUTE) < ora ORDER BY id " . $orderSql,
+        'i',
+        array($luogo_id)
+    );
 } else {
-    $query = gdrcd_query("	SELECT chat.id, chat.imgs, chat.mittente, chat.destinatario, chat.tipo, chat.ora, chat.testo, personaggio.url_img_chat, mappa.ora_prenotazione, mappa.privata
+    $query = Db::prepared(
+        "SELECT chat.id, chat.imgs, chat.mittente, chat.destinatario, chat.tipo, chat.ora, chat.testo, personaggio.url_img_chat, mappa.ora_prenotazione, mappa.privata
             FROM chat
             INNER JOIN mappa ON mappa.id = chat.stanza
             LEFT JOIN personaggio ON personaggio.nome = chat.mittente
-            WHERE stanza = " . $_SESSION['luogo'] . " AND mappa.privata = 0 AND DATE_SUB(NOW(), INTERVAL 240 MINUTE) < ora AND chat.ora > IFNULL(mappa.ora_prenotazione, '0000-00-00 00:00:00') ORDER BY id " . $typeOrder,
-        'result');
+            WHERE stanza = ? AND mappa.privata = 0 AND DATE_SUB(NOW(), INTERVAL 240 MINUTE) < ora AND chat.ora > IFNULL(mappa.ora_prenotazione, '0000-00-00 00:00:00') ORDER BY id " . $orderSql,
+        'i',
+        array($luogo_id)
+    );
 }
 
 /* Registro per inlining immagini: ogni risorsa locale viene letta una sola volta
@@ -116,11 +125,14 @@ while ($row = gdrcd_query($query, 'fetch')) {
             }
             if ($PARAMETERS['settings']['chat']['guilds'] == 'ON') {
 
-                $query_ruoli = "SELECT 	clgpersonaggioruolo.id_ruolo,	ruolo.nome_ruolo,	ruolo.immagine FROM clgpersonaggioruolo INNER JOIN ruolo ON ruolo.id_ruolo = clgpersonaggioruolo.id_ruolo WHERE clgpersonaggioruolo.personaggio='" . $row['mittente'] . "'";
-                $result_ruoli = gdrcd_query($query_ruoli, 'result');
+                $result_ruoli = Db::prepared(
+                    "SELECT clgpersonaggioruolo.id_ruolo, ruolo.nome_ruolo, ruolo.immagine FROM clgpersonaggioruolo INNER JOIN ruolo ON ruolo.id_ruolo = clgpersonaggioruolo.id_ruolo WHERE clgpersonaggioruolo.personaggio = ?",
+                    's',
+                    array($row['mittente'])
+                );
                 $gilde = 0;
 
-                if (gdrcd_query($result_ruoli, 'num_rows') > 0) {
+                if ($result_ruoli instanceof mysqli_result && gdrcd_query($result_ruoli, 'num_rows') > 0) {
                     while ($ruoli = gdrcd_query($result_ruoli, 'fetch')) {
                         $gilde++;
                         $add_icon .= $__img_registry->iconTag(

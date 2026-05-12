@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 /**
  * Endpoint JSON per le notifiche desktop (PM e segnalazioni GM).
  *
@@ -37,29 +39,33 @@ if ($auth === null) {
     exit;
 }
 
-$me = gdrcd_filter('in', $auth['login']);
+$me = (string)$auth['login'];
 
 // --- PM non letti -------------------------------------------------------
 $unreadPm = 0;
 $latestPm = null;
 
 if (($PARAMETERS['mode']['check_messages'] ?? 'OFF') === 'ON') {
-    $res = gdrcd_query(
+    $res = Db::preparedFetch(
         "SELECT COUNT(*) AS c FROM messaggi
-         WHERE destinatario = '" . $me . "'
+         WHERE destinatario = ?
            AND destinatario_del = 0
-           AND letto = 0"
+           AND letto = 0",
+        's',
+        array($me)
     );
     $unreadPm = (int)($res['c'] ?? 0);
 
     if ($unreadPm > 0) {
-        $row = gdrcd_query(
+        $row = Db::preparedFetch(
             "SELECT id, mittente, oggetto FROM messaggi
-             WHERE destinatario = '" . $me . "'
+             WHERE destinatario = ?
                AND destinatario_del = 0
                AND letto = 0
              ORDER BY spedito DESC
-             LIMIT 1"
+             LIMIT 1",
+            's',
+            array($me)
         );
         if (!empty($row)) {
             $subject = (string)($row['oggetto'] ?? '');
@@ -84,19 +90,23 @@ $permessi = (int)($auth['permessi'] ?? 0);
 if (ESITI && $permessi >= ESITI_PERM) {
     if ($permessi >= FULL_PERM) {
         // Moderator: vede tutti i blocchi.
-        $res = gdrcd_query(
+        $res = Db::preparedFetch(
             "SELECT COUNT(*) AS c FROM esiti
              WHERE letto_master = 0
-               AND autore <> '" . $me . "'"
+               AND autore <> ?",
+            's',
+            array($me)
         );
     } else {
         // GM: vede solo i blocchi liberi (master = 0) o di cui è master.
-        $res = gdrcd_query(
+        $res = Db::preparedFetch(
             "SELECT COUNT(e.id) AS c FROM esiti e
              INNER JOIN blocco_esiti b ON b.id = e.id_blocco
              WHERE e.letto_master = 0
-               AND e.autore <> '" . $me . "'
-               AND (b.master = '0' OR b.master = '" . $me . "')"
+               AND e.autore <> ?
+               AND (b.master = '0' OR b.master = ?)",
+            'ss',
+            array($me, $me)
         );
     }
     $unreadSegnalazioni = (int)($res['c'] ?? 0);

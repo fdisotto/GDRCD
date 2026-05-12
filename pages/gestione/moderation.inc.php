@@ -22,7 +22,6 @@ if (($_SESSION['permessi'] ?? 0) < MODERATOR) {
 }
 
 $me   = (string)($_SESSION['login'] ?? '');
-$me_q = gdrcd_filter('in', $me);
 
 $flash = null;
 
@@ -36,8 +35,10 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     if ($id <= 0) {
         $flash = ['kind' => 'warning', 'message' => 'Segnalazione non valida.'];
     } else {
-        $row = gdrcd_query(
-            "SELECT id, status FROM moderation_reports WHERE id = " . $id . " LIMIT 1"
+        $row = Db::preparedFetch(
+            "SELECT id, status FROM moderation_reports WHERE id = ? LIMIT 1",
+            'i',
+            array($id)
         );
 
         if (empty($row)) {
@@ -46,11 +47,10 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             if (!in_array($row['status'], ['pending', 'under_review'], true)) {
                 $flash = ['kind' => 'warning', 'message' => 'Segnalazione gia\' chiusa.'];
             } else {
-                gdrcd_query(
-                    "UPDATE moderation_reports SET "
-                    . "assigned_to = '" . $me_q . "', "
-                    . "status = 'under_review' "
-                    . "WHERE id = " . $id
+                Db::preparedExecute(
+                    "UPDATE moderation_reports SET assigned_to = ?, status = 'under_review' WHERE id = ?",
+                    'si',
+                    array($me, $id)
                 );
                 $flash = ['kind' => 'success', 'message' => 'Segnalazione presa in carico.'];
 
@@ -65,14 +65,15 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             } elseif (!in_array($row['status'], ['pending', 'under_review'], true)) {
                 $flash = ['kind' => 'warning', 'message' => 'Segnalazione gia\' chiusa.'];
             } else {
-                $res_q = gdrcd_filter('in', $resolution);
-                gdrcd_query(
+                Db::preparedExecute(
                     "UPDATE moderation_reports SET "
                     . "status = 'resolved', "
-                    . "resolution = '" . $res_q . "', "
+                    . "resolution = ?, "
                     . "resolved_at = NOW(), "
-                    . "assigned_to = COALESCE(NULLIF(assigned_to, ''), '" . $me_q . "') "
-                    . "WHERE id = " . $id
+                    . "assigned_to = COALESCE(NULLIF(assigned_to, ''), ?) "
+                    . "WHERE id = ?",
+                    'ssi',
+                    array($resolution, $me, $id)
                 );
                 $flash = ['kind' => 'success', 'message' => 'Segnalazione risolta.'];
 
@@ -85,17 +86,28 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                 $flash = ['kind' => 'warning', 'message' => 'Segnalazione gia\' chiusa.'];
             } else {
                 $resolution = trim((string)($_POST['resolution'] ?? ''));
-                $res_sql    = $resolution !== ''
-                    ? ", resolution = '" . gdrcd_filter('in', $resolution) . "'"
-                    : '';
-                gdrcd_query(
-                    "UPDATE moderation_reports SET "
-                    . "status = 'dismissed', "
-                    . "resolved_at = NOW(), "
-                    . "assigned_to = COALESCE(NULLIF(assigned_to, ''), '" . $me_q . "')"
-                    . $res_sql . " "
-                    . "WHERE id = " . $id
-                );
+                if ($resolution !== '') {
+                    Db::preparedExecute(
+                        "UPDATE moderation_reports SET "
+                        . "status = 'dismissed', "
+                        . "resolved_at = NOW(), "
+                        . "assigned_to = COALESCE(NULLIF(assigned_to, ''), ?), "
+                        . "resolution = ? "
+                        . "WHERE id = ?",
+                        'ssi',
+                        array($me, $resolution, $id)
+                    );
+                } else {
+                    Db::preparedExecute(
+                        "UPDATE moderation_reports SET "
+                        . "status = 'dismissed', "
+                        . "resolved_at = NOW(), "
+                        . "assigned_to = COALESCE(NULLIF(assigned_to, ''), ?) "
+                        . "WHERE id = ?",
+                        'si',
+                        array($me, $id)
+                    );
+                }
                 $flash = ['kind' => 'success', 'message' => 'Segnalazione archiviata.'];
 
                 if (function_exists('gdrcd_log_info')) {
@@ -115,9 +127,14 @@ if (!in_array($filter, $allowed_filter, true)) {
     $filter = 'pending';
 }
 
-$where_sql = '';
+// $filter validato da whitelist sopra.
+$where_sql    = '';
+$filter_types = '';
+$filter_params = array();
 if ($filter !== 'all') {
-    $where_sql = " WHERE status = '" . gdrcd_filter('in', $filter) . "'";
+    $where_sql     = " WHERE status = ?";
+    $filter_types  = 's';
+    $filter_params = array($filter);
 }
 
 /* ------------------------------------------------------------------
@@ -143,14 +160,15 @@ $counts = [
 /* ------------------------------------------------------------------
  * Recupero righe.
  * ------------------------------------------------------------------ */
-$rs = gdrcd_query(
+$rs = Db::prepared(
     "SELECT id, reporter, subject, kind, body, context_url, status, severity, "
     . "assigned_to, resolution, created_at, updated_at, resolved_at "
     . "FROM moderation_reports" . $where_sql
     . " ORDER BY FIELD(status,'pending','under_review','resolved','dismissed'), "
     . "          FIELD(severity,'high','medium','low'), "
     . "          created_at DESC LIMIT 200",
-    'result'
+    $filter_types,
+    $filter_params
 );
 
 /* ------------------------------------------------------------------

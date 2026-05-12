@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 /**
  * Endpoint JSON: info del luogo corrente ($_SESSION['luogo']).
  *

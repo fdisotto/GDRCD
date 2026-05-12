@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 /**
  * GDRCD — Helper per upload di immagini lato server.
  *

@@ -44,17 +44,18 @@ $pagebegin = $offset * $per_page;
 $count_row     = gdrcd_query("SELECT COUNT(*) AS c FROM messaggioaraldo WHERE id_messaggio_padre = -1 AND id_araldo = " . $araldo_id);
 $totaleresults = (int)$count_row['c'];
 
-$result = gdrcd_query(
+$result = Db::prepared(
     "SELECT MA.id_messaggio, MA.titolo, MA.autore, MA.data_messaggio, MA.data_ultimo_messaggio,
             MA.importante, MA.chiuso, AL.id AS read_id
      FROM messaggioaraldo AS MA
-     LEFT JOIN araldo_letto AS AL ON MA.id_messaggio = AL.thread_id AND AL.nome = '" . gdrcd_filter('in', $_SESSION['login']) . "'
-     WHERE MA.id_messaggio_padre = -1 AND MA.id_araldo = " . $araldo_id . "
+     LEFT JOIN araldo_letto AS AL ON MA.id_messaggio = AL.thread_id AND AL.nome = ?
+     WHERE MA.id_messaggio_padre = -1 AND MA.id_araldo = ?
      ORDER BY MA.importante DESC, MA.data_ultimo_messaggio DESC
-     LIMIT " . $pagebegin . ", " . $per_page,
-    'result'
+     LIMIT ?, ?",
+    'siii',
+    array((string)$_SESSION['login'], (int)$araldo_id, (int)$pagebegin, (int)$per_page)
 );
-$numresults = (int)gdrcd_query($result, 'num_rows');
+$numresults = ($result instanceof mysqli_result) ? (int)mysqli_num_rows($result) : 0;
 
 $is_mod = ((int)$_SESSION['permessi'] >= MODERATOR);
 ?>

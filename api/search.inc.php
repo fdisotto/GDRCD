@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 /**
  * Endpoint JSON per la ricerca globale dalla topbar.
  *
@@ -74,11 +76,9 @@ if (mb_strlen($qTrim) < 2) {
     exit;
 }
 
-// Filtra l'input per la concatenazione SQL (stessa convenzione delle altre
-// pagine, vedi pages/servizi/anagrafe/index.inc.php). La conversione a
-// prepared statement è un task separato.
-$q   = gdrcd_filter('in', $qTrim);
-$LIM = 5;
+// Prepared statements: $like e' il pattern LIKE bindato.
+$like = '%' . $qTrim . '%';
+$LIM  = 5;
 
 $results = [
     'pg'            => [],
@@ -90,95 +90,95 @@ $results = [
 
 // --- Personaggi ---------------------------------------------------------
 // Solo PG non esiliati (esilio <= oggi). Match su nome o cognome.
-$resPg = gdrcd_query(
+$rowsPg = Db::preparedFetchAll(
     "SELECT nome, cognome FROM personaggio
-     WHERE (nome LIKE '%" . $q . "%' OR cognome LIKE '%" . $q . "%')
+     WHERE (nome LIKE ? OR cognome LIKE ?)
        AND esilio <= CURDATE()
      ORDER BY nome
-     LIMIT " . $LIM,
-    'result'
+     LIMIT ?",
+    'ssi',
+    array($like, $like, $LIM)
 );
-while ($row = gdrcd_query($resPg, 'fetch')) {
+foreach ($rowsPg as $row) {
     $results['pg'][] = [
         'nome'    => (string)$row['nome'],
         'cognome' => (string)($row['cognome'] ?? ''),
         'url'     => 'main.php?page=scheda&pg=' . urlencode($row['nome']),
     ];
 }
-gdrcd_query($resPg, 'free');
 
 // --- Oggetti sul mercato -----------------------------------------------
 // JOIN su mercato per restituire solo oggetti effettivamente acquistabili
 // (gli oggetti "nascosti" non presenti nel mercato non vengono mostrati).
-$resOgg = gdrcd_query(
+$rowsOgg = Db::preparedFetchAll(
     "SELECT DISTINCT oggetto.id_oggetto, oggetto.nome, oggetto.tipo
      FROM oggetto
      JOIN mercato ON oggetto.id_oggetto = mercato.id_oggetto
-     WHERE oggetto.nome LIKE '%" . $q . "%'
+     WHERE oggetto.nome LIKE ?
      ORDER BY oggetto.nome
-     LIMIT " . $LIM,
-    'result'
+     LIMIT ?",
+    'si',
+    array($like, $LIM)
 );
-while ($row = gdrcd_query($resOgg, 'fetch')) {
+foreach ($rowsOgg as $row) {
     $results['oggetti'][] = [
         'nome' => (string)$row['nome'],
         'url'  => 'main.php?page=servizi_mercato&op=visit&what=' . (int)$row['tipo'],
     ];
 }
-gdrcd_query($resOgg, 'free');
 
 // --- Gilde --------------------------------------------------------------
-$resGil = gdrcd_query(
+$rowsGil = Db::preparedFetchAll(
     "SELECT id_gilda, nome FROM gilda
      WHERE visibile = 1
-       AND nome LIKE '%" . $q . "%'
+       AND nome LIKE ?
      ORDER BY nome
-     LIMIT " . $LIM,
-    'result'
+     LIMIT ?",
+    'si',
+    array($like, $LIM)
 );
-while ($row = gdrcd_query($resGil, 'fetch')) {
+foreach ($rowsGil as $row) {
     $results['gilde'][] = [
         'nome' => (string)$row['nome'],
         'url'  => 'main.php?page=servizi_gilde&id_gilda=' . (int)$row['id_gilda'],
     ];
 }
-gdrcd_query($resGil, 'free');
 
 // --- Ambientazione ------------------------------------------------------
 // Match su titolo o testo. Restituiamo il titolo + capitolo, e linkiamo
 // alla pagina con anchor #cap-N (il client può fare scroll lato js).
-$resAmb = gdrcd_query(
+$rowsAmb = Db::preparedFetchAll(
     "SELECT capitolo, titolo FROM ambientazione
-     WHERE titolo LIKE '%" . $q . "%' OR testo LIKE '%" . $q . "%'
+     WHERE titolo LIKE ? OR testo LIKE ?
      ORDER BY capitolo
-     LIMIT " . $LIM,
-    'result'
+     LIMIT ?",
+    'ssi',
+    array($like, $like, $LIM)
 );
-while ($row = gdrcd_query($resAmb, 'fetch')) {
+foreach ($rowsAmb as $row) {
     $results['ambientazione'][] = [
         'titolo'   => (string)$row['titolo'],
         'capitolo' => (int)$row['capitolo'],
         'url'      => 'main.php?page=user_ambientazione#cap-' . (int)$row['capitolo'],
     ];
 }
-gdrcd_query($resAmb, 'free');
 
 // --- Regolamento --------------------------------------------------------
-$resReg = gdrcd_query(
+$rowsReg = Db::preparedFetchAll(
     "SELECT articolo, titolo FROM regolamento
-     WHERE titolo LIKE '%" . $q . "%' OR testo LIKE '%" . $q . "%'
+     WHERE titolo LIKE ? OR testo LIKE ?
      ORDER BY articolo
-     LIMIT " . $LIM,
-    'result'
+     LIMIT ?",
+    'ssi',
+    array($like, $like, $LIM)
 );
-while ($row = gdrcd_query($resReg, 'fetch')) {
+foreach ($rowsReg as $row) {
     $results['regolamento'][] = [
         'titolo'    => (string)$row['titolo'],
         'articolo'  => (int)$row['articolo'],
         'url'       => 'main.php?page=user_regolamento#art-' . (int)$row['articolo'],
     ];
 }
-gdrcd_query($resReg, 'free');
 
 $total = count($results['pg'])
        + count($results['oggetti'])

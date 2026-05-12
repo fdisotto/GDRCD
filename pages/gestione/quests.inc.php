@@ -48,13 +48,10 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             $flash = ['kind' => 'warning', 'message' => 'Titolo e descrizione sono obbligatori.'];
             $open_form = 'new';
         } else {
-            gdrcd_query(
-                "INSERT INTO quest (titolo, descrizione, obiettivo, ricompensa, autore) VALUES ("
-                . "'" . gdrcd_filter('in', $titolo) . "', "
-                . "'" . gdrcd_filter('in', $descrizione) . "', "
-                . "'" . gdrcd_filter('in', $obiettivo) . "', "
-                . "'" . gdrcd_filter('in', $ricompensa) . "', "
-                . "'" . gdrcd_filter('in', $me_login) . "')"
+            Db::preparedExecute(
+                "INSERT INTO quest (titolo, descrizione, obiettivo, ricompensa, autore) VALUES (?, ?, ?, ?, ?)",
+                'sssss',
+                array($titolo, $descrizione, $obiettivo, $ricompensa, $me_login)
             );
             $flash = ['kind' => 'success', 'message' => 'Quest creata.'];
         }
@@ -72,13 +69,10 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             $flash = ['kind' => 'warning', 'message' => 'Titolo e descrizione sono obbligatori.'];
             $open_form = ['edit', $id];
         } else {
-            gdrcd_query(
-                "UPDATE quest SET "
-                . "titolo = '" . gdrcd_filter('in', $titolo) . "', "
-                . "descrizione = '" . gdrcd_filter('in', $descrizione) . "', "
-                . "obiettivo = '" . gdrcd_filter('in', $obiettivo) . "', "
-                . "ricompensa = '" . gdrcd_filter('in', $ricompensa) . "' "
-                . "WHERE id_quest = " . $id
+            Db::preparedExecute(
+                "UPDATE quest SET titolo = ?, descrizione = ?, obiettivo = ?, ricompensa = ? WHERE id_quest = ?",
+                'ssssi',
+                array($titolo, $descrizione, $obiettivo, $ricompensa, $id)
             );
             $flash = ['kind' => 'success', 'message' => 'Quest aggiornata.'];
         }
@@ -86,7 +80,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     } elseif ($op === 'toggle') {
         $id = (int)($_POST['id_quest'] ?? 0);
         if ($id > 0) {
-            gdrcd_query("UPDATE quest SET attiva = 1 - attiva WHERE id_quest = " . $id);
+            Db::preparedExecute("UPDATE quest SET attiva = 1 - attiva WHERE id_quest = ?", 'i', array($id));
             $flash = ['kind' => 'success', 'message' => 'Stato quest aggiornato.'];
         }
 
@@ -100,21 +94,20 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             if ($id > 0) { $open_form = ['assign', $id]; }
         } else {
             // Verifica esistenza PG.
-            $pg_check = gdrcd_query(
-                "SELECT nome FROM personaggio WHERE nome = '" . gdrcd_filter('in', $pg) . "' LIMIT 1"
+            $pg_check = Db::preparedFetch(
+                "SELECT nome FROM personaggio WHERE nome = ? LIMIT 1",
+                's',
+                array($pg)
             );
             if (empty($pg_check)) {
                 $flash = ['kind' => 'warning', 'message' => 'Personaggio "' . htmlspecialchars($pg) . '" non trovato.'];
                 $open_form = ['assign', $id];
             } else {
-                gdrcd_query(
-                    "INSERT IGNORE INTO clgquestpg (id_quest, personaggio, status, note) VALUES ("
-                    . $id . ", "
-                    . "'" . gdrcd_filter('in', (string)$pg_check['nome']) . "', "
-                    . "'attiva', "
-                    . "'" . gdrcd_filter('in', $note) . "')"
+                $affected = Db::preparedAffected(
+                    "INSERT IGNORE INTO clgquestpg (id_quest, personaggio, status, note) VALUES (?, ?, 'attiva', ?)",
+                    'iss',
+                    array($id, (string)$pg_check['nome'], $note)
                 );
-                $affected = gdrcd_query('', 'affected');
                 if ($affected > 0) {
                     $flash = ['kind' => 'success', 'message' => 'Quest assegnata a ' . htmlspecialchars((string)$pg_check['nome']) . '.'];
                 } else {
@@ -132,15 +125,14 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         if ($row_id <= 0 || !in_array($status, ['completata', 'fallita', 'attiva'], true)) {
             $flash = ['kind' => 'warning', 'message' => 'Parametri non validi.'];
         } else {
+            // $status validato da whitelist sopra.
             $set_conclusa = ($status === 'attiva')
                 ? "conclusa_il = NULL"
                 : "conclusa_il = NOW()";
-            gdrcd_query(
-                "UPDATE clgquestpg SET "
-                . "status = '" . gdrcd_filter('in', $status) . "', "
-                . $set_conclusa . ", "
-                . "note = '" . gdrcd_filter('in', $note) . "' "
-                . "WHERE id = " . $row_id
+            Db::preparedExecute(
+                "UPDATE clgquestpg SET status = ?, " . $set_conclusa . ", note = ? WHERE id = ?",
+                'ssi',
+                array($status, $note, $row_id)
             );
             $flash = ['kind' => 'success', 'message' => 'Stato assegnazione aggiornato.'];
             if ($id > 0) { $open_form = ['assignees', $id]; }
@@ -150,7 +142,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         $row_id = (int)($_POST['row_id'] ?? 0);
         $id     = (int)($_POST['id_quest'] ?? 0);
         if ($row_id > 0) {
-            gdrcd_query("DELETE FROM clgquestpg WHERE id = " . $row_id);
+            Db::preparedExecute("DELETE FROM clgquestpg WHERE id = ?", 'i', array($row_id));
             $flash = ['kind' => 'success', 'message' => 'Assegnazione rimossa.'];
             if ($id > 0) { $open_form = ['assignees', $id]; }
         }
@@ -225,18 +217,13 @@ $status_badge = [
  * @return array<int, array<string,mixed>>
  */
 $load_assignees = function (int $id_quest): array {
-    $rs2 = gdrcd_query(
+    return Db::preparedFetchAll(
         "SELECT id, personaggio, status, assegnata_il, conclusa_il, note "
-        . "FROM clgquestpg WHERE id_quest = " . $id_quest . " "
+        . "FROM clgquestpg WHERE id_quest = ? "
         . "ORDER BY (status = 'attiva') DESC, assegnata_il DESC",
-        'result'
+        'i',
+        array($id_quest)
     );
-    $out = [];
-    while ($r = gdrcd_query($rs2, 'assoc')) {
-        $out[] = $r;
-    }
-    gdrcd_query($rs2, 'free');
-    return $out;
 };
 ?>
 

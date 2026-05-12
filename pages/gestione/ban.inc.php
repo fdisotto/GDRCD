@@ -54,27 +54,21 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             if ($ip === '' || filter_var($ip, FILTER_VALIDATE_IP) === false) {
                 $flash = ['kind' => 'warning', 'message' => 'Indirizzo IP non valido.'];
             } else {
-                $ip_q   = gdrcd_filter('in', $ip);
-                $nota_q = gdrcd_filter('in', $nota);
-                $host   = @gethostbyaddr($ip);
+                $host = @gethostbyaddr($ip);
                 if (!is_string($host) || $host === '') {
                     $host = '-';
                 }
-                $host_q = gdrcd_filter('in', $host);
 
                 if ($days > 0) {
-                    $expires_sql = "DATE_ADD(NOW(), INTERVAL " . (int)$days . " DAY)";
+                    // INTERVAL non puo' essere parametrizzato -> $days e' int.
+                    $sql_insert = "INSERT INTO blacklist (ip, nota, granted, ora, host, expires_at) VALUES (?, ?, 0, NOW(), ?, DATE_ADD(NOW(), INTERVAL " . (int)$days . " DAY)) "
+                                . "ON DUPLICATE KEY UPDATE nota = VALUES(nota), granted = 0, ora = NOW(), host = VALUES(host), expires_at = VALUES(expires_at)";
                 } else {
-                    $expires_sql = "NULL";
+                    $sql_insert = "INSERT INTO blacklist (ip, nota, granted, ora, host, expires_at) VALUES (?, ?, 0, NOW(), ?, NULL) "
+                                . "ON DUPLICATE KEY UPDATE nota = VALUES(nota), granted = 0, ora = NOW(), host = VALUES(host), expires_at = VALUES(expires_at)";
                 }
 
-                // Upsert: se l'IP e' gia' presente, riattiva il ban e aggiorna i metadati.
-                gdrcd_query(
-                    "INSERT INTO blacklist (ip, nota, granted, ora, host, expires_at) VALUES ("
-                    . "'" . $ip_q . "', '" . $nota_q . "', 0, NOW(), '" . $host_q . "', " . $expires_sql . ") "
-                    . "ON DUPLICATE KEY UPDATE "
-                    . "nota = VALUES(nota), granted = 0, ora = NOW(), host = VALUES(host), expires_at = VALUES(expires_at)"
-                );
+                Db::preparedExecute($sql_insert, 'sss', array($ip, $nota, $host));
 
                 $flash = ['kind' => 'success', 'message' => 'Ban aggiunto: ' . $ip . '.'];
             }
@@ -85,8 +79,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             if ($ip === '' || filter_var($ip, FILTER_VALIDATE_IP) === false) {
                 $flash = ['kind' => 'warning', 'message' => 'IP non valido.'];
             } else {
-                $ip_q = gdrcd_filter('in', $ip);
-                gdrcd_query("UPDATE blacklist SET granted = 1 WHERE ip = '" . $ip_q . "'");
+                Db::preparedExecute("UPDATE blacklist SET granted = 1 WHERE ip = ?", 's', array($ip));
                 $flash = ['kind' => 'success', 'message' => 'Ban revocato per ' . $ip . '.'];
             }
             break;
@@ -96,9 +89,12 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             if ($ip === '' || filter_var($ip, FILTER_VALIDATE_IP) === false) {
                 $flash = ['kind' => 'warning', 'message' => 'IP non valido.'];
             } else {
-                $ip_q = gdrcd_filter('in', $ip);
                 // Riattivare un ban scaduto -> azzera expires_at (ban permanente).
-                gdrcd_query("UPDATE blacklist SET granted = 0, expires_at = NULL, ora = NOW() WHERE ip = '" . $ip_q . "'");
+                Db::preparedExecute(
+                    "UPDATE blacklist SET granted = 0, expires_at = NULL, ora = NOW() WHERE ip = ?",
+                    's',
+                    array($ip)
+                );
                 $flash = ['kind' => 'success', 'message' => 'Ban riattivato per ' . $ip . '.'];
             }
             break;
@@ -108,8 +104,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             if ($ip === '' || filter_var($ip, FILTER_VALIDATE_IP) === false) {
                 $flash = ['kind' => 'warning', 'message' => 'IP non valido.'];
             } else {
-                $ip_q = gdrcd_filter('in', $ip);
-                gdrcd_query("DELETE FROM blacklist WHERE ip = '" . $ip_q . "'");
+                Db::preparedExecute("DELETE FROM blacklist WHERE ip = ?", 's', array($ip));
                 $flash = ['kind' => 'success', 'message' => 'Riga eliminata per ' . $ip . '.'];
             }
             break;
@@ -120,9 +115,11 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             if ($ip === '' || filter_var($ip, FILTER_VALIDATE_IP) === false) {
                 $flash = ['kind' => 'warning', 'message' => 'IP non valido.'];
             } else {
-                $ip_q   = gdrcd_filter('in', $ip);
-                $nota_q = gdrcd_filter('in', $nota);
-                gdrcd_query("UPDATE blacklist SET nota = '" . $nota_q . "' WHERE ip = '" . $ip_q . "'");
+                Db::preparedExecute(
+                    "UPDATE blacklist SET nota = ? WHERE ip = ?",
+                    'ss',
+                    array($nota, $ip)
+                );
                 $flash = ['kind' => 'success', 'message' => 'Nota aggiornata per ' . $ip . '.'];
             }
             break;
@@ -152,9 +149,15 @@ switch ($filter) {
         break;
 }
 
+$types  = '';
+$params = array();
+
 if ($q !== '') {
-    $q_like = gdrcd_filter('in', '%' . $q . '%');
-    $where[] = "(ip LIKE '" . $q_like . "' OR nota LIKE '" . $q_like . "')";
+    $where[]  = "(ip LIKE ? OR nota LIKE ?)";
+    $types   .= 'ss';
+    $like     = '%' . $q . '%';
+    $params[] = $like;
+    $params[] = $like;
 }
 
 $where_sql = empty($where) ? '' : (' WHERE ' . implode(' AND ', $where));
@@ -162,7 +165,7 @@ $where_sql = empty($where) ? '' : (' WHERE ' . implode(' AND ', $where));
 /* ------------------------------------------------------------------
  * Conteggio totale + contatori per badge filtro.
  * ------------------------------------------------------------------ */
-$count_row = gdrcd_query("SELECT COUNT(*) AS n FROM blacklist" . $where_sql);
+$count_row = Db::preparedFetch("SELECT COUNT(*) AS n FROM blacklist" . $where_sql, $types, $params);
 $total     = (int)($count_row['n'] ?? 0);
 
 $counts = ['active' => 0, 'granted' => 0, 'expired' => 0, 'all' => 0];
@@ -188,11 +191,12 @@ if ($offset > $max_offset) {
 }
 $page_begin = $offset * $per_page;
 
-$rows_rs = gdrcd_query(
+$rows_rs = Db::prepared(
     "SELECT ip, nota, granted, ora, host, expires_at FROM blacklist"
     . $where_sql
-    . " ORDER BY ora DESC LIMIT " . (int)$page_begin . ", " . (int)$per_page,
-    'result'
+    . " ORDER BY ora DESC LIMIT ?, ?",
+    $types . 'ii',
+    array_merge($params, array((int)$page_begin, (int)$per_page))
 );
 
 /* ------------------------------------------------------------------

@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 /**
  * Endpoint inbound del Discord bridge.
  *
@@ -122,20 +124,16 @@ if (mb_strlen($mittente) > 250) {
 // --- INSERT chat ----------------------------------------------------------
 $handleDBConnection = gdrcd_connect();
 
-$stanza   = (int)$cfg['bridge_room_id'];
-$mittenteEsc = gdrcd_filter('in', $mittente);
-$testoEsc    = gdrcd_filter('in', $content);
-$tipoEsc     = gdrcd_filter('in', $type_in);
+$stanza = (int)$cfg['bridge_room_id'];
 
 try {
-    gdrcd_query(
-        "INSERT INTO chat (stanza, imgs, mittente, destinatario, ora, tipo, testo) VALUES ("
-        . $stanza . ", '', '" . $mittenteEsc . "', '', NOW(), '" . $tipoEsc . "', '" . $testoEsc . "')"
+    Db::preparedExecute(
+        "INSERT INTO chat (stanza, imgs, mittente, destinatario, ora, tipo, testo) VALUES (?, '', ?, '', NOW(), ?, ?)",
+        'isss',
+        array($stanza, $mittente, $type_in, $content)
     );
 
-    // Recupera l'ID inserito per restituirlo (utile a deduplicare lato bot).
-    $idRow = gdrcd_query("SELECT LAST_INSERT_ID() AS id");
-    $insertedId = is_array($idRow) && isset($idRow['id']) ? (int)$idRow['id'] : 0;
+    $insertedId = Db::lastInsertId();
 } catch (\Throwable $e) {
     if (function_exists('gdrcd_log_error')) {
         gdrcd_log_error('Discord inbound: insert failed', array('exception' => $e->getMessage()));

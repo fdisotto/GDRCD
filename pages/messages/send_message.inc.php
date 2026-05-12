@@ -4,12 +4,12 @@
  */
 
 $lbl = $MESSAGE['interface']['messages'];
-$me  = gdrcd_filter('in', $_SESSION['login']);
+$me  = (string)$_SESSION['login'];
 
 $opRequest    = gdrcd_filter('get', $_POST['multipli'] ?? '');
-$tipo_val     = gdrcd_filter('in',  $_POST['tipo']     ?? '');
-$oggetto_val  = gdrcd_filter('in',  $_POST['oggetto']  ?? '');
-$testo_val    = gdrcd_filter('in',  $_POST['testo']    ?? '');
+$tipo_val     = (string)($_POST['tipo']     ?? '');
+$oggetto_val  = (string)($_POST['oggetto']  ?? '');
+$testo_val    = (string)($_POST['testo']    ?? '');
 
 $success_alert = function (string $msg) {
     return '<div class="gdrcd-alert-success">'
@@ -33,11 +33,10 @@ switch ($opRequest) {
             'result'
         );
         while ($row = gdrcd_query($result, 'fetch')) {
-            gdrcd_query(
-                "INSERT INTO messaggi (mittente, destinatario, spedito, tipo, oggetto, testo) VALUES ("
-                . "'" . $me . "',"
-                . "'" . gdrcd_filter('in', $row['nome']) . "',"
-                . "NOW(), '" . $tipo_val . "', '" . $oggetto_val . "', '" . $testo_val . "')"
+            Db::preparedExecute(
+                "INSERT INTO messaggi (mittente, destinatario, spedito, tipo, oggetto, testo) VALUES (?, ?, NOW(), ?, ?, ?)",
+                'sssss',
+                array($me, (string)$row['nome'], $tipo_val, $oggetto_val, $testo_val)
             );
         }
         $out .= $success_alert(gdrcd_filter('out', $PARAMETERS['names']['private_message']['sing'] . $lbl['sent']));
@@ -47,11 +46,10 @@ switch ($opRequest) {
         if ($_SESSION['permessi'] >= MODERATOR) {
             $query = gdrcd_query("SELECT nome FROM personaggio", 'result');
             while ($row = gdrcd_query($query, 'fetch')) {
-                gdrcd_query(
-                    "INSERT INTO messaggi (mittente, destinatario, spedito, tipo, oggetto, testo) VALUES ("
-                    . "'" . $me . "',"
-                    . "'" . gdrcd_filter('in', $row['nome']) . "',"
-                    . "NOW(), '" . $tipo_val . "', '" . $oggetto_val . "', '" . $testo_val . "')"
+                Db::preparedExecute(
+                    "INSERT INTO messaggi (mittente, destinatario, spedito, tipo, oggetto, testo) VALUES (?, ?, NOW(), ?, ?, ?)",
+                    'sssss',
+                    array($me, (string)$row['nome'], $tipo_val, $oggetto_val, $testo_val)
                 );
             }
             $out .= $success_alert(gdrcd_filter('out', $PARAMETERS['names']['private_message']['sing'] . $lbl['sent']));
@@ -61,35 +59,45 @@ switch ($opRequest) {
     default:
         $destinatari = array_map('trim', explode(',', $_POST['destinatario'] ?? ''));
         $destinatari = array_filter($destinatari, fn($v) => $v !== '');
+        $destinatari = array_values($destinatari);
         $num_dest    = count($destinatari);
 
-        $destinatariCheck = "'" . implode("','", array_map(fn($v) => gdrcd_filter('in', $v), $destinatari)) . "'";
-
-        $result = gdrcd_query(
-            "SELECT nome FROM personaggio
-             WHERE nome IN (" . $destinatariCheck . ")
-               AND nome IS NOT NULL
-             GROUP BY nome",
-            'result'
-        );
-        $sended = (int)gdrcd_query($result, 'num_rows');
+        $sended = 0;
+        $validRecipients = array();
+        if ($num_dest > 0) {
+            $placeholders = implode(',', array_fill(0, $num_dest, '?'));
+            $types        = str_repeat('s', $num_dest);
+            $rows         = Db::preparedFetchAll(
+                "SELECT nome FROM personaggio
+                 WHERE nome IN (" . $placeholders . ")
+                   AND nome IS NOT NULL
+                 GROUP BY nome",
+                $types,
+                $destinatari
+            );
+            foreach ($rows as $r) {
+                $validRecipients[] = (string)$r['nome'];
+            }
+            $sended = count($validRecipients);
+        }
         $not_all_sended = ($num_dest > $sended);
 
         if ($sended > 0) {
             if (!empty($_POST['url'])) {
-                $testo_val = gdrcd_filter('in', $me . ' ti ha segnalato questo [url=' . $_POST['url'] . ']link[/url].');
+                $testo_val = $me . ' ti ha segnalato questo [url=' . (string)$_POST['url'] . ']link[/url].';
             }
 
-            $queryInsert = [];
-            while ($record = gdrcd_query($result, 'fetch')) {
-                $queryInsert[] = "('" . $me . "',"
-                              . "'" . gdrcd_filter('in', $record['nome']) . "',"
-                              . "NOW(), '" . $tipo_val . "', '" . $oggetto_val . "', '" . $testo_val . "')";
-            }
-            if ($queryInsert) {
-                $values = implode(',', $queryInsert);
-                gdrcd_query("INSERT INTO messaggi    (mittente, destinatario, spedito, tipo, oggetto, testo) VALUES " . $values);
-                gdrcd_query("INSERT INTO backmessaggi (mittente, destinatario, spedito, tipo, oggetto, testo) VALUES " . $values);
+            foreach ($validRecipients as $destNome) {
+                Db::preparedExecute(
+                    "INSERT INTO messaggi (mittente, destinatario, spedito, tipo, oggetto, testo) VALUES (?, ?, NOW(), ?, ?, ?)",
+                    'sssss',
+                    array($me, $destNome, $tipo_val, $oggetto_val, $testo_val)
+                );
+                Db::preparedExecute(
+                    "INSERT INTO backmessaggi (mittente, destinatario, spedito, tipo, oggetto, testo) VALUES (?, ?, NOW(), ?, ?, ?)",
+                    'sssss',
+                    array($me, $destNome, $tipo_val, $oggetto_val, $testo_val)
+                );
             }
 
             $out .= $success_alert(gdrcd_filter('out', $PARAMETERS['names']['private_message']['sing'] . $lbl['sent']));

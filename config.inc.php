@@ -102,6 +102,19 @@ $PARAMETERS['mode']['check_forum'] = 'ON';
 $PARAMETERS['text']['check_forum']['new'] = '(Nuovo)'; // Mettendo FALSE o lasciandolo vuoto, non si vedrà il messaggio
 $PARAMETERS['mode']['check_messages'] = 'ON';
 
+/* Web Push (notifiche del browser anche a tab chiusa, via Service Worker).
+ * Le chiavi VAPID identificano il server presso il push service del browser.
+ * Per generarle (una sola volta, da committare SOLO la pubblica):
+ *
+ *     openssl ecparam -genkey -name prime256v1 -out vapid_private.pem
+ *     openssl ec    -in vapid_private.pem -pubout -out vapid_public.pem
+ *
+ * Quindi convertire le chiavi in base64url come richiede VAPID (RFC 8292).
+ * Lasciare le stringhe vuote disabilita l'iscrizione push lato client. */
+$PARAMETERS['push']['vapid_public']  = '';                       // base64url della chiave pubblica P-256
+$PARAMETERS['push']['vapid_private'] = '';                       // base64url della chiave privata P-256
+$PARAMETERS['push']['vapid_subject'] = 'mailto:admin@example.com';
+
 /**
  * SCELTA DEL TIPO DI LAYOUT
  * Tutti i layout sono cross-browser, compatibili cioè con tutti i browser.
@@ -845,6 +858,9 @@ $PARAMETERS['administration']['quests']['access_level'] = GAMEMASTER;
 $PARAMETERS['administration']['discord']['text'] = 'Discord bridge';
 $PARAMETERS['administration']['discord']['url'] = 'main.php?page=gestione/discord';
 $PARAMETERS['administration']['discord']['access_level'] = SUPERUSER;
+$PARAMETERS['administration']['push_test']['text'] = 'Test push notifications';
+$PARAMETERS['administration']['push_test']['url'] = 'main.php?page=gestione/push_test';
+$PARAMETERS['administration']['push_test']['access_level'] = SUPERUSER;
 
 
 /* HELP: Elenco delle voci dei menu' dei servizi e di gestione. E' sconsigliato operare modifiche. Le opzioni sono disponibili solo agli account con il livello d'accesso specificato o superiore.

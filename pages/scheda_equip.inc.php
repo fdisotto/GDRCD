@@ -9,14 +9,12 @@ if (!isset($_REQUEST['pg'])) {
     return;
 }
 
-$pg = $_REQUEST['pg'];
-$check = gdrcd_query("SELECT sesso FROM personaggio WHERE nome = '" . gdrcd_filter('in', $pg) . "'", 'result');
-if (gdrcd_query($check, 'num_rows') === 0) {
+$pg = (string)$_REQUEST['pg'];
+$pg_data = Db::preparedFetch("SELECT sesso FROM personaggio WHERE nome = ?", 's', array($pg));
+if ($pg_data === null) {
     echo '<div class="gdrcd-alert-error">' . gdrcd_filter('out', $MESSAGE['error']['unknown_character_sheet']) . '</div>';
     return;
 }
-$pg_data = gdrcd_query($check, 'fetch');
-gdrcd_query($check, 'free');
 $sesso = $pg_data['sesso'];
 
 $can_modify = ($_SESSION['login'] === $pg) || ((int)$_SESSION['permessi'] >= GAMEMASTER);
@@ -25,47 +23,74 @@ $alerts     = [];
 
 if ($can_modify) {
     if ($op === 'abbandona') {
+        $id_oggetto = (int)$_POST['id_oggetto'];
         if ((int)$_POST['numero'] <= 1) {
-            gdrcd_query("DELETE FROM clgpersonaggiooggetto WHERE id_oggetto = " . gdrcd_filter('num', $_POST['id_oggetto']) . " AND nome = '" . gdrcd_filter('in', $pg) . "' LIMIT 1");
+            Db::preparedExecute(
+                "DELETE FROM clgpersonaggiooggetto WHERE id_oggetto = ? AND nome = ? LIMIT 1",
+                'is',
+                array($id_oggetto, $pg)
+            );
         } else {
-            gdrcd_query("UPDATE clgpersonaggiooggetto SET numero = numero - 1 WHERE id_oggetto = " . gdrcd_filter('num', $_POST['id_oggetto']) . " AND nome = '" . gdrcd_filter('in', $pg) . "' LIMIT 1");
+            Db::preparedExecute(
+                "UPDATE clgpersonaggiooggetto SET numero = numero - 1 WHERE id_oggetto = ? AND nome = ? LIMIT 1",
+                'is',
+                array($id_oggetto, $pg)
+            );
         }
-        gdrcd_query(
-            "INSERT INTO log (nome_interessato, autore, data_evento, codice_evento, descrizione_evento) VALUES ("
-            . "'" . gdrcd_filter('in', $pg) . "',"
-            . "'" . gdrcd_filter('in', $_SESSION['login']) . "',"
-            . "NOW(), " . BONIFICO . ","
-            . "' -" . gdrcd_filter('in', $_POST['checosa'] ?? '') . "')"
+        Db::preparedExecute(
+            "INSERT INTO log (nome_interessato, autore, data_evento, codice_evento, descrizione_evento) VALUES (?, ?, NOW(), ?, ?)",
+            'ssis',
+            array($pg, (string)$_SESSION['login'], (int)BONIFICO, ' -' . (string)($_POST['checosa'] ?? ''))
         );
         $alerts[] = ['success', gdrcd_filter('out', $MESSAGE['warning']['done'])];
 
     } elseif ($op === 'cedi') {
-        $id_obj  = gdrcd_filter('num', $_POST['id_oggetto']);
+        $id_obj  = (int)$_POST['id_oggetto'];
         $num     = (int)$_POST['numero'];
-        $dest    = gdrcd_filter('in', $_POST['give_item']);
-        $cariche = gdrcd_filter('num', $_POST['cariche']);
+        $dest    = (string)$_POST['give_item'];
+        $cariche = (int)$_POST['cariche'];
 
-        $exists = gdrcd_query("SELECT id_oggetto FROM clgpersonaggiooggetto WHERE id_oggetto = " . $id_obj, 'result');
-        if ((int)gdrcd_query($exists, 'num_rows') > 0) {
-            gdrcd_query($exists, 'free');
+        $exists = Db::preparedFetch(
+            "SELECT id_oggetto FROM clgpersonaggiooggetto WHERE id_oggetto = ?",
+            'i',
+            array($id_obj)
+        );
+        if ($exists !== null) {
             if ($num <= 1) {
-                gdrcd_query("DELETE FROM clgpersonaggiooggetto WHERE id_oggetto = " . $id_obj . " AND nome = '" . gdrcd_filter('in', $pg) . "' LIMIT 1");
+                Db::preparedExecute(
+                    "DELETE FROM clgpersonaggiooggetto WHERE id_oggetto = ? AND nome = ? LIMIT 1",
+                    'is',
+                    array($id_obj, $pg)
+                );
             } else {
-                gdrcd_query("UPDATE clgpersonaggiooggetto SET numero = numero - 1 WHERE id_oggetto = " . $id_obj . " AND nome = '" . gdrcd_filter('in', $pg) . "' LIMIT 1");
+                Db::preparedExecute(
+                    "UPDATE clgpersonaggiooggetto SET numero = numero - 1 WHERE id_oggetto = ? AND nome = ? LIMIT 1",
+                    'is',
+                    array($id_obj, $pg)
+                );
             }
-            $dest_check = gdrcd_query("SELECT id_oggetto FROM clgpersonaggiooggetto WHERE id_oggetto = " . $id_obj . " AND nome = '" . $dest . "'", 'result');
-            if ((int)gdrcd_query($dest_check, 'num_rows') > 0) {
-                gdrcd_query("UPDATE clgpersonaggiooggetto SET numero = numero + 1 WHERE id_oggetto = " . $id_obj . " AND nome = '" . $dest . "'");
+            $dest_check = Db::preparedFetch(
+                "SELECT id_oggetto FROM clgpersonaggiooggetto WHERE id_oggetto = ? AND nome = ?",
+                'is',
+                array($id_obj, $dest)
+            );
+            if ($dest_check !== null) {
+                Db::preparedExecute(
+                    "UPDATE clgpersonaggiooggetto SET numero = numero + 1 WHERE id_oggetto = ? AND nome = ?",
+                    'is',
+                    array($id_obj, $dest)
+                );
             } else {
-                gdrcd_query("INSERT INTO clgpersonaggiooggetto (nome, id_oggetto, cariche, numero) VALUES ('" . $dest . "', " . $id_obj . ", " . $cariche . ", 1)");
+                Db::preparedExecute(
+                    "INSERT INTO clgpersonaggiooggetto (nome, id_oggetto, cariche, numero) VALUES (?, ?, ?, 1)",
+                    'sii',
+                    array($dest, $id_obj, $cariche)
+                );
             }
-            gdrcd_query($dest_check, 'free');
-            gdrcd_query(
-                "INSERT INTO log (nome_interessato, autore, data_evento, codice_evento, descrizione_evento) VALUES ("
-                . "'" . $dest . "',"
-                . "'" . gdrcd_filter('in', $_SESSION['login']) . "',"
-                . "NOW(), " . BONIFICO . ","
-                . "'" . gdrcd_filter('in', $_POST['checosa'] ?? '') . "')"
+            Db::preparedExecute(
+                "INSERT INTO log (nome_interessato, autore, data_evento, codice_evento, descrizione_evento) VALUES (?, ?, NOW(), ?, ?)",
+                'ssis',
+                array($dest, (string)$_SESSION['login'], (int)BONIFICO, (string)($_POST['checosa'] ?? ''))
             );
             $alerts[] = ['success', gdrcd_filter('out', $MESSAGE['warning']['done'])];
         } else {
@@ -73,18 +98,18 @@ if ($can_modify) {
         }
 
     } elseif ($op === 'indossa') {
-        gdrcd_query(
-            "UPDATE clgpersonaggiooggetto SET posizione = " . gdrcd_filter('num', $_POST['posizione']) .
-            " WHERE id_oggetto = " . gdrcd_filter('num', $_POST['id_oggetto']) .
-            "   AND nome = '" . gdrcd_filter('in', $pg) . "' LIMIT 1"
+        Db::preparedExecute(
+            "UPDATE clgpersonaggiooggetto SET posizione = ? WHERE id_oggetto = ? AND nome = ? LIMIT 1",
+            'iis',
+            array((int)$_POST['posizione'], (int)$_POST['id_oggetto'], $pg)
         );
         $alerts[] = ['success', gdrcd_filter('out', $MESSAGE['warning']['done'])];
 
     } elseif ($op === 'in_zaino') {
-        gdrcd_query(
-            "UPDATE clgpersonaggiooggetto SET posizione = 1
-             WHERE id_oggetto = " . gdrcd_filter('num', $_POST['id_oggetto']) .
-            "   AND nome = '" . gdrcd_filter('in', $pg) . "' LIMIT 1"
+        Db::preparedExecute(
+            "UPDATE clgpersonaggiooggetto SET posizione = 1 WHERE id_oggetto = ? AND nome = ? LIMIT 1",
+            'is',
+            array((int)$_POST['id_oggetto'], $pg)
         );
         $alerts[] = ['success', gdrcd_filter('out', $MESSAGE['warning']['done'])];
     }
@@ -92,17 +117,20 @@ if ($can_modify) {
 
 /* Carico oggetti indossati (posizione > 1, slot specifici) */
 $oggetti = [];
-$result = gdrcd_query(
+$result = Db::prepared(
     "SELECT oggetto.id_oggetto, oggetto.nome, oggetto.urlimg AS immagine, clgpersonaggiooggetto.posizione
      FROM clgpersonaggiooggetto JOIN oggetto ON clgpersonaggiooggetto.id_oggetto = oggetto.id_oggetto
      WHERE clgpersonaggiooggetto.posizione > 1
-       AND clgpersonaggiooggetto.nome = '" . gdrcd_filter('in', $pg) . "'",
-    'result'
+       AND clgpersonaggiooggetto.nome = ?",
+    's',
+    array($pg)
 );
-while ($r = gdrcd_query($result, 'fetch')) {
-    $oggetti[(int)$r['posizione']] = $r;
+if ($result instanceof mysqli_result) {
+    while ($r = mysqli_fetch_assoc($result)) {
+        $oggetti[(int)$r['posizione']] = $r;
+    }
+    mysqli_free_result($result);
 }
-gdrcd_query($result, 'free');
 
 $theme = $PARAMETERS['themes']['current_theme'];
 $lbl_i = $MESSAGE['interface']['sheet']['items']['list'];
@@ -145,18 +173,23 @@ $render_slot = function (?array $item, string $label, string $icon_svg, string $
 $chars_list = [];
 if ($can_modify) {
     if (($PARAMETERS['mode']['give_only_if_online'] ?? 'OFF') === 'ON') {
-        $q = "SELECT nome FROM personaggio
-              WHERE ultimo_luogo = " . (int)($_SESSION['luogo'] ?? 0) . "
+        $cres = Db::prepared(
+            "SELECT nome FROM personaggio
+              WHERE ultimo_luogo = ?
                 AND ultimo_luogo <> -1
-                AND nome <> '" . gdrcd_filter('in', $_SESSION['login']) . "'
+                AND nome <> ?
                 AND DATE_ADD(ultimo_refresh, INTERVAL 2 MINUTE) > NOW()
-              ORDER BY nome";
+              ORDER BY nome",
+            'is',
+            array((int)($_SESSION['luogo'] ?? 0), (string)$_SESSION['login'])
+        );
     } else {
-        $q = "SELECT nome FROM personaggio ORDER BY nome";
+        $cres = gdrcd_query("SELECT nome FROM personaggio ORDER BY nome", 'result');
     }
-    $cres = gdrcd_query($q, 'result');
-    while ($c = gdrcd_query($cres, 'fetch')) $chars_list[] = $c['nome'];
-    gdrcd_query($cres, 'free');
+    if ($cres instanceof mysqli_result) {
+        while ($c = mysqli_fetch_assoc($cres)) $chars_list[] = $c['nome'];
+        mysqli_free_result($cres);
+    }
 }
 ?>
 
@@ -352,18 +385,19 @@ if ($can_modify) {
 
     <!-- Lista oggetti indossati e in zaino -->
     <?php
-    $list = gdrcd_query(
+    $list = Db::prepared(
         "SELECT oggetto.id_oggetto, oggetto.nome AS nome_oggetto, oggetto.descrizione, oggetto.urlimg,
                 oggetto.ubicabile, oggetto.difesa, oggetto.attacco,
                 oggetto.bonus_car0, oggetto.bonus_car1, oggetto.bonus_car2, oggetto.bonus_car3, oggetto.bonus_car4, oggetto.bonus_car5,
                 clgpersonaggiooggetto.*
          FROM clgpersonaggiooggetto LEFT JOIN oggetto ON clgpersonaggiooggetto.id_oggetto = oggetto.id_oggetto
-         WHERE clgpersonaggiooggetto.nome = '" . gdrcd_filter('in', $pg) . "'
+         WHERE clgpersonaggiooggetto.nome = ?
            AND clgpersonaggiooggetto.posizione > 0
          ORDER BY oggetto.nome DESC",
-        'result'
+        's',
+        array($pg)
     );
-    $listcount = (int)gdrcd_query($list, 'num_rows');
+    $listcount = ($list instanceof mysqli_result) ? (int)mysqli_num_rows($list) : 0;
     ?>
     <section>
         <header class="flex items-baseline justify-between gap-2 mb-3">

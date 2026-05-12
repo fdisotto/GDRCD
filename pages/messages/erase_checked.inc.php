@@ -23,13 +23,16 @@ if ($column === null) {
     return;
 }
 
-gdrcd_query(
+// $delType / $column whitelisted sopra; $ids_csv contiene solo interi.
+$affected = Db::preparedAffected(
     "UPDATE messaggi SET " . $delType . " = 1
-     WHERE " . $column . " = '" . gdrcd_filter('in', $_SESSION['login']) . "'
-       AND id IN (" . $ids_csv . ")"
+     WHERE " . $column . " = ?
+       AND id IN (" . $ids_csv . ")",
+    's',
+    array((string)$_SESSION['login'])
 );
 
-if ((int)gdrcd_query("", 'affected') > 0): ?>
+if ($affected > 0): ?>
     <div class="gdrcd-alert-success">
         <svg class="w-5 h-5 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
         <div><?= gdrcd_filter('out', $PARAMETERS['names']['private_message']['plur'] . $MESSAGE['interface']['messages']['all_erased']) ?></div>

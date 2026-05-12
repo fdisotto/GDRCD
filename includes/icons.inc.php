@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 /**
  * Libreria icone SVG inline (Heroicons mini 20x20).
  * Tutte le funzioni restituiscono stringa HTML. Includono <title> per tooltip

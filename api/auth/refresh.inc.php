@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 /**
  * Endpoint JSON: refresh di un JWT ancora valido.
  *
@@ -84,9 +86,10 @@ if ($sub === '') {
 $handleDBConnection = gdrcd_connect();
 
 // Verifica che il PG sia ancora valido (permessi >= 0, non esiliato).
-$sub_safe = gdrcd_filter('in', $sub);
-$row = gdrcd_query(
-    "SELECT nome, permessi FROM personaggio WHERE nome = '" . $sub_safe . "' LIMIT 1"
+$row = Db::preparedFetch(
+    "SELECT nome, permessi FROM personaggio WHERE nome = ? LIMIT 1",
+    's',
+    array($sub)
 );
 if (empty($row) || (int)$row['permessi'] < 0) {
     http_response_code(401);

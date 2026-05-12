@@ -20,17 +20,22 @@ $op = $_POST['op'] ?? null;
     </header>
 
     <?php if ($op === 'listpg'):
-        $id = gdrcd_filter('num', $_POST['id']);
-        $head_q = gdrcd_query("SELECT * FROM blocco_esiti
-                               WHERE id = " . $id . "
-                               AND pg = '" . gdrcd_filter('in', $_SESSION['login']) . "'
-                               ORDER BY id", 'result');
-        $head = gdrcd_query($head_q, 'fetch');
-        gdrcd_query("UPDATE esiti SET letto_pg = 1 WHERE id_blocco = " . $id);
-        $esiti_q = gdrcd_query("SELECT * FROM esiti
-                                WHERE id_blocco = " . $id . " AND chat = 0
-                                AND pg = '" . gdrcd_filter('in', $_SESSION['login']) . "'
-                                ORDER BY data DESC", 'result');
+        $id = (int)gdrcd_filter('num', $_POST['id']);
+        $login_user = (string)$_SESSION['login'];
+        $head = Db::preparedFetch(
+            "SELECT * FROM blocco_esiti WHERE id = ? AND pg = ? ORDER BY id",
+            'is',
+            array($id, $login_user)
+        );
+        Db::preparedExecute("UPDATE esiti SET letto_pg = 1 WHERE id_blocco = ?", 'i', array($id));
+        $esiti_q = Db::prepared(
+            "SELECT * FROM esiti
+                                WHERE id_blocco = ? AND chat = 0
+                                AND pg = ?
+                                ORDER BY data DESC",
+            'is',
+            array($id, $login_user)
+        );
     ?>
         <article class="gdrcd-card">
             <header class="gdrcd-card-header flex items-center justify-between">
@@ -87,17 +92,22 @@ $op = $_POST['op'] ?? null;
         $offset = (int)($_REQUEST['offset'] ?? 0);
         $per_page = (int)$PARAMETERS['settings']['posts_per_page'];
         $pagebegin = $offset * $per_page;
-        $tot_q = gdrcd_query("SELECT COUNT(*) AS n FROM blocco_esiti
-                              WHERE pg = '" . gdrcd_filter('in', $_SESSION['login']) . "'");
-        $totaleresults = (int)$tot_q['n'];
-
-        $result = gdrcd_query(
-            "SELECT * FROM blocco_esiti
-             WHERE pg = '" . gdrcd_filter('in', $_SESSION['login']) . "'
-             ORDER BY id DESC LIMIT " . $pagebegin . ", " . $per_page,
-            'result'
+        $login_user = (string)$_SESSION['login'];
+        $tot_q = Db::preparedFetch(
+            "SELECT COUNT(*) AS n FROM blocco_esiti WHERE pg = ?",
+            's',
+            array($login_user)
         );
-        $num = gdrcd_query($result, 'num_rows');
+        $totaleresults = (int)($tot_q['n'] ?? 0);
+
+        $result = Db::prepared(
+            "SELECT * FROM blocco_esiti
+             WHERE pg = ?
+             ORDER BY id DESC LIMIT ?, ?",
+            'sii',
+            array($login_user, (int)$pagebegin, (int)$per_page)
+        );
+        $num = ($result instanceof mysqli_result) ? (int)mysqli_num_rows($result) : 0;
     ?>
         <?php if ($num === 0): ?>
             <div class="gdrcd-alert-info">
@@ -119,12 +129,20 @@ $op = $_POST['op'] ?? null;
                         </thead>
                         <tbody>
                         <?php while ($rec = gdrcd_query($result, 'fetch')):
-                            $n = (int)gdrcd_query(gdrcd_query(
-                                "SELECT id FROM esiti WHERE id_blocco = " . (int)$rec['id'] . "
-                                 AND autore != '" . gdrcd_filter('in', $_SESSION['login']) . "'", 'result'), 'num_rows');
-                            $nuovi = (int)gdrcd_query(gdrcd_query(
-                                "SELECT id FROM esiti WHERE id_blocco = " . (int)$rec['id'] . "
-                                 AND autore != '" . gdrcd_filter('in', $_SESSION['login']) . "' AND letto_pg = 0", 'result'), 'num_rows');
+                            $rs_n = Db::prepared(
+                                "SELECT id FROM esiti WHERE id_blocco = ? AND autore != ?",
+                                'is',
+                                array((int)$rec['id'], $login_user)
+                            );
+                            $n = ($rs_n instanceof mysqli_result) ? (int)mysqli_num_rows($rs_n) : 0;
+                            if ($rs_n instanceof mysqli_result) { mysqli_free_result($rs_n); }
+                            $rs_nuovi = Db::prepared(
+                                "SELECT id FROM esiti WHERE id_blocco = ? AND autore != ? AND letto_pg = 0",
+                                'is',
+                                array((int)$rec['id'], $login_user)
+                            );
+                            $nuovi = ($rs_nuovi instanceof mysqli_result) ? (int)mysqli_num_rows($rs_nuovi) : 0;
+                            if ($rs_nuovi instanceof mysqli_result) { mysqli_free_result($rs_nuovi); }
                         ?>
                             <tr>
                                 <td class="tabular-nums text-sm"><?= gdrcd_filter('out', gdrcd_format_date($rec['data'])) ?></td>

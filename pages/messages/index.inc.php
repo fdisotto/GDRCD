@@ -11,14 +11,23 @@ $isSentMessage = (($_GET['op'] ?? '') === 'inviati');
 $msgType       = $isSentMessage ? 'mittente' : 'destinatario';
 $delType       = $msgType . '_del';
 
+// $msgType / $delType derivati da whitelist (non da input utente).
 $sqlMessages = "SELECT * FROM messaggi
-                WHERE " . $msgType . " = '" . gdrcd_filter('in', $_SESSION['login']) . "'
+                WHERE " . $msgType . " = ?
                   AND " . $delType . " = 0
                 ORDER BY spedito DESC";
 
-$result        = gdrcd_query($sqlMessages . " LIMIT " . $pagebegin . ", " . $per_page, 'result');
-$numresults    = (int)gdrcd_query($result, 'num_rows');
-$totaleresults = (int)gdrcd_query(gdrcd_query($sqlMessages, 'result'), 'num_rows');
+$loginParam = (string)$_SESSION['login'];
+$pagebegin  = (int)$pagebegin;
+$per_page   = (int)$per_page;
+
+$result        = Db::prepared($sqlMessages . " LIMIT ?, ?", 'sii', array($loginParam, $pagebegin, $per_page));
+$numresults    = ($result instanceof mysqli_result) ? (int)mysqli_num_rows($result) : 0;
+$countRes      = Db::prepared($sqlMessages, 's', array($loginParam));
+$totaleresults = ($countRes instanceof mysqli_result) ? (int)mysqli_num_rows($countRes) : 0;
+if ($countRes instanceof mysqli_result) {
+    mysqli_free_result($countRes);
+}
 
 $base_query = $isSentMessage ? '&op=inviati' : '';
 $page_label = $PARAMETERS['names']['private_message']['plur'];
@@ -198,7 +207,7 @@ $page_label = $PARAMETERS['names']['private_message']['plur'];
         <!-- Form di reply/erase posizionati fuori dalla form multipla per non annidarsi -->
         <?php
         // Recuperiamo nuovamente i dati per i form puntuali
-        $result2 = gdrcd_query($sqlMessages . " LIMIT " . $pagebegin . ", " . $per_page, 'result');
+        $result2 = Db::prepared($sqlMessages . " LIMIT ?, ?", 'sii', array($loginParam, $pagebegin, $per_page));
         while ($row = gdrcd_query($result2, 'fetch')):
             $counterpart = $isSentMessage ? $row['destinatario'] : $row['mittente'];
             ?>

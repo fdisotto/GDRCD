@@ -8,49 +8,59 @@ if (!isset($_REQUEST['pg'])) {
     return;
 }
 
-$pg = $_REQUEST['pg'];
-$check = gdrcd_query("SELECT esperienza FROM personaggio WHERE nome = '" . gdrcd_filter('in', $pg) . "' LIMIT 1", 'result');
-if (gdrcd_query($check, 'num_rows') === 0) {
+$pg = (string)$_REQUEST['pg'];
+$pg_data = Db::preparedFetch(
+    "SELECT esperienza FROM personaggio WHERE nome = ? LIMIT 1",
+    's',
+    array($pg)
+);
+if ($pg_data === null) {
     echo '<div class="gdrcd-alert-error">' . gdrcd_filter('out', $MESSAGE['error']['unknown_character_sheet']) . '</div>';
     return;
 }
-$pg_data = gdrcd_query($check, 'fetch');
-gdrcd_query($check, 'free');
 
 $alerts = [];
 
 // Handler GM assegnazione PX
 if (($_POST['op'] ?? '') === 'assegna') {
     if (is_numeric($_POST['px'] ?? null) && (int)$_SESSION['permessi'] >= GAMEMASTER) {
-        gdrcd_query(
-            "UPDATE personaggio SET esperienza = esperienza + " . gdrcd_filter('num', $_POST['px']) .
-            " WHERE nome = '" . gdrcd_filter('in', $pg) . "' LIMIT 1"
+        $px_val   = (int)$_POST['px'];
+        $causale  = (string)($_POST['causale'] ?? '');
+        Db::preparedExecute(
+            "UPDATE personaggio SET esperienza = esperienza + ? WHERE nome = ? LIMIT 1",
+            'is',
+            array($px_val, $pg)
         );
-        gdrcd_query(
-            "INSERT INTO log (nome_interessato, autore, data_evento, codice_evento, descrizione_evento) VALUES ("
-            . "'" . gdrcd_filter('in', $pg) . "',"
-            . "'" . gdrcd_filter('in', $_SESSION['login']) . "',"
-            . "NOW(), " . PX . ","
-            . "'(" . gdrcd_filter('in', $_POST['px']) . ' px) ' . gdrcd_filter('in', $_POST['causale'] ?? '') . "')"
+        Db::preparedExecute(
+            "INSERT INTO log (nome_interessato, autore, data_evento, codice_evento, descrizione_evento) VALUES (?, ?, NOW(), ?, ?)",
+            'ssis',
+            array($pg, (string)$_SESSION['login'], (int)PX, '(' . $px_val . ' px) ' . $causale)
         );
         $alerts[] = ['success', gdrcd_filter('out', $MESSAGE['warning']['done'])];
 
         // Aggiorno valore corrente per visualizzazione
-        $refresh = gdrcd_query("SELECT esperienza FROM personaggio WHERE nome = '" . gdrcd_filter('in', $pg) . "' LIMIT 1");
-        $pg_data['esperienza'] = $refresh['esperienza'];
+        $refresh = Db::preparedFetch(
+            "SELECT esperienza FROM personaggio WHERE nome = ? LIMIT 1",
+            's',
+            array($pg)
+        );
+        if ($refresh !== null) {
+            $pg_data['esperienza'] = $refresh['esperienza'];
+        }
     } else {
         $alerts[] = ['error', gdrcd_filter('out', $MESSAGE['warning']['camt_do'] ?? $MESSAGE['warning']['cant_do'])];
     }
 }
 
 $num_logs = (int)($PARAMETERS['settings']['view_logs'] ?? 20);
-$result = gdrcd_query(
+$result = Db::prepared(
     "SELECT descrizione_evento, autore, data_evento FROM log
-     WHERE nome_interessato = '" . gdrcd_filter('in', $pg) . "' AND codice_evento = " . PX . "
-     ORDER BY data_evento DESC LIMIT " . $num_logs,
-    'result'
+     WHERE nome_interessato = ? AND codice_evento = ?
+     ORDER BY data_evento DESC LIMIT ?",
+    'sii',
+    array($pg, (int)PX, $num_logs)
 );
-$numresults = (int)gdrcd_query($result, 'num_rows');
+$numresults = ($result instanceof mysqli_result) ? (int)mysqli_num_rows($result) : 0;
 
 $lbl = $MESSAGE['interface']['sheet']['px'];
 ?>

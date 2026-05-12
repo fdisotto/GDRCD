@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 /**
  * Funzioni di protezione CSRF (Cross-Site Request Forgery)
  *
@@ -19,7 +21,7 @@
  * Restituisce il token CSRF della sessione, generandolo se non esistente.
  * @return string
  */
-function gdrcd_csrf_token()
+function gdrcd_csrf_token(): string
 {
     if (empty($_SESSION['csrf_token']) || !is_string($_SESSION['csrf_token'])) {
         $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
@@ -31,7 +33,7 @@ function gdrcd_csrf_token()
  * Restituisce il campo hidden HTML da inserire dentro un form POST.
  * @return string
  */
-function gdrcd_csrf_field()
+function gdrcd_csrf_field(): string
 {
     $token = gdrcd_csrf_token();
     return '<input type="hidden" name="_csrf" value="' . htmlspecialchars($token, ENT_QUOTES, 'UTF-8') . '">';
@@ -42,7 +44,7 @@ function gdrcd_csrf_field()
  * Il confronto è timing-safe (hash_equals).
  * @return bool true se valido
  */
-function gdrcd_csrf_check()
+function gdrcd_csrf_check(): bool
 {
     if (empty($_SESSION['csrf_token']) || !is_string($_SESSION['csrf_token'])) {
         return false;
@@ -62,7 +64,7 @@ function gdrcd_csrf_check()
  *
  * @return void
  */
-function gdrcd_csrf_guard()
+function gdrcd_csrf_guard(): void
 {
     if (gdrcd_csrf_check()) {
         return;

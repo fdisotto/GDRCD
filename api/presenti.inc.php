@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 /**
  * Endpoint JSON: elenco PG online raggruppati per mappa/luogo.
  *

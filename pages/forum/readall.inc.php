@@ -3,23 +3,23 @@
  * Handler: marca come letti tutti i topic del forum per l'utente corrente.
  */
 
-$me_in = gdrcd_filter('in', $_SESSION['login']);
+$me = (string)$_SESSION['login'];
 $result = gdrcd_query(
     "SELECT id_messaggio, id_araldo FROM messaggioaraldo WHERE id_messaggio_padre = -1",
     'result'
 );
 
 while ($row = gdrcd_query($result, 'fetch')) {
-    $esiste = gdrcd_query(
-        "SELECT id FROM araldo_letto WHERE thread_id = " . (int)$row['id_messaggio'] .
-        " AND nome = '" . $me_in . "'"
+    $esiste = Db::preparedFetch(
+        "SELECT id FROM araldo_letto WHERE thread_id = ? AND nome = ?",
+        'is',
+        array((int)$row['id_messaggio'], $me)
     );
     if ((int)($esiste['id'] ?? 0) <= 0) {
-        gdrcd_query(
-            "INSERT INTO araldo_letto (nome, araldo_id, thread_id) VALUES ("
-            . "'" . $me_in . "',"
-            . (int)$row['id_araldo'] . ","
-            . (int)$row['id_messaggio'] . ")"
+        Db::preparedExecute(
+            "INSERT INTO araldo_letto (nome, araldo_id, thread_id) VALUES (?, ?, ?)",
+            'sii',
+            array($me, (int)$row['id_araldo'], (int)$row['id_messaggio'])
         );
     }
 }

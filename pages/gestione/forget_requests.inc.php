@@ -49,10 +49,12 @@ $flash = null;
  * Helpers.
  * ------------------------------------------------------------------ */
 $fetch_request = function (int $id) {
-    return gdrcd_query(
+    return Db::preparedFetch(
         "SELECT id, user_login, user_email, reason, status, requested_at, "
         . "processed_at, processed_by, note_admin "
-        . "FROM deletion_requests WHERE id = " . $id . " LIMIT 1"
+        . "FROM deletion_requests WHERE id = ? LIMIT 1",
+        'i',
+        array($id)
     );
 };
 
@@ -74,32 +76,33 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         } elseif ($op === 'anonymize') {
 
             $user_login = (string)$req['user_login'];
-            $user_q     = gdrcd_filter('in', $user_login);
             $anon_label = 'Cancellato_' . $id;
-            $anon_q     = gdrcd_filter('in', $anon_label);
             $note       = trim((string)($_POST['note_admin'] ?? ''));
-            $note_q     = gdrcd_filter('in', $note);
-            $admin_q    = gdrcd_filter('in', (string)($_SESSION['login'] ?? ''));
+            $admin      = (string)($_SESSION['login'] ?? '');
 
             // 1) Azzera dati personali della riga `personaggio`.
             //    Nota: alcuni campi (biografia/frase) non esistono nello schema
             //    attuale, vengono ignorati. permessi = -1 disattiva l'account.
-            gdrcd_query(
+            Db::preparedExecute(
                 "UPDATE personaggio SET "
                 . "cognome = '', email = '', permessi = -1, "
                 . "descrizione = '', storia = '', "
                 . "url_img = '', url_img_chat = '', "
                 . "affetti = '', stato = '', "
-                . "nome = '" . $anon_q . "' "
-                . "WHERE nome = '" . $user_q . "'"
+                . "nome = ? "
+                . "WHERE nome = ?",
+                'ss',
+                array($anon_label, $user_login)
             );
 
             // 2) Cascading rename su tutte le tabelle che referenziano il nome.
+            //    Whitelist statica: $cascade_targets contiene SOLO costanti del codice.
             foreach ($cascade_targets as $table => $cols) {
                 foreach ($cols as $col) {
-                    gdrcd_query(
-                        "UPDATE `" . $table . "` SET `" . $col . "` = '" . $anon_q . "' "
-                        . "WHERE `" . $col . "` = '" . $user_q . "'"
+                    Db::preparedExecute(
+                        "UPDATE `" . $table . "` SET `" . $col . "` = ? WHERE `" . $col . "` = ?",
+                        'ss',
+                        array($anon_label, $user_login)
                     );
                 }
             }
@@ -107,20 +110,23 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             // 3) Caso speciale: segnalazione_role.partecipanti e' un campo
             //    testuale con elenco nomi separati. Sostituiamo il nome come
             //    token (best-effort), evitando di toccare prefissi/suffissi.
-            gdrcd_query(
-                "UPDATE segnalazione_role SET partecipanti = REPLACE(partecipanti, '"
-                . $user_q . "', '" . $anon_q . "') "
-                . "WHERE partecipanti LIKE '%" . $user_q . "%'"
+            Db::preparedExecute(
+                "UPDATE segnalazione_role SET partecipanti = REPLACE(partecipanti, ?, ?) "
+                . "WHERE partecipanti LIKE ?",
+                'sss',
+                array($user_login, $anon_label, '%' . $user_login . '%')
             );
 
             // 4) Aggiorna la richiesta.
-            gdrcd_query(
+            Db::preparedExecute(
                 "UPDATE deletion_requests SET "
                 . "status = 'processed', "
                 . "processed_at = NOW(), "
-                . "processed_by = '" . $admin_q . "', "
-                . "note_admin = '" . $note_q . "' "
-                . "WHERE id = " . $id
+                . "processed_by = ?, "
+                . "note_admin = ? "
+                . "WHERE id = ?",
+                'ssi',
+                array($admin, $note, $id)
             );
 
             if (function_exists('gdrcd_log_info')) {
@@ -144,16 +150,15 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             if ($note === '') {
                 $flash = ['kind' => 'warning', 'message' => 'Per rifiutare una richiesta e\' necessaria una motivazione.'];
             } else {
-                $note_q  = gdrcd_filter('in', $note);
-                $admin_q = gdrcd_filter('in', (string)($_SESSION['login'] ?? ''));
-
-                gdrcd_query(
+                Db::preparedExecute(
                     "UPDATE deletion_requests SET "
                     . "status = 'rejected', "
                     . "processed_at = NOW(), "
-                    . "processed_by = '" . $admin_q . "', "
-                    . "note_admin = '" . $note_q . "' "
-                    . "WHERE id = " . $id
+                    . "processed_by = ?, "
+                    . "note_admin = ? "
+                    . "WHERE id = ?",
+                    'ssi',
+                    array((string)($_SESSION['login'] ?? ''), $note, $id)
                 );
 
                 if (function_exists('gdrcd_log_info')) {
@@ -178,9 +183,14 @@ if (!in_array($filter, $allowed_filter, true)) {
     $filter = 'pending';
 }
 
-$where_sql = '';
+// $filter validato da whitelist sopra.
+$where_sql     = '';
+$filter_types  = '';
+$filter_params = array();
 if ($filter !== 'all') {
-    $where_sql = " WHERE status = '" . gdrcd_filter('in', $filter) . "'";
+    $where_sql     = " WHERE status = ?";
+    $filter_types  = 's';
+    $filter_params = array($filter);
 }
 
 /* ------------------------------------------------------------------
@@ -204,11 +214,12 @@ $counts = [
 /* ------------------------------------------------------------------
  * Recupero righe.
  * ------------------------------------------------------------------ */
-$rs = gdrcd_query(
+$rs = Db::prepared(
     "SELECT id, user_login, user_email, reason, status, requested_at, "
     . "processed_at, processed_by, note_admin "
     . "FROM deletion_requests" . $where_sql . " ORDER BY requested_at DESC LIMIT 200",
-    'result'
+    $filter_types,
+    $filter_params
 );
 
 $status_badge = [

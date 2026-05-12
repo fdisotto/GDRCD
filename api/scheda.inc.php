@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 /**
  * Endpoint JSON: scheda PG ridotta (dati pubblici + dati privati se self).
  *
@@ -33,9 +35,7 @@ $pg_param = isset($_GET['pg']) ? (string)$_GET['pg'] : $me_login;
 if ($pg_param === '') {
     $pg_param = $me_login;
 }
-$pg_safe = gdrcd_filter('in', $pg_param);
-
-$result = gdrcd_query(
+$p = Db::preparedFetch(
     "SELECT personaggio.nome, personaggio.cognome, personaggio.sesso, personaggio.permessi,
             personaggio.descrizione, personaggio.stato, personaggio.url_img,
             personaggio.salute, personaggio.salute_max, personaggio.esperienza,
@@ -45,13 +45,13 @@ $result = gdrcd_query(
             razza.bonus_car0, razza.bonus_car1, razza.bonus_car2,
             razza.bonus_car3, razza.bonus_car4, razza.bonus_car5
      FROM personaggio LEFT JOIN razza ON personaggio.id_razza = razza.id_razza
-     WHERE personaggio.nome = '" . $pg_safe . "'
+     WHERE personaggio.nome = ?
      LIMIT 1",
-    'result'
+    's',
+    array($pg_param)
 );
 
-if (gdrcd_query($result, 'num_rows') === 0) {
-    gdrcd_query($result, 'free');
+if ($p === null) {
     http_response_code(404);
     echo json_encode(['error' => 'Personaggio non trovato'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     if (isset($handleDBConnection)) {
@@ -59,9 +59,6 @@ if (gdrcd_query($result, 'num_rows') === 0) {
     }
     exit;
 }
-
-$p = gdrcd_query($result, 'fetch');
-gdrcd_query($result, 'free');
 
 $is_self    = ($p['nome'] === $me_login);
 $razza_lbl  = $p['sing_' . $p['sesso']] ?? '';

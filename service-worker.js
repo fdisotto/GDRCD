@@ -154,3 +154,81 @@ self.addEventListener('message', function (event) {
         self.skipWaiting();
     }
 });
+
+/**
+ * Web Push: gestisce i payload arrivati dal push service del browser.
+ *
+ * Il server (includes/push.inc.php) invia un payload JSON cifrato AES-128-GCM
+ * con la chiave pubblica del client (p256dh). Il push service lo consegna
+ * gia' decifrato al SW. Formato atteso:
+ *
+ *   {
+ *     "title": "Titolo notifica",
+ *     "body":  "Corpo testo",
+ *     "url":   "/main.php?page=messages_center", // optional target on click
+ *     "tag":   "gdrcd-pm"                          // optional dedup tag
+ *   }
+ *
+ * Se il payload non e' parsable (es. ping di test o payload corrotto)
+ * mostriamo comunque una notifica neutra, perche' alcuni browser revocano
+ * il permesso push se il SW non chiama showNotification() su un push event.
+ */
+self.addEventListener('push', function (event) {
+    var data = {};
+    try {
+        data = event.data ? event.data.json() : {};
+    } catch (e) {
+        // Payload non JSON: prova come testo, altrimenti fallback.
+        try {
+            data = { title: 'GDRCD', body: event.data ? event.data.text() : '' };
+        } catch (e2) {
+            data = { title: 'GDRCD', body: '' };
+        }
+    }
+
+    var title = data.title || 'GDRCD';
+    var options = {
+        body:     data.body || '',
+        icon:     '/imgs/icon-192.png',
+        badge:    '/imgs/favicon.ico',
+        tag:      data.tag || 'gdrcd-notification',
+        data:     data.url || '/main.php',
+        renotify: false
+    };
+
+    event.waitUntil(self.registration.showNotification(title, options));
+});
+
+/**
+ * Click sulla notifica: porta l'utente alla URL associata (data.url
+ * salvata in showNotification.options.data). Se esiste gia' una finestra
+ * GDRCD aperta la focalizziamo invece di aprirne una nuova.
+ */
+self.addEventListener('notificationclick', function (event) {
+    event.notification.close();
+
+    var targetUrl = event.notification.data || '/main.php';
+
+    event.waitUntil(
+        self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (windowClients) {
+            for (var i = 0; i < windowClients.length; i++) {
+                var client = windowClients[i];
+                // Riusa una finestra esistente se possibile.
+                if ('focus' in client) {
+                    try {
+                        if ('navigate' in client) {
+                            client.navigate(targetUrl);
+                        }
+                        return client.focus();
+                    } catch (e) {
+                        // Alcuni browser bloccano navigate cross-origin; fallback ad openWindow.
+                    }
+                }
+            }
+            if (self.clients.openWindow) {
+                return self.clients.openWindow(targetUrl);
+            }
+            return undefined;
+        })
+    );
+});

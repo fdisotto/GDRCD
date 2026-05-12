@@ -8,30 +8,26 @@ if (!isset($_REQUEST['pg'])) {
     return;
 }
 
-$pg = $_REQUEST['pg'];
+$pg = (string)$_REQUEST['pg'];
 
-$check = gdrcd_query(
-    "SELECT nome FROM personaggio WHERE nome = '" . gdrcd_filter('in', $pg) . "'",
-    'result'
-);
-if (gdrcd_query($check, 'num_rows') === 0) {
+$check = Db::preparedFetch("SELECT nome FROM personaggio WHERE nome = ?", 's', array($pg));
+if ($check === null) {
     echo '<div class="gdrcd-alert-error">' . gdrcd_filter('out', $MESSAGE['error']['unknown_character_sheet']) . '</div>';
     return;
 }
-gdrcd_query($check, 'free');
 
 $num_logs = (int)($PARAMETERS['settings']['view_logs'] ?? 20);
 
-$result = gdrcd_query(
+$result = Db::prepared(
     "SELECT descrizione_evento, autore, data_evento, nome_interessato
      FROM log
-     WHERE (nome_interessato = '" . gdrcd_filter('in', $pg) . "'
-            OR autore = '" . gdrcd_filter('in', $pg) . "')
-       AND codice_evento = " . BONIFICO . "
-     ORDER BY data_evento DESC LIMIT " . $num_logs,
-    'result'
+     WHERE (nome_interessato = ? OR autore = ?)
+       AND codice_evento = ?
+     ORDER BY data_evento DESC LIMIT ?",
+    'ssii',
+    array($pg, $pg, (int)BONIFICO, $num_logs)
 );
-$numresults = (int)gdrcd_query($result, 'num_rows');
+$numresults = ($result instanceof mysqli_result) ? (int)mysqli_num_rows($result) : 0;
 
 $lbl   = $MESSAGE['interface']['sheet']['px'];
 $lbl_t = $MESSAGE['interface']['sheet']['trans'];

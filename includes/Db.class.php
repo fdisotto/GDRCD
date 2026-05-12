@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 /**
  * Db - Wrapper tipizzato attorno alle funzioni mysqli del core.
  *

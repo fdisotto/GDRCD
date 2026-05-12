@@ -86,31 +86,38 @@ $offset   = max(0, (int)($_GET['offset'] ?? 0));
 $per_page = max(1, (int)($PARAMETERS['settings']['records_per_page'] ?? 15));
 
 /* ------------------------------------------------------------------
- * Costruzione WHERE.
+ * Costruzione WHERE parametrizzato.
  * ------------------------------------------------------------------ */
-$where = [];
+$where  = [];
+$types  = '';
+$params = [];
 
 // Range data (inclusivo: da 00:00:00 a 23:59:59).
-$from_q = gdrcd_filter('in', $date_from . ' 00:00:00');
-$to_q   = gdrcd_filter('in', $date_to   . ' 23:59:59');
-$where[] = "data_evento BETWEEN '" . $from_q . "' AND '" . $to_q . "'";
+$where[]  = "data_evento BETWEEN ? AND ?";
+$types   .= 'ss';
+$params[] = $date_from . ' 00:00:00';
+$params[] = $date_to   . ' 23:59:59';
 
 if (!empty($selected_codes)) {
+    // $selected_codes contiene gia' solo interi validati (whitelist).
     $codes_sql = implode(',', array_map('intval', $selected_codes));
     $where[] = "codice_evento IN (" . $codes_sql . ")";
 }
 
 if ($q_interessato !== '') {
-    $like = gdrcd_filter('in', '%' . $q_interessato . '%');
-    $where[] = "nome_interessato LIKE '" . $like . "'";
+    $where[]  = "nome_interessato LIKE ?";
+    $types   .= 's';
+    $params[] = '%' . $q_interessato . '%';
 }
 if ($q_autore !== '') {
-    $like = gdrcd_filter('in', '%' . $q_autore . '%');
-    $where[] = "autore LIKE '" . $like . "'";
+    $where[]  = "autore LIKE ?";
+    $types   .= 's';
+    $params[] = '%' . $q_autore . '%';
 }
 if ($q_descr !== '') {
-    $like = gdrcd_filter('in', '%' . $q_descr . '%');
-    $where[] = "descrizione_evento LIKE '" . $like . "'";
+    $where[]  = "descrizione_evento LIKE ?";
+    $types   .= 's';
+    $params[] = '%' . $q_descr . '%';
 }
 
 $where_sql = ' WHERE ' . implode(' AND ', $where);
@@ -118,7 +125,7 @@ $where_sql = ' WHERE ' . implode(' AND ', $where);
 /* ------------------------------------------------------------------
  * Conteggio + query principale paginata.
  * ------------------------------------------------------------------ */
-$count_row = gdrcd_query("SELECT COUNT(*) AS n FROM log" . $where_sql);
+$count_row = Db::preparedFetch("SELECT COUNT(*) AS n FROM log" . $where_sql, $types, $params);
 $total     = (int)($count_row['n'] ?? 0);
 
 $max_offset = ($total > 0) ? (int)floor(($total - 1) / $per_page) : 0;
@@ -127,13 +134,14 @@ if ($offset > $max_offset) {
 }
 $page_begin = $offset * $per_page;
 
-$rows_rs = gdrcd_query(
+$rows_rs = Db::prepared(
     "SELECT id, data_evento, codice_evento, autore, nome_interessato, descrizione_evento"
     . " FROM log"
     . $where_sql
     . " ORDER BY data_evento DESC, id DESC"
-    . " LIMIT " . (int)$page_begin . ", " . (int)$per_page,
-    'result'
+    . " LIMIT ?, ?",
+    $types . 'ii',
+    array_merge($params, array((int)$page_begin, (int)$per_page))
 );
 
 /* ------------------------------------------------------------------

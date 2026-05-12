@@ -56,17 +56,13 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && ($_POST['op'] ?? '') === 's
         if ($title === '') {
             $flash = ['kind' => 'warning', 'message' => 'Il titolo non puo\' essere vuoto.'];
         } else {
-            $slug_q  = gdrcd_filter('in', $slug_in);
-            $title_q = gdrcd_filter('in', $title);
-            $body_q  = gdrcd_filter('in', $body);
-            $user_q  = gdrcd_filter('in', (string)($_SESSION['login'] ?? ''));
-
             // Upsert: garantisce la riga anche se la migrazione/seed non hanno girato.
-            gdrcd_query(
-                "INSERT INTO legal_pages (slug, title, body, updated_by) VALUES ("
-                . "'" . $slug_q . "', '" . $title_q . "', '" . $body_q . "', '" . $user_q . "')"
+            Db::preparedExecute(
+                "INSERT INTO legal_pages (slug, title, body, updated_by) VALUES (?, ?, ?, ?)"
                 . " ON DUPLICATE KEY UPDATE "
-                . "title = VALUES(title), body = VALUES(body), updated_by = VALUES(updated_by)"
+                . "title = VALUES(title), body = VALUES(body), updated_by = VALUES(updated_by)",
+                'ssss',
+                array($slug_in, $title, $body, (string)($_SESSION['login'] ?? ''))
             );
 
             $flash  = ['kind' => 'success', 'message' => 'Pagina aggiornata correttamente.'];
@@ -80,9 +76,10 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && ($_POST['op'] ?? '') === 's
  * ------------------------------------------------------------------ */
 $loaded = [];
 foreach ($pages as $slug => $_meta) {
-    $slug_q = gdrcd_filter('in', $slug);
-    $row = gdrcd_query(
-        "SELECT slug, title, body, updated_at, updated_by FROM legal_pages WHERE slug = '" . $slug_q . "' LIMIT 1"
+    $row = Db::preparedFetch(
+        "SELECT slug, title, body, updated_at, updated_by FROM legal_pages WHERE slug = ? LIMIT 1",
+        's',
+        array($slug)
     );
     $loaded[$slug] = $row ?: [
         'slug'       => $slug,

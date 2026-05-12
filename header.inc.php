@@ -73,6 +73,14 @@ if(($PARAMETERS['mode']['user_bbcode'] == 'ON' && $PARAMETERS['settings']['user_
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="GDRCD">
+    <?php
+    // Web Push: espone la VAPID public key al client (includes/notifications.js)
+    // solo se configurata; vuota -> il client salta la subscription push.
+    $__gdrcd_vapid_pub = (string)($PARAMETERS['push']['vapid_public'] ?? '');
+    if ($__gdrcd_vapid_pub !== ''):
+    ?>
+    <meta name="gdrcd-vapid-public" content="<?= htmlspecialchars($__gdrcd_vapid_pub, ENT_QUOTES, 'UTF-8') ?>">
+    <?php endif; ?>
     <title><?= htmlspecialchars($PARAMETERS['info']['site_name']) ?></title>
 </head>
 <body class="bg-gdrcd-bg text-gdrcd-text font-sans min-h-screen flex flex-col dark:bg-gdrcd-dark-bg dark:text-gdrcd-dark-text">

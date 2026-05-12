@@ -3,17 +3,17 @@
  * Visualizzazione di un singolo messaggio.
  */
 
-$id_messaggio = gdrcd_filter('num', $_REQUEST['id_messaggio'] ?? 0);
-$result = gdrcd_query(
+$id_messaggio = (int)gdrcd_filter('num', $_REQUEST['id_messaggio'] ?? 0);
+$record = Db::preparedFetch(
     "SELECT * FROM messaggi
-     WHERE id = " . $id_messaggio . "
-       AND (destinatario = '" . gdrcd_filter('in', $_SESSION['login']) . "'
-            OR mittente   = '" . gdrcd_filter('in', $_SESSION['login']) . "')
+     WHERE id = ?
+       AND (destinatario = ? OR mittente = ?)
      LIMIT 1",
-    'result'
+    'iss',
+    array($id_messaggio, (string)$_SESSION['login'], (string)$_SESSION['login'])
 );
 
-if (gdrcd_query($result, 'num_rows') === 0): ?>
+if ($record === null): ?>
 <div class="space-y-4">
     <div class="gdrcd-alert-warning">
         <svg class="w-5 h-5 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4c-.77-1.33-2.69-1.33-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3z"/></svg>
@@ -30,11 +30,8 @@ if (gdrcd_query($result, 'num_rows') === 0): ?>
     return;
 endif;
 
-$record = gdrcd_query($result, 'fetch');
-gdrcd_query($result, 'free');
-
 if ($record['destinatario'] === $_SESSION['login'] && (int)$record['letto'] === 0) {
-    gdrcd_query("UPDATE messaggi SET letto = 1 WHERE id = " . gdrcd_filter('num', $record['id']) . " LIMIT 1");
+    Db::preparedExecute("UPDATE messaggi SET letto = 1 WHERE id = ? LIMIT 1", 'i', array((int)$record['id']));
 }
 
 [$data_spedito, $ora_spedito] = explode(' ', $record['spedito']);

@@ -883,6 +883,26 @@ CREATE TABLE IF NOT EXISTS `clgquestpg` (
 -- --------------------------------------------------------
 
 --
+-- Struttura della tabella `push_subscriptions` (Web Push subscriptions
+-- emesse dal browser per ricevere notifiche anche a tab chiusa).
+--
+
+CREATE TABLE IF NOT EXISTS `push_subscriptions` (
+  `id`           INT NOT NULL AUTO_INCREMENT,
+  `user_login`   VARCHAR(50) NOT NULL,
+  `endpoint`     TEXT NOT NULL,
+  `p256dh`       VARCHAR(255) NOT NULL,
+  `auth`         VARCHAR(255) NOT NULL,
+  `created_at`   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `last_used_at` DATETIME NULL,
+  PRIMARY KEY (`id`),
+  INDEX `idx_user` (`user_login`),
+  UNIQUE KEY `uq_endpoint` (`endpoint`(255))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
 -- Struttura della tabella `_gdrcd_db_versions`
 --
 
@@ -902,7 +922,8 @@ INSERT INTO _gdrcd_db_versions (migration_id,applied_on) VALUES
   ('2026051116', NOW()),
   ('2026051117', NOW()),
   ('2026051118', NOW()),
-  ('2026051119', NOW());
+  ('2026051119', NOW()),
+  ('2026051120', NOW());
 
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

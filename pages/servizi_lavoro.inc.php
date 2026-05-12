@@ -7,15 +7,17 @@ $disoccupato = 0;
 $lavoro = -1;
 $jobsn = 0;
 $ultimolavoro = date('Y-m-d');
-$result = gdrcd_query(
+$login_user = (string)$_SESSION['login'];
+$jobs_rows  = Db::preparedFetchAll(
     "SELECT clgpersonaggioruolo.id_ruolo, clgpersonaggioruolo.scadenza, ruolo.gilda
      FROM clgpersonaggioruolo
      LEFT JOIN ruolo ON clgpersonaggioruolo.id_ruolo = ruolo.id_ruolo
-     WHERE clgpersonaggioruolo.personaggio = '" . gdrcd_filter('in', $_SESSION['login']) . "'
+     WHERE clgpersonaggioruolo.personaggio = ?
      ORDER BY ruolo.gilda",
-    'result'
+    's',
+    array($login_user)
 );
-while ($jobs = gdrcd_query($result, 'fetch')) {
+foreach ($jobs_rows as $jobs) {
     $jobsn++;
     if ($jobs['gilda'] == -1) {
         $disoccupato = -1;
@@ -23,33 +25,50 @@ while ($jobs = gdrcd_query($result, 'fetch')) {
         $ultimolavoro = $jobs['scadenza'];
     }
 }
-gdrcd_query($result, 'free');
 
 $op = $_POST['op'] ?? null;
 $alerts = [];
+$minEmployment = (int)$PARAMETERS['settings']['minimum_employment'];
 
 if ($op === 'pick') {
+    $id_record = (int)($_POST['id_record'] ?? 0);
     if ($disoccupato == -1) {
-        gdrcd_query("UPDATE clgpersonaggioruolo SET id_ruolo = " . gdrcd_filter('num', $_POST['id_record']) . ",
-                     scadenza = DATE_ADD(NOW(), INTERVAL " . gdrcd_filter('num', $PARAMETERS['settings']['minimum_employment']) . " DAY)
-                     WHERE personaggio = '" . gdrcd_filter('in', $_SESSION['login']) . "' AND id_ruolo = " . gdrcd_filter('num', $lavoro) . " LIMIT 1");
+        // INTERVAL non puo' essere parametrizzato -> $minEmployment e' int.
+        Db::preparedExecute(
+            "UPDATE clgpersonaggioruolo SET id_ruolo = ?,
+                     scadenza = DATE_ADD(NOW(), INTERVAL " . $minEmployment . " DAY)
+                     WHERE personaggio = ? AND id_ruolo = ? LIMIT 1",
+            'isi',
+            array($id_record, $login_user, (int)$lavoro)
+        );
     } else {
-        gdrcd_query("INSERT INTO clgpersonaggioruolo (id_ruolo, personaggio, scadenza)
-                     VALUES (" . gdrcd_filter('num', $_POST['id_record']) . ",
-                             '" . gdrcd_filter('in', $_SESSION['login']) . "',
-                             DATE_ADD(NOW(), INTERVAL " . gdrcd_filter('num', $PARAMETERS['settings']['minimum_employment']) . " DAY))");
+        Db::preparedExecute(
+            "INSERT INTO clgpersonaggioruolo (id_ruolo, personaggio, scadenza)
+                     VALUES (?, ?, DATE_ADD(NOW(), INTERVAL " . $minEmployment . " DAY))",
+            'is',
+            array($id_record, $login_user)
+        );
     }
     $alerts[] = ['success', gdrcd_filter('out', $MESSAGE['interface']['job']['ok_job'])];
-    gdrcd_query("INSERT INTO log (nome_interessato, autore, data_evento, codice_evento, descrizione_evento)
-                 VALUES ('" . gdrcd_filter('in', $_SESSION['login']) . "', '" . gdrcd_filter('in', $_SESSION['login']) . "',
-                         NOW(), " . NUOVOLAVORO . ", '" . gdrcd_filter('in', $_POST['nome_lavoro'] ?? '') . "')");
+    Db::preparedExecute(
+        "INSERT INTO log (nome_interessato, autore, data_evento, codice_evento, descrizione_evento)
+                 VALUES (?, ?, NOW(), ?, ?)",
+        'ssis',
+        array($login_user, $login_user, (int)NUOVOLAVORO, (string)($_POST['nome_lavoro'] ?? ''))
+    );
 } elseif ($op === 'resign') {
-    gdrcd_query("DELETE FROM clgpersonaggioruolo WHERE personaggio = '" . gdrcd_filter('in', $_SESSION['login']) . "'
-                 AND id_ruolo = " . gdrcd_filter('num', $_POST['id_record']) . " LIMIT 1");
+    Db::preparedExecute(
+        "DELETE FROM clgpersonaggioruolo WHERE personaggio = ? AND id_ruolo = ? LIMIT 1",
+        'si',
+        array($login_user, (int)($_POST['id_record'] ?? 0))
+    );
     $alerts[] = ['success', gdrcd_filter('out', $MESSAGE['interface']['job']['ok_quit'])];
-    gdrcd_query("INSERT INTO log (nome_interessato, autore, data_evento, codice_evento, descrizione_evento)
-                 VALUES ('" . gdrcd_filter('in', $_SESSION['login']) . "', '" . gdrcd_filter('in', $_SESSION['login']) . "',
-                         NOW(), " . DIMISSIONE . ", '" . gdrcd_filter('in', $_POST['nome_lavoro'] ?? '') . "')");
+    Db::preparedExecute(
+        "INSERT INTO log (nome_interessato, autore, data_evento, codice_evento, descrizione_evento)
+                 VALUES (?, ?, NOW(), ?, ?)",
+        'ssis',
+        array($login_user, $login_user, (int)DIMISSIONE, (string)($_POST['nome_lavoro'] ?? ''))
+    );
 }
 
 $today = date('Y-m-d');

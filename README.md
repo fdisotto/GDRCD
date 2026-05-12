@@ -622,6 +622,77 @@ aggiungere in `.htaccess` (se introdotto in futuro):
 
 ---
 
+## Push notifications setup
+
+Oltre alle notifiche desktop in-tab (vedi `includes/notifications.js`), GDRCD
+supporta **Web Push**: notifiche del browser anche quando la tab è chiusa,
+recapitate al `service-worker.js` dal push service del browser
+(FCM/Mozilla/WNS) e mostrate via `showNotification()`.
+
+### Componenti
+
+| Path                                       | Ruolo                                                |
+|--------------------------------------------|------------------------------------------------------|
+| `db_versions/2026051120_GDRCDPushSubscriptions.php` | Migrazione: tabella `push_subscriptions`    |
+| `api/push-subscribe.inc.php`               | Salva una subscription (POST JSON)                   |
+| `api/push-unsubscribe.inc.php`             | Rimuove una subscription (POST JSON)                 |
+| `service-worker.js`                        | Handler `push` + `notificationclick`                 |
+| `includes/notifications.js`                | Bootstrap `PushManager.subscribe()` lato client      |
+| `includes/push.inc.php`                    | Helper server `gdrcd_push_send()` (STUB, vedi sotto) |
+| `pages/gestione/push_test.inc.php`         | Pannello SUPERUSER per inviare notifiche di test     |
+
+### Generare le chiavi VAPID
+
+VAPID (RFC 8292) identifica il server presso il push service. Servono una
+coppia di chiavi P-256 ECDSA, base64url-encoded. Generazione one-time con
+`openssl`:
+
+```bash
+# Chiave privata (P-256)
+openssl ecparam -genkey -name prime256v1 -out vapid_private.pem
+
+# Chiave pubblica derivata
+openssl ec -in vapid_private.pem -pubout -out vapid_public.pem
+```
+
+Successivamente convertire le chiavi nel formato base64url richiesto da VAPID
+e configurarle in `config.inc.php`:
+
+```php
+$PARAMETERS['push']['vapid_public']  = 'BNc...'; // base64url della chiave pubblica
+$PARAMETERS['push']['vapid_private'] = 'kI4...'; // base64url della chiave privata
+$PARAMETERS['push']['vapid_subject'] = 'mailto:admin@example.com';
+```
+
+La chiave **pubblica** viene esposta al browser via `<meta name="gdrcd-vapid-public">`
+in `header.inc.php`. La chiave **privata** non lascia mai il server.
+
+Solo a chiavi configurate il client tenta `pushManager.subscribe()`: con
+campi vuoti la subscription push viene saltata e restano attive le sole
+notifiche in-tab.
+
+### Sender lato server (STATO: stub)
+
+`gdrcd_push_send($user_login, $payload)` in `includes/push.inc.php` recupera
+le subscription dell'utente, ma **non effettua ancora il dispatch HTTP** verso
+il push service: richiede firma VAPID JWT ES256 + cifratura AES-128-GCM
+secondo RFC 8291 (ECDH P-256 → HKDF → CEK + nonce). Per produzione si
+consiglia di integrare [`minishlink/web-push`](https://github.com/web-push-libs/web-push-php)
+via Composer e delegare il dispatch alla libreria. Per ora la funzione
+logga l'intento e restituisce il numero di subscription trovate.
+
+### Test rapido
+
+1. Genera e configura le chiavi VAPID (vedi sopra).
+2. Applica la migrazione (`bin/migrate up` o reset DB con `gdrcd_db.sql`).
+3. Login normale, accetta il prompt notifiche: il client invia POST a
+   `/api/push-subscribe.inc.php` e una riga compare in `push_subscriptions`.
+4. Da SUPERUSER, apri **Gestione → Test push notifications** e invia una
+   notifica di prova. Il pannello mostra il numero di subscription colpite
+   (al momento solo log, niente dispatch reale).
+
+---
+
 ## Internazionalizzazione (i18n)
 
 Tutte le stringhe di interfaccia visualizzate all'utente devono passare

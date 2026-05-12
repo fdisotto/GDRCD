@@ -3,10 +3,10 @@
  * Lettura di un singolo topic con tutte le risposte.
  */
 
-$topic_id = gdrcd_filter('num', $_REQUEST['what']  ?? 0);
-$araldo_q = gdrcd_filter('num', $_REQUEST['where'] ?? 0);
+$topic_id = (int)gdrcd_filter('num', $_REQUEST['what']  ?? 0);
+$araldo_q = (int)gdrcd_filter('num', $_REQUEST['where'] ?? 0);
 
-$result = gdrcd_query(
+$result = Db::prepared(
     "SELECT messaggioaraldo.id_messaggio, messaggioaraldo.id_messaggio_padre,
             messaggioaraldo.titolo, messaggioaraldo.messaggio, messaggioaraldo.autore,
             messaggioaraldo.data_messaggio, messaggioaraldo.chiuso,
@@ -15,12 +15,13 @@ $result = gdrcd_query(
      FROM messaggioaraldo
      LEFT JOIN araldo ON messaggioaraldo.id_araldo = araldo.id_araldo
      LEFT JOIN personaggio ON messaggioaraldo.autore = personaggio.nome
-     WHERE (messaggioaraldo.id_messaggio_padre = " . $topic_id . " AND messaggioaraldo.id_messaggio_padre != -1)
-        OR messaggioaraldo.id_messaggio = " . $topic_id . "
+     WHERE (messaggioaraldo.id_messaggio_padre = ? AND messaggioaraldo.id_messaggio_padre != -1)
+        OR messaggioaraldo.id_messaggio = ?
      ORDER BY id_messaggio_padre, data_messaggio",
-    'result'
+    'ii',
+    array($topic_id, $topic_id)
 );
-$head = gdrcd_query($result, 'fetch');
+$head = ($result instanceof mysqli_result) ? mysqli_fetch_assoc($result) : null;
 
 if (empty($head)): ?>
 <div class="space-y-4">
@@ -53,13 +54,16 @@ $chiuso    = !empty($head['chiuso']);
 $is_mod    = ((int)$_SESSION['permessi'] >= MODERATOR);
 
 // Marca come letto
-$check = gdrcd_query("SELECT id FROM araldo_letto WHERE nome = '" . gdrcd_filter('in', $_SESSION['login']) . "' AND thread_id = " . $topic_id);
+$check = Db::preparedFetch(
+    "SELECT id FROM araldo_letto WHERE nome = ? AND thread_id = ?",
+    'si',
+    array((string)$_SESSION['login'], $topic_id)
+);
 if ((int)($check['id'] ?? 0) <= 0) {
-    gdrcd_query(
-        "INSERT INTO araldo_letto (nome, araldo_id, thread_id) VALUES ("
-        . "'" . gdrcd_filter('in', $_SESSION['login']) . "',"
-        . $araldo_q . ","
-        . $topic_id . ")"
+    Db::preparedExecute(
+        "INSERT INTO araldo_letto (nome, araldo_id, thread_id) VALUES (?, ?, ?)",
+        'sii',
+        array((string)$_SESSION['login'], $araldo_q, $topic_id)
     );
 }
 

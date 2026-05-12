@@ -16,8 +16,16 @@ while ($row = gdrcd_query($result, 'fetch')) {
     }
 
     $tipo  = (int)$row['tipo'];
-    $letti = gdrcd_query("SELECT COUNT(id) AS n FROM araldo_letto WHERE araldo_id = " . (int)$row['id_araldo'] . " AND nome = '" . gdrcd_filter('in', $_SESSION['login']) . "'");
-    $tot   = gdrcd_query("SELECT COUNT(id_messaggio) AS n FROM messaggioaraldo WHERE id_araldo = " . (int)$row['id_araldo'] . " AND id_messaggio_padre = -1");
+    $letti = Db::preparedFetch(
+        "SELECT COUNT(id) AS n FROM araldo_letto WHERE araldo_id = ? AND nome = ?",
+        'is',
+        array((int)$row['id_araldo'], (string)$_SESSION['login'])
+    );
+    $tot   = Db::preparedFetch(
+        "SELECT COUNT(id_messaggio) AS n FROM messaggioaraldo WHERE id_araldo = ? AND id_messaggio_padre = -1",
+        'i',
+        array((int)$row['id_araldo'])
+    );
 
     $has_new = ((int)$tot['n'] > (int)$letti['n']);
     if ($has_new) $total_new++;

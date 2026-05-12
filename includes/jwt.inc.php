@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 /**
  * JWT (RFC 7519) helper minimale — algoritmo HS256.
  *

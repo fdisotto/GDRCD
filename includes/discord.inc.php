@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 /**
  * Discord bridge helper.
  *
@@ -40,7 +42,7 @@ if (!defined('GDRCD_DISCORD_INC')) {
      *   relay_types: array<int,string>
      * }
      */
-    function gdrcd_discord_config()
+    function gdrcd_discord_config(): array
     {
         global $PARAMETERS;
 
@@ -96,7 +98,7 @@ if (!defined('GDRCD_DISCORD_INC')) {
      * Maschera un webhook URL per la presentazione in admin UI.
      * Mantiene host + ultimi 4 caratteri del path, censura il resto.
      */
-    function gdrcd_discord_mask_webhook($url)
+    function gdrcd_discord_mask_webhook(string $url): string
     {
         $url = (string)$url;
         if ($url === '') {
@@ -129,7 +131,7 @@ if (!defined('GDRCD_DISCORD_INC')) {
      * @param string $stanza    Nome leggibile della stanza/luogo.
      * @return bool true se l'invio e' andato a buon fine (HTTP 204).
      */
-    function gdrcd_discord_relay($tipo, $mittente, $testo, $stanza)
+    function gdrcd_discord_relay(string $tipo, string $mittente, string $testo, string $stanza): bool
     {
         $cfg = gdrcd_discord_config();
         if (empty($cfg['enabled']) || $cfg['webhook_url'] === '') {
@@ -216,7 +218,7 @@ if (!defined('GDRCD_DISCORD_INC')) {
      *
      * @return string
      */
-    function gdrcd_discord_generate_token()
+    function gdrcd_discord_generate_token(): string
     {
         try {
             return bin2hex(random_bytes(32));
@@ -230,7 +232,7 @@ if (!defined('GDRCD_DISCORD_INC')) {
     /**
      * Confronta in modo timing-safe due token.
      */
-    function gdrcd_discord_token_equals($a, $b)
+    function gdrcd_discord_token_equals(string $a, string $b): bool
     {
         $a = (string)$a;
         $b = (string)$b;

@@ -16,10 +16,13 @@ if ($column === null) {
     return;
 }
 
-gdrcd_query(
+// $delType / $column whitelisted sopra.
+Db::preparedExecute(
     "UPDATE messaggi SET " . $delType . " = 1
-     WHERE " . $column . " = '" . gdrcd_filter('in', $_SESSION['login']) . "'
-       AND letto = 1"
+     WHERE " . $column . " = ?
+       AND letto = 1",
+    's',
+    array((string)$_SESSION['login'])
 );
 ?>
 

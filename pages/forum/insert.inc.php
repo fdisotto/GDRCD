@@ -44,27 +44,28 @@ if (!gdrcd_controllo_permessi_forum($araldoData['tipo'], $araldoData['proprietar
     return;
 }
 
-gdrcd_query(
+Db::preparedExecute(
     "INSERT INTO messaggioaraldo
         (id_messaggio_padre, id_araldo, titolo, messaggio, autore, data_messaggio, data_ultimo_messaggio)
-     VALUES ("
-    . $padre . ","
-    . (int)$araldoData['id_araldo'] . ","
-    . "'" . gdrcd_filter('in', $_POST['titolo'] ?? '') . "',"
-    . "'" . gdrcd_filter('in', $_POST['messaggio'] ?? '') . "',"
-    . "'" . gdrcd_filter('in', $_SESSION['login']) . "',"
-    . "NOW(), NOW())"
+     VALUES (?, ?, ?, ?, ?, NOW(), NOW())",
+    'iisss',
+    array((int)$padre, (int)$araldoData['id_araldo'], (string)($_POST['titolo'] ?? ''), (string)($_POST['messaggio'] ?? ''), (string)$_SESSION['login'])
 );
 
 if ((int)$padre === -1) {
-    $padre = (int)gdrcd_query('', 'last_id');
+    $padre = Db::lastInsertId();
 } else {
-    gdrcd_query("UPDATE messaggioaraldo SET data_ultimo_messaggio = NOW() WHERE id_messaggio = " . $padre);
+    Db::preparedExecute(
+        "UPDATE messaggioaraldo SET data_ultimo_messaggio = NOW() WHERE id_messaggio = ?",
+        'i',
+        array((int)$padre)
+    );
 }
 
-gdrcd_query(
-    "DELETE FROM araldo_letto WHERE thread_id = " . $padre .
-    " AND nome != '" . gdrcd_filter('in', $_SESSION['login']) . "'"
+Db::preparedExecute(
+    "DELETE FROM araldo_letto WHERE thread_id = ? AND nome != ?",
+    'is',
+    array((int)$padre, (string)$_SESSION['login'])
 );
 
-gdrcd_redirect('main.php?page=forum&op=read&what=' . $padre . '&where=' . (int)$araldoData['id_araldo']);
+gdrcd_redirect('main.php?page=forum&op=read&what=' . (int)$padre . '&where=' . (int)$araldoData['id_araldo']);

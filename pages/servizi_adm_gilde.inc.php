@@ -139,38 +139,54 @@ $is_guildmod = $_SESSION['permessi'] >= GUILDMODERATOR;
 
 if ($is_guildmod) {
     if ($is_mod) {
-        $q_ruoli = "SELECT ruolo.id_ruolo, ruolo.nome_ruolo, gilda.nome FROM ruolo
+        $ruoli_res = gdrcd_query(
+            "SELECT ruolo.id_ruolo, ruolo.nome_ruolo, gilda.nome FROM ruolo
                     LEFT JOIN gilda ON ruolo.gilda = gilda.id_gilda
-                    ORDER BY gilda.nome, ruolo.capo DESC, ruolo.stipendio DESC, ruolo.nome_ruolo";
-        $q_membri = "SELECT clgpersonaggioruolo.personaggio, clgpersonaggioruolo.id_ruolo, ruolo.nome_ruolo, ruolo.gilda
+                    ORDER BY gilda.nome, ruolo.capo DESC, ruolo.stipendio DESC, ruolo.nome_ruolo",
+            'result'
+        );
+        $membri_res = gdrcd_query(
+            "SELECT clgpersonaggioruolo.personaggio, clgpersonaggioruolo.id_ruolo, ruolo.nome_ruolo, ruolo.gilda
                      FROM clgpersonaggioruolo JOIN ruolo ON clgpersonaggioruolo.id_ruolo = ruolo.id_ruolo
-                     ORDER BY ruolo.gilda DESC, ruolo.stipendio DESC";
+                     ORDER BY ruolo.gilda DESC, ruolo.stipendio DESC",
+            'result'
+        );
     } else {
-        $login_in = gdrcd_filter('in', $_SESSION['login']);
-        $q_ruoli = "SELECT ruolo.id_ruolo, ruolo.nome_ruolo, gilda.nome FROM ruolo
+        $login_in = (string)$_SESSION['login'];
+        $ruoli_res = Db::prepared(
+            "SELECT ruolo.id_ruolo, ruolo.nome_ruolo, gilda.nome FROM ruolo
                     JOIN gilda ON ruolo.gilda = gilda.id_gilda
                     WHERE ruolo.gilda IN (SELECT ruolo.gilda FROM clgpersonaggioruolo
                                           JOIN ruolo ON clgpersonaggioruolo.id_ruolo = ruolo.id_ruolo
-                                          WHERE clgpersonaggioruolo.personaggio='{$login_in}'
+                                          WHERE clgpersonaggioruolo.personaggio = ?
                                           AND ruolo.gilda>-1 AND ruolo.capo = 1)
-                    ORDER BY gilda.nome, ruolo.capo DESC, ruolo.stipendio DESC, ruolo.nome_ruolo";
-        $q_membri = "SELECT clgpersonaggioruolo.personaggio, clgpersonaggioruolo.id_ruolo, ruolo.nome_ruolo, ruolo.gilda
+                    ORDER BY gilda.nome, ruolo.capo DESC, ruolo.stipendio DESC, ruolo.nome_ruolo",
+            's',
+            array($login_in)
+        );
+        $membri_res = Db::prepared(
+            "SELECT clgpersonaggioruolo.personaggio, clgpersonaggioruolo.id_ruolo, ruolo.nome_ruolo, ruolo.gilda
                      FROM clgpersonaggioruolo JOIN ruolo ON clgpersonaggioruolo.id_ruolo = ruolo.id_ruolo
                      WHERE ruolo.gilda IN (SELECT ruolo.gilda FROM clgpersonaggioruolo
                                            JOIN ruolo ON clgpersonaggioruolo.id_ruolo = ruolo.id_ruolo
-                                           WHERE clgpersonaggioruolo.personaggio='{$login_in}'
+                                           WHERE clgpersonaggioruolo.personaggio = ?
                                            AND ruolo.gilda>-1 AND ruolo.capo = 1) OR ruolo.gilda=-1
-                     ORDER BY ruolo.gilda DESC, ruolo.stipendio DESC";
+                     ORDER BY ruolo.gilda DESC, ruolo.stipendio DESC",
+            's',
+            array($login_in)
+        );
     }
-    $ruoli_res = gdrcd_query($q_ruoli, 'result');
     $people_res = gdrcd_query("SELECT nome, cognome FROM personaggio WHERE permessi > -1 ORDER BY nome", 'result');
-    $membri_res = gdrcd_query($q_membri, 'result');
 }
 
-$me = gdrcd_filter('in', $_SESSION['login']);
-$miei_ruoli = gdrcd_query("SELECT ruolo.id_ruolo, ruolo.nome_ruolo FROM clgpersonaggioruolo
+$me = (string)$_SESSION['login'];
+$miei_ruoli = Db::prepared(
+    "SELECT ruolo.id_ruolo, ruolo.nome_ruolo FROM clgpersonaggioruolo
                             LEFT JOIN ruolo ON ruolo.id_ruolo = clgpersonaggioruolo.id_ruolo
-                            WHERE clgpersonaggioruolo.personaggio='{$me}'", 'result');
+                            WHERE clgpersonaggioruolo.personaggio = ?",
+    's',
+    array($me)
+);
 ?>
 
 <div class="space-y-6">

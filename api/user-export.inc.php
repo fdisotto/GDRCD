@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 /**
  * Endpoint download: export GDPR dei dati personali dell'utente loggato.
  *
@@ -40,26 +42,10 @@ if ($auth === null) {
     exit;
 }
 
-$user      = (string)$auth['login'];
-$user_safe = gdrcd_filter('in', $user);
-
-/**
- * Esegue una SELECT e ritorna tutte le righe associative come array.
- * @param string $sql
- * @return array<int, array<string, mixed>>
- */
-$fetch_all = function (string $sql): array {
-    $rows = [];
-    $res  = gdrcd_query($sql, 'result');
-    while ($r = gdrcd_query($res, 'assoc')) {
-        $rows[] = $r;
-    }
-    gdrcd_query($res, 'free');
-    return $rows;
-};
+$user = (string)$auth['login'];
 
 // ---- Dati: scheda personaggio + razza --------------------------------------
-$scheda_rows = $fetch_all(
+$scheda = Db::preparedFetch(
     "SELECT personaggio.nome, personaggio.cognome, personaggio.email,
             personaggio.data_iscrizione, personaggio.ultimo_cambiopass,
             personaggio.sesso, personaggio.permessi, personaggio.id_razza,
@@ -73,39 +59,46 @@ $scheda_rows = $fetch_all(
             razza.nome_razza, razza.sing_m, razza.sing_f
      FROM personaggio
      LEFT JOIN razza ON personaggio.id_razza = razza.id_razza
-     WHERE personaggio.nome = '" . $user_safe . "'
-     LIMIT 1"
+     WHERE personaggio.nome = ?
+     LIMIT 1",
+    's',
+    array($user)
 );
-$scheda = $scheda_rows[0] ?? null;
 
 // ---- Messaggi (mittente o destinatario), ultimi 24 mesi --------------------
-$messaggi = $fetch_all(
+$messaggi = Db::preparedFetchAll(
     "SELECT id, mittente, destinatario, spedito, letto, tipo, oggetto, testo
      FROM messaggi
-     WHERE (mittente = '" . $user_safe . "' OR destinatario = '" . $user_safe . "')
+     WHERE (mittente = ? OR destinatario = ?)
        AND spedito > (NOW() - INTERVAL 24 MONTH)
-     ORDER BY spedito DESC"
+     ORDER BY spedito DESC",
+    'ss',
+    array($user, $user)
 );
 
 // ---- Log eventi (interessato o autore), ultimi 12 mesi ---------------------
-$log = $fetch_all(
+$log = Db::preparedFetchAll(
     "SELECT id, nome_interessato, autore, data_evento, codice_evento, descrizione_evento
      FROM log
-     WHERE (nome_interessato = '" . $user_safe . "' OR autore = '" . $user_safe . "')
+     WHERE (nome_interessato = ? OR autore = ?)
        AND data_evento > (NOW() - INTERVAL 12 MONTH)
-     ORDER BY data_evento DESC"
+     ORDER BY data_evento DESC",
+    'ss',
+    array($user, $user)
 );
 
 // ---- Diario completo del personaggio ---------------------------------------
-$diario = $fetch_all(
+$diario = Db::preparedFetchAll(
     "SELECT id, personaggio, data, data_inserimento, data_modifica, visibile, titolo, testo
      FROM diario
-     WHERE personaggio = '" . $user_safe . "'
-     ORDER BY data DESC"
+     WHERE personaggio = ?
+     ORDER BY data DESC",
+    's',
+    array($user)
 );
 
 // ---- Inventario (oggetti posseduti) ----------------------------------------
-$oggetti = $fetch_all(
+$oggetti = Db::preparedFetchAll(
     "SELECT clgpersonaggiooggetto.nome AS proprietario,
             clgpersonaggiooggetto.id_oggetto,
             clgpersonaggiooggetto.numero,
@@ -120,16 +113,20 @@ $oggetti = $fetch_all(
             oggetto.costo
      FROM clgpersonaggiooggetto
      LEFT JOIN oggetto ON clgpersonaggiooggetto.id_oggetto = oggetto.id_oggetto
-     WHERE clgpersonaggiooggetto.nome = '" . $user_safe . "'
-     ORDER BY clgpersonaggiooggetto.posizione, clgpersonaggiooggetto.id_oggetto"
+     WHERE clgpersonaggiooggetto.nome = ?
+     ORDER BY clgpersonaggiooggetto.posizione, clgpersonaggiooggetto.id_oggetto",
+    's',
+    array($user)
 );
 
 // ---- Segnalazioni role inviate dall'utente ---------------------------------
-$segnalazioni = $fetch_all(
+$segnalazioni = Db::preparedFetchAll(
     "SELECT id, stanza, conclusa, partecipanti, mittente, data_inizio, data_fine, tags, quest
      FROM segnalazione_role
-     WHERE mittente = '" . $user_safe . "'
-     ORDER BY data_inizio DESC"
+     WHERE mittente = ?
+     ORDER BY data_inizio DESC",
+    's',
+    array($user)
 );
 
 // ---- Costruzione ZIP -------------------------------------------------------

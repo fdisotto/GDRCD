@@ -142,20 +142,141 @@
     function requestPermission() {
         if (Notification.permission !== 'default') {
             hidePromptUi();
+            // Se gia' concesso prima, prova comunque a registrare la
+            // subscription push (idempotente lato server).
+            maybeSubscribePush();
             return;
         }
         try {
             var p = Notification.requestPermission(function (result) {
                 // Callback legacy (Safari).
                 hidePromptUi();
+                if (result === 'granted') maybeSubscribePush();
             });
             // Promise-based (Chrome, FF moderni).
             if (p && typeof p.then === 'function') {
-                p.then(function () { hidePromptUi(); }).catch(function () { hidePromptUi(); });
+                p.then(function (result) {
+                    hidePromptUi();
+                    if (result === 'granted') maybeSubscribePush();
+                }).catch(function () { hidePromptUi(); });
             }
         } catch (e) {
             hidePromptUi();
         }
+    }
+
+    // --- Web Push subscription -----------------------------------------
+    /**
+     * Converte una stringa VAPID public key in base64url (URL-safe, no padding)
+     * nell'Uint8Array atteso da PushManager.subscribe().applicationServerKey.
+     */
+    function urlBase64ToUint8Array(base64String) {
+        var padding = '='.repeat((4 - base64String.length % 4) % 4);
+        var base64  = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+        var raw     = window.atob(base64);
+        var output  = new Uint8Array(raw.length);
+        for (var i = 0; i < raw.length; ++i) output[i] = raw.charCodeAt(i);
+        return output;
+    }
+
+    /**
+     * Converte un ArrayBuffer in stringa base64 standard (con padding).
+     * Usata per serializzare le chiavi p256dh/auth del browser verso il server.
+     */
+    function arrayBufferToBase64(buffer) {
+        var bytes = new Uint8Array(buffer);
+        var binary = '';
+        for (var i = 0; i < bytes.byteLength; i++) {
+            binary += String.fromCharCode(bytes[i]);
+        }
+        return window.btoa(binary);
+    }
+
+    function getVapidPublicKey() {
+        var el = document.querySelector('meta[name="gdrcd-vapid-public"]');
+        if (!el) return '';
+        var v = el.getAttribute('content') || '';
+        return v.trim();
+    }
+
+    /**
+     * Iscrive (o riusa) la PushSubscription corrente e la invia all'endpoint
+     * /api/push-subscribe.inc.php. No-op silenzioso se:
+     *   - Service Worker / PushManager non supportati
+     *   - chiave VAPID non configurata lato server
+     *   - permesso notifiche non concesso
+     */
+    function maybeSubscribePush() {
+        if (!isEnabled()) return;
+        if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+        if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+
+        var vapid = getVapidPublicKey();
+        if (!vapid) return; // server non ha configurato VAPID
+
+        navigator.serviceWorker.ready.then(function (reg) {
+            return reg.pushManager.getSubscription().then(function (existing) {
+                if (existing) return existing;
+                return reg.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: urlBase64ToUint8Array(vapid)
+                });
+            });
+        }).then(function (sub) {
+            if (!sub) return;
+            var keys = sub.toJSON && sub.toJSON().keys ? sub.toJSON().keys : null;
+            var p256dh = keys && keys.p256dh ? keys.p256dh : '';
+            var auth   = keys && keys.auth ? keys.auth : '';
+            // Fallback (vecchi browser senza toJSON()): leggi i raw buffer.
+            if ((!p256dh || !auth) && sub.getKey) {
+                try {
+                    p256dh = p256dh || arrayBufferToBase64(sub.getKey('p256dh'));
+                    auth   = auth   || arrayBufferToBase64(sub.getKey('auth'));
+                } catch (e) { /* no-op */ }
+            }
+            if (!p256dh || !auth) return;
+
+            return fetch('/api/push-subscribe.inc.php', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    endpoint: sub.endpoint,
+                    keys: { p256dh: p256dh, auth: auth }
+                })
+            });
+        }).catch(function (err) {
+            if (window.console && console.warn) {
+                console.warn('[GDRCD push] subscribe failed:', err);
+            }
+        });
+    }
+
+    /**
+     * Disiscrive la subscription corrente e informa il server.
+     * Esposta via window.GDRCDNotifications.unsubscribePush().
+     */
+    function unsubscribePush() {
+        if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+        navigator.serviceWorker.ready.then(function (reg) {
+            return reg.pushManager.getSubscription();
+        }).then(function (sub) {
+            if (!sub) return null;
+            var endpoint = sub.endpoint;
+            return sub.unsubscribe().then(function () { return endpoint; });
+        }).then(function (endpoint) {
+            if (!endpoint) return;
+            return fetch('/api/push-unsubscribe.inc.php', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ endpoint: endpoint })
+            });
+        }).catch(function (err) {
+            if (window.console && console.warn) {
+                console.warn('[GDRCD push] unsubscribe failed:', err);
+            }
+        });
     }
 
     // --- Fire a desktop notification -----------------------------------
@@ -255,13 +376,19 @@
         setTimeout(poll, 2000);
         setInterval(poll, POLL_INTERVAL_MS);
 
+        // Web Push: se l'utente ha gia' concesso permessi e c'e' un SW
+        // attivo, registra (o riusa) la subscription. Idempotente.
+        setTimeout(maybeSubscribePush, 3000);
+
         // API pubblica minima: utile per un eventuale toggle in settings.
         window.GDRCDNotifications = {
             isEnabled: isEnabled,
             enable: function () { lsSet(LS_KEYS.enabled, '1'); },
             disable: function () { lsSet(LS_KEYS.enabled, '0'); },
             requestPermission: requestPermission,
-            permission: function () { return Notification.permission; }
+            permission: function () { return Notification.permission; },
+            subscribePush: maybeSubscribePush,
+            unsubscribePush: unsubscribePush
         };
     }
 
