@@ -597,7 +597,9 @@ function gdrcd_controllo_sessione()
     if (empty($_SESSION['login'])) {
         $msg  = $GLOBALS['MESSAGE']['error']['session_expired'];
         $hint = $GLOBALS['MESSAGE']['warning']['please_login_again'];
-        $url  = $GLOBALS['PARAMETERS']['info']['site_url'];
+        // Sempre link relativo a index.php: evita placeholder hardcoded
+        // (config.inc.php site_url e' gdrcd.test) e funziona su qualsiasi host.
+        $url  = 'index.php';
         echo '<div class="gdrcd-shell"><div class="gdrcd-container-sm">'
            . '<div class="gdrcd-card"><div class="gdrcd-card-body text-center space-y-4 py-8">'
            . '<span class="gdrcd-icon-circle bg-gdrcd-error-soft text-gdrcd-error border-red-200">'
